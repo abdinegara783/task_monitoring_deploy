@@ -19,4 +19,6 @@ urlpatterns = [
         views.employee_delete,
         name="employee_delete",
     ),
+    # Foreman URLs
+    path("foreman/", views.Foreman_view, name="foreman"),
 ]
