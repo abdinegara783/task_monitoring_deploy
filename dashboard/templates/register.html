@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 50px;
+            background-color: #f5f5f5;
+        }
+        .form-container { 
+            max-width: 400px; 
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-control { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn { 
+            background: #28a745; 
+            color: white; 
+            padding: 12px 20px; 
+            border: none; 
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #218838;
+        }
+        .messages { 
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .messages.error {
+            color: red;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .messages.success {
+            color: green;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .login-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .form-errors {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2 style="text-align: center; margin-bottom: 30px;">Daftar Akun Baru</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="messages {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+                <div class="form-errors">{{ form.first_name.errors }}</div>
+            {% endif %}
+            
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+                <div class="form-errors">{{ form.last_name.errors }}</div>
+            {% endif %}
+            
+            {{ form.email }}
+            {% if form.email.errors %}
+                <div class="form-errors">{{ form.email.errors }}</div>
+            {% endif %}
+            
+            {{ form.username }}
+            {% if form.username.errors %}
+                <div class="form-errors">{{ form.username.errors }}</div>
+            {% endif %}
+            
+            {{ form.password1 }}
+            {% if form.password1.errors %}
+                <div class="form-errors">{{ form.password1.errors }}</div>
+            {% endif %}
+            
+            {{ form.password2 }}
+            {% if form.password2.errors %}
+                <div class="form-errors">{{ form.password2.errors }}</div>
+            {% endif %}
+            
+            <button type="submit" class="btn">Daftar</button>
+        </form>
+        
+        <div class="login-link">
+            <p>Sudah punya akun? <a href="{% url 'login' %}">Login di sini</a></p>
+        </div>
+    </div>
+</body>
+</html>
