@@ -1,113 +1,214 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Buat Activity Report - Foreman Dashboard{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/login.css' %}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto p-6 max-w-2xl">
-    <!-- Header -->
-    <div class="flex items-center gap-3 mb-6">
-        <a href="{% url 'foreman' %}" class="p-2 hover:bg-gray-100 rounded-md">
-            <i data-lucide="arrow-left" class="w-5 h-5"></i>
-        </a>
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
-            </div>
-            <div>
-                <h1 class="text-xl font-bold">Activity Report</h1>
-                <p class="text-sm text-gray-600">
-                    Laporan aktivitas untuk {{ form.date.value|default:"hari ini" }}
-                </p>
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'dashboard' %}" 
+                   class="p-2 bg-white rounded-md shadow-sm border hover:bg-gray-50 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Activity Report</h1>
+                    <p class="text-gray-600 mt-2">Buat laporan aktivitas harian</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="bg-white rounded-lg shadow-sm border">
-        <div class="p-6">
-            {% if form.errors %}
-                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <div class="flex items-center mb-2">
-                        <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 mr-2"></i>
-                        <span class="font-medium text-red-800">Terjadi kesalahan:</span>
+        <!-- Form Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-8">
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-6 p-4 rounded-md flex items-center space-x-3 {% if message.tags == 'error' %}bg-red-50 border border-red-200{% else %}bg-green-50 border border-green-200{% endif %}">
+                        {% if message.tags == 'error' %}
+                            <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-red-700 font-medium">{{ message }}</span>
+                        {% else %}
+                            <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-green-700 font-medium">{{ message }}</span>
+                        {% endif %}
                     </div>
-                    {% for field, errors in form.errors.items %}
-                        {% for error in errors %}
-                            <p class="text-sm text-red-700">{{ error }}</p>
-                        {% endfor %}
-                    {% endfor %}
-                </div>
+                {% endfor %}
             {% endif %}
 
             <form method="post" class="space-y-6">
                 {% csrf_token %}
                 
-                <!-- Info Section -->
-                <div class="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
-                    <div>
-                        <p class="text-sm font-medium text-blue-900">Nama</p>
-                        <p class="text-sm text-blue-800">{{ user.get_full_name }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-blue-900">Departemen</p>
-                        <p class="text-sm text-blue-800">{{ user.department }}</p>
-                    </div>
-                </div>
-
-                <!-- Time Section -->
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <label for="{{ form.date.id_for_label }}" class="text-sm font-medium">Tanggal</label>
-                        {{ form.date }}
-                    </div>
-                    <div>
-                        <label for="{{ form.start_time.id_for_label }}" class="text-sm font-medium">Jam Mulai</label>
-                        {{ form.start_time }}
-                    </div>
-                    <div>
-                        <label for="{{ form.end_time.id_for_label }}" class="text-sm font-medium">Jam Selesai</label>
-                        {{ form.end_time }}
-                    </div>
-                </div>
-
-                <!-- Main Content -->
-                <div class="space-y-4">
-                    <div>
-                        <label for="{{ form.activities.id_for_label }}" class="text-sm font-medium">
-                            Aktivitas yang Dilakukan <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.activities }}
-                    </div>
-
-                    <div>
-                        <label for="{{ form.achievements.id_for_label }}" class="text-sm font-medium">
-                            Pencapaian & Target
-                        </label>
-                        {{ form.achievements }}
-                    </div>
-
-                    <div>
-                        <label for="{{ form.problems.id_for_label }}" class="text-sm font-medium">
-                            Masalah & Kendala
-                        </label>
-                        {{ form.problems }}
-                    </div>
-
-                    <div>
-                        <label for="{{ form.suggestions.id_for_label }}" class="text-sm font-medium">
-                            Saran & Rekomendasi
-                        </label>
-                        {{ form.suggestions }}
+                <!-- User Information (Auto-filled) -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        Informasi Karyawan
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Nama (Auto-filled) -->
+                        <div class="bg-gray-50 rounded-md p-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama</label>
+                            <div class="text-lg font-semibold text-gray-900">{{ user.name|default:user.get_full_name }}</div>
+                        </div>
+                        
+                        <!-- NRP (Auto-filled) -->
+                        <div class="bg-gray-50 rounded-md p-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">NRP</label>
+                            <div class="text-lg font-semibold text-gray-900">{{ user.nrp|default:"-" }}</div>
+                        </div>
+                        
+                        <!-- Departemen (Auto-filled) -->
+                        <div class="bg-gray-50 rounded-md p-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Departemen</label>
+                            <div class="text-lg font-semibold text-gray-900">{{ user.get_department_display|default:"-" }}</div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Submit Section -->
-                <div class="flex justify-end gap-3 pt-4 border-t">
-                    <a href="{% url 'foreman' %}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                
+                <!-- Report Information -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1M8 7h8m-8 0H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2m-8 0V7"></path>
+                        </svg>
+                        Informasi Laporan
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Date -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.date.label }}</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                                <div class="text-red-600 text-sm">{{ form.date.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Group Leader -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.leader.label }}</label>
+                            {{ form.leader }}
+                            {% if form.leader.errors %}
+                                <div class="text-red-600 text-sm">{{ form.leader.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Unit Code -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.Unit_Code.label }}</label>
+                            {{ form.Unit_Code }}
+                            {% if form.Unit_Code.errors %}
+                                <div class="text-red-600 text-sm">{{ form.Unit_Code.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- HM/KM -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.Hmkm.label }}</label>
+                            {{ form.Hmkm }}
+                            {% if form.Hmkm.errors %}
+                                <div class="text-red-600 text-sm">{{ form.Hmkm.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Time Information -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Waktu Aktivitas
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Start Time -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.start_time.label }}</label>
+                            {{ form.start_time }}
+                            {% if form.start_time.errors %}
+                                <div class="text-red-600 text-sm">{{ form.start_time.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- End Time -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.end_time.label }}</label>
+                            {{ form.end_time }}
+                            {% if form.end_time.errors %}
+                                <div class="text-red-600 text-sm">{{ form.end_time.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Activity Details -->
+                <div class="pb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        Detail Aktivitas
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <!-- Component -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.component.label }}</label>
+                            {{ form.component }}
+                            {% if form.component.errors %}
+                                <div class="text-red-600 text-sm">{{ form.component.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Activity -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.activities.label }}</label>
+                            {{ form.activities }}
+                            {% if form.activities.errors %}
+                                <div class="text-red-600 text-sm">{{ form.activities.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Activity Code -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700">{{ form.activities_code.label }}</label>
+                            {{ form.activities_code }}
+                            {% if form.activities_code.errors %}
+                                <div class="text-red-600 text-sm">{{ form.activities_code.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-4 pt-6">
+                    <a href="{% url 'dashboard' %}" 
+                       class="px-6 py-3 border border-input text-gray-700 font-medium rounded-md hover:bg-accent transition-colors">
                         Batal
                     </a>
-                    <button type="submit" class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2">
-                        <i data-lucide="send" class="w-4 h-4"></i>
-                        Kirim Laporan
+                    <button type="submit" 
+                            class="px-6 py-3 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors shadow-sm">
+                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Simpan Laporan
                     </button>
                 </div>
             </form>
