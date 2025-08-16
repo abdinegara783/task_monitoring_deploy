@@ -7,8 +7,8 @@ from django.db import models  # Tambahkan ini
 
 # Atau lebih spesifik:
 # from django.db.models import Q
-from .forms import LoginForm, RegisterForm, EmployeeRegistrationForm
-from .models import User
+from .forms import LoginForm, RegisterForm, EmployeeRegistrationForm, ActivityReportForm
+from .models import User, ActivityReport
 
 
 def hello_world(request):
@@ -178,8 +178,30 @@ def Foreman_view(request):
     return render(request, "foreman/dashboard_foreman.html")
 
 
+@login_required
 def create_activity_report(request):
-    return render(request, "foreman/create_activity_report.html")
+    """View untuk membuat Activity Report"""
+    if request.method == "POST":
+        form = ActivityReportForm(request.POST, user=request.user)
+        if form.is_valid():
+            activity_report = form.save(commit=False)
+            activity_report.foreman = request.user
+            activity_report.shift = request.user.shift
+            activity_report.save()
+            messages.success(request, "Activity Report berhasil dibuat!")
+            return redirect("dashboard")
+        else:
+            messages.error(
+                request, "Terjadi kesalahan dalam pembuatan Activity Report."
+            )
+    else:
+        form = ActivityReportForm(user=request.user)
+
+    return render(
+        request,
+        "foreman/create_activity_report.html",
+        {"form": form, "user": request.user},
+    )
 
 
 def create_analysis_report(request):
