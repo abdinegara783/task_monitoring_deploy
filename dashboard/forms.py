@@ -5,6 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import widgets
 from .models import User as CustomUser
+from .models import User, ActivityReport
 
 
 class LoginForm(AuthenticationForm):
@@ -108,79 +109,111 @@ class RegisterForm(UserCreationForm):
 # NEW: Form untuk Admin menambah karyawan
 class EmployeeRegistrationForm(forms.ModelForm):
     """Form untuk admin mendaftarkan karyawan baru"""
-    
+
     password1 = forms.CharField(
         label="Password",
-        widget=forms.PasswordInput(attrs={
-            "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
-            "placeholder": "Masukkan password",
-        }),
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                "placeholder": "Masukkan password",
+            }
+        ),
     )
     password2 = forms.CharField(
         label="Konfirmasi Password",
-        widget=forms.PasswordInput(attrs={
-            "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
-            "placeholder": "Konfirmasi password",
-        }),
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                "placeholder": "Konfirmasi password",
+            }
+        ),
     )
 
     class Meta:
         model = CustomUser
         fields = [
-            'username', 'email', 'first_name', 'last_name', 'name', 
-            'phone', 'nrp', 'role', 'department', 'shift'
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "name",
+            "phone",
+            "nrp",
+            "role",
+            "department",
+            "shift",
         ]
         widgets = {
-            'username': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'Username karyawan'
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'email@company.com'
-            }),
-            'first_name': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'Nama depan'
-            }),
-            'last_name': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'Nama belakang'
-            }),
-            'name': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'Nama lengkap'
-            }),
-            'phone': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': '08123456789'
-            }),
-            'nrp': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'Nomor Registrasi Pegawai'
-            }),
-            'role': forms.Select(attrs={
-                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400'
-            }),
-            'department': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
-                'placeholder': 'Departemen/Divisi'
-            }),
-            'shift': forms.Select(attrs={
-                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400'
-            }),
+            "username": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "Username karyawan",
+                }
+            ),
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "email@company.com",
+                }
+            ),
+            "first_name": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "Nama depan",
+                }
+            ),
+            "last_name": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "Nama belakang",
+                }
+            ),
+            "name": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "Nama lengkap",
+                }
+            ),
+            "phone": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "08123456789",
+                }
+            ),
+            "nrp": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "Nomor Registrasi Pegawai",
+                }
+            ),
+            "role": forms.Select(
+                attrs={
+                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                }
+            ),
+            "department": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
+                    "placeholder": "Departemen/Divisi",
+                }
+            ),
+            "shift": forms.Select(
+                attrs={
+                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
+                }
+            ),
         }
         labels = {
-            'username': 'Username',
-            'email': 'Email',
-            'first_name': 'Nama Depan',
-            'last_name': 'Nama Belakang',
-            'name': 'Nama Lengkap',
-            'phone': 'Nomor Telepon',
-            'nrp': 'NRP',
-            'role': 'Role/Jabatan',
-            'department': 'Departemen',
-            'shift': 'Shift Kerja',
+            "username": "Username",
+            "email": "Email",
+            "first_name": "Nama Depan",
+            "last_name": "Nama Belakang",
+            "name": "Nama Lengkap",
+            "phone": "Nomor Telepon",
+            "nrp": "NRP",
+            "role": "Role/Jabatan",
+            "department": "Departemen",
+            "shift": "Shift Kerja",
         }
 
     def clean_password2(self):
@@ -196,3 +229,70 @@ class EmployeeRegistrationForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
+
+class ActivityReportForm(forms.ModelForm):
+    """Form untuk membuat Activity Report"""
+    
+    class Meta:
+        model = ActivityReport
+        fields = [
+            'date', 'leader', 'Unit_Code', 'Hmkm', 'start_time', 'end_time',
+            'component', 'activities', 'activities_code'
+        ]
+        widgets = {
+            'date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'leader': forms.Select(attrs={
+                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'Unit_Code': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Masukkan kode unit'
+            }),
+            'Hmkm': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Masukkan HM/KM'
+            }),
+            'start_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'end_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'component': forms.Select(attrs={
+                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'activities': forms.Textarea(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'rows': 4,
+                'placeholder': 'Deskripsikan aktivitas yang dilakukan'
+            }),
+            'activities_code': forms.Select(attrs={
+                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+        }
+        labels = {
+            'date': 'Tanggal',
+            'leader': 'Group Leader',
+            'Unit_Code': 'Unit Code',
+            'Hmkm': 'HM/KM',
+            'start_time': 'Waktu Mulai',
+            'end_time': 'Waktu Selesai',
+            'component': 'Component',
+            'activities': 'Activity',
+            'activities_code': 'Activity Code',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set default date to today
+        if not self.instance.pk:
+            from django.utils import timezone
+            self.fields['date'].initial = timezone.now().date()

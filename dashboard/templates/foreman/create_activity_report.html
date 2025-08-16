@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Buat Activity Report - Foreman Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-2xl">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'foreman' %}" class="p-2 hover:bg-gray-100 rounded-md">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+        </a>
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <i data-lucide="file-text" class="w-5 h-5 text-blue-600"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold">Activity Report</h1>
+                <p class="text-sm text-gray-600">
+                    Laporan aktivitas untuk {{ form.date.value|default:"hari ini" }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="p-6">
+            {% if form.errors %}
+                <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div class="flex items-center mb-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 mr-2"></i>
+                        <span class="font-medium text-red-800">Terjadi kesalahan:</span>
+                    </div>
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <p class="text-sm text-red-700">{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Info Section -->
+                <div class="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-blue-900">Nama</p>
+                        <p class="text-sm text-blue-800">{{ user.get_full_name }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-blue-900">Departemen</p>
+                        <p class="text-sm text-blue-800">{{ user.department }}</p>
+                    </div>
+                </div>
+
+                <!-- Time Section -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <label for="{{ form.date.id_for_label }}" class="text-sm font-medium">Tanggal</label>
+                        {{ form.date }}
+                    </div>
+                    <div>
+                        <label for="{{ form.start_time.id_for_label }}" class="text-sm font-medium">Jam Mulai</label>
+                        {{ form.start_time }}
+                    </div>
+                    <div>
+                        <label for="{{ form.end_time.id_for_label }}" class="text-sm font-medium">Jam Selesai</label>
+                        {{ form.end_time }}
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="{{ form.activities.id_for_label }}" class="text-sm font-medium">
+                            Aktivitas yang Dilakukan <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.activities }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.achievements.id_for_label }}" class="text-sm font-medium">
+                            Pencapaian & Target
+                        </label>
+                        {{ form.achievements }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.problems.id_for_label }}" class="text-sm font-medium">
+                            Masalah & Kendala
+                        </label>
+                        {{ form.problems }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.suggestions.id_for_label }}" class="text-sm font-medium">
+                            Saran & Rekomendasi
+                        </label>
+                        {{ form.suggestions }}
+                    </div>
+                </div>
+
+                <!-- Submit Section -->
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                    <a href="{% url 'foreman' %}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                        Batal
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors flex items-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        Kirim Laporan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

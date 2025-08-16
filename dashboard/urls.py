@@ -21,4 +21,14 @@ urlpatterns = [
     ),
     # Foreman URLs
     path("foreman/", views.Foreman_view, name="foreman"),
+    path(
+        "foreman/create_activity_report/",
+        views.create_activity_report,
+        name="create_activity_report",
+    ),
+    path(
+        "foreman/create_analysis_report/",
+        views.create_analysis_report,
+        name="create_analysis_report",
+    ),
 ]

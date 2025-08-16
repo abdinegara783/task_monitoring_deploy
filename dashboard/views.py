@@ -50,7 +50,7 @@ def login_view(request):
 
 @login_required
 def dashboard(request):
-    return render(request, "dashboard.html")
+    return render(request, "leader/dashboard.html")
 
 
 def logout_view(request):
@@ -176,3 +176,11 @@ def employee_delete(request, user_id):
 
 def Foreman_view(request):
     return render(request, "foreman/dashboard_foreman.html")
+
+
+def create_activity_report(request):
+    return render(request, "foreman/create_activity_report.html")
+
+
+def create_analysis_report(request):
+    return render(request, "foreman/create_analysis_report.html")
