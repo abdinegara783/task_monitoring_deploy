@@ -190,35 +190,35 @@
                     {% for report in recent_reports|slice:":3" %}
                         <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full {% if report.status == 'approved' %}bg-green-500{% elif report.status == 'rejected' %}bg-red-500{% else %}bg-orange-500{% endif %}"></div>
+                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
                                 <div>
-                                    <p class="font-medium text-sm">{{ report.type }}</p>
-                                    <p class="text-xs text-gray-600">{{ report.date }}</p>
+                                    <p class="font-medium text-sm">Activity Report</p>
+                                    <p class="text-xs text-gray-600">{{ report.date|date:"d M Y" }}</p>
+                                    <p class="text-xs text-gray-500">{{ report.start_time }} - {{ report.end_time }}</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full {% if report.status == 'approved' %}bg-green-100 text-green-800{% elif report.status == 'rejected' %}bg-red-100 text-red-800{% else %}bg-orange-100 text-orange-800{% endif %}">
-                                    {% if report.status == 'approved' %}Disetujui{% elif report.status == 'rejected' %}Ditolak{% else %}Menunggu{% endif %}
+                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                                    Terkirim
                                 </span>
-                                {% if report.feedback %}
-                                    <p class="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
-                                        "{{ report.feedback }}"
-                                    </p>
-                                {% endif %}
+                                <p class="text-xs text-gray-500 mt-1 max-w-[200px] truncate">
+                                    {{ report.Unit_Code }} - {{ report.get_component_display|default:report.component }}
+                                </p>
                             </div>
                         </div>
                     {% empty %}
                         <div class="text-center py-8">
                             <i data-lucide="file-text" class="w-12 h-12 text-gray-300 mx-auto mb-2"></i>
                             <p class="text-gray-500">Belum ada laporan yang dikirim</p>
+                            <p class="text-xs text-gray-400 mt-1">Mulai dengan membuat activity report pertama Anda</p>
                         </div>
                     {% endfor %}
                 </div>
                 
                 {% if recent_reports|length > 3 %}
                     <div class="mt-4 text-center">
-                        <a href="{% url 'reports:foreman_reports' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            Lihat Semua Laporan →
+                        <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            Lihat Semua Laporan ({{ total_reports }})
                         </a>
                     </div>
                 {% endif %}

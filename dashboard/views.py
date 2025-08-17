@@ -193,12 +193,13 @@ def admin_delete(request, user_id):
     return render(request, "admin/admin_delete.html", {"employee": employee})
 
 
+@login_required
 def Foreman_dashboard(request):
     """Foreman dashboard view with corrected field references"""
     # Get activity reports for current user, ordered by date (most recent first)
     activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
         "-date",
-        "-start_time",  # Use 'date' instead of 'created_at'
+        "-start_time"
     )
 
     # Get total reports
@@ -206,26 +207,27 @@ def Foreman_dashboard(request):
 
     # Get reports from today
     today = timezone.now().date()
-    today_reports = activity_reports.filter(
-        date=today  # Use 'date' field instead of 'created_at__date'
-    ).count()
+    today_reports = activity_reports.filter(date=today).count()
 
     # Get reports from this week
     week_ago = today - timedelta(days=7)
-    this_week_reports = activity_reports.filter(
-        date__gte=week_ago  # Use 'date__gte' instead of 'created_at__date__gte'
-    ).count()
+    this_week_reports = activity_reports.filter(date__gte=week_ago).count()
 
     # Get reports from this month
     month_start = today.replace(day=1)
     this_month_reports = activity_reports.filter(date__gte=month_start).count()
 
+    # Check if user has submitted activity report today
+    activity_report_today = activity_reports.filter(date=today).first()
+
     context = {
         "activity_reports": activity_reports[:5],  # Latest 5 reports
+        "recent_reports": activity_reports[:5],   # Add this for template compatibility
         "total_reports": total_reports,
         "today_reports": today_reports,
         "this_week_reports": this_week_reports,
         "this_month_reports": this_month_reports,
+        "activity_report_today": activity_report_today,
         "user": request.user,
         "current_time": timezone.now(),
     }
