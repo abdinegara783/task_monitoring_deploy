@@ -12,6 +12,11 @@
         </div>
         
         <div class="flex items-center gap-4">
+                        <!-- Notifications -->
+            <button class="relative p-2 hover:bg-gray-100 rounded-md">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+            </button>
             <div class="px-3 py-1 border rounded-md flex items-center">
                 <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
                 Shift {{ user.shift }} - <span id="current-time"></span>

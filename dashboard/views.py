@@ -24,9 +24,20 @@ def hello_world_tailwind(request):
     return render(request, "hello-world.html")
 
 
+# ------------------------------------------------------------------------------
+
+
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("dashboard")
+        # Redirect based on user role
+        if request.user.role == "admin":
+            return redirect("admin_dashboard")
+        elif request.user.role == "leader":
+            return redirect("leader_dashboard")  # Leader dashboard
+        elif request.user.role == "foreman":
+            return redirect("foreman_dashboard")
+        else:
+            return redirect("dashboard")  # Default dashboard
 
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
@@ -37,7 +48,16 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Selamat datang, {user.username}!")
-                return redirect("dashboard")
+
+                # Redirect to appropriate dashboard based on role
+                if user.role == "admin":
+                    return redirect("admin_dashboard")
+                elif user.role == "leader":
+                    return redirect("dashboard")  # Leader dashboard
+                elif user.role == "foreman":
+                    return redirect("foreman_dashboard")
+                else:
+                    return redirect("dashboard")  # Default dashboard
             else:
                 messages.error(request, "Username atau password salah.")
         else:
@@ -84,7 +104,7 @@ def is_admin(user):
 
 
 @user_passes_test(is_admin)
-def employee_list(request):
+def admin_list(request):
     """Daftar semua karyawan untuk admin"""
     employees = User.objects.all().order_by("-created_at")
 
@@ -108,11 +128,11 @@ def employee_list(request):
         "search_query": search_query,
         "total_employees": employees.count(),
     }
-    return render(request, "admin/employee_list.html", context)
+    return render(request, "admin/admin_list.html", context)
 
 
 @user_passes_test(is_admin)
-def employee_create(request):
+def admin_create(request):
     """Form untuk admin menambah karyawan baru"""
     if request.method == "POST":
         form = EmployeeRegistrationForm(request.POST)
@@ -121,24 +141,24 @@ def employee_create(request):
             messages.success(
                 request, f"Karyawan {employee.username} berhasil didaftarkan!"
             )
-            return redirect("employee_list")
+            return redirect("admin_list")
         else:
             messages.error(request, "Terjadi kesalahan dalam pendaftaran karyawan.")
     else:
         form = EmployeeRegistrationForm()
 
-    return render(request, "admin/employee_create.html", {"form": form})
+    return render(request, "admin/admin_create.html", {"form": form})
 
 
 @user_passes_test(is_admin)
-def employee_detail(request, user_id):
+def admin_detail(request, user_id):
     """Detail karyawan"""
     employee = get_object_or_404(User, id=user_id)
-    return render(request, "admin/employee_detail.html", {"employee": employee})
+    return render(request, "admin/admin_detail.html", {"employee": employee})
 
 
 @user_passes_test(is_admin)
-def employee_edit(request, user_id):
+def admin_edit(request, user_id):
     """Edit data karyawan"""
     employee = get_object_or_404(User, id=user_id)
 
@@ -149,19 +169,19 @@ def employee_edit(request, user_id):
             messages.success(
                 request, f"Data karyawan {employee.username} berhasil diupdate!"
             )
-            return redirect("employee_detail", user_id=employee.id)
+            return redirect("admin_detail", user_id=employee.id)
         else:
             messages.error(request, "Terjadi kesalahan dalam update data.")
     else:
         form = EmployeeRegistrationForm(instance=employee)
 
     return render(
-        request, "admin/employee_edit.html", {"form": form, "employee": employee}
+        request, "admin/admin_edit.html", {"form": form, "employee": employee}
     )
 
 
 @user_passes_test(is_admin)
-def employee_delete(request, user_id):
+def admin_delete(request, user_id):
     """Hapus karyawan"""
     employee = get_object_or_404(User, id=user_id)
 
@@ -171,11 +191,39 @@ def employee_delete(request, user_id):
         messages.success(request, f"Karyawan {username} berhasil dihapus!")
         return redirect("employee_list")
 
-    return render(request, "admin/employee_delete.html", {"employee": employee})
+    return render(request, "admin/admin_delete.html", {"employee": employee})
 
 
-def Foreman_view(request):
-    return render(request, "foreman/dashboard_foreman.html")
+def Foreman_dashboard(request):
+    """Dashboard Foreman"""
+    # Get activity reports for this foreman
+    activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
+        "-created_at"
+    )
+
+    # Get total reports
+    total_reports = activity_reports.count()
+
+    # Get reports from today
+    today_reports = activity_reports.filter(
+        created_at__date=models.timezone.now().date()
+    ).count()
+
+    # Get reports from this week
+    this_week_reports = activity_reports.filter(
+        created_at__date__gte=models.timezone.now().date() - models.timedelta(days=7)
+    ).count()
+
+    context = {
+        "activity_reports": activity_reports[:5],  # Latest 5 reports
+        "total_reports": total_reports,
+        "today_reports": today_reports,
+        "this_week_reports": this_week_reports,
+        "user": request.user,
+        "current_time": models.timezone.now(),
+    }
+
+    return render(request, "foreman/foreman_dashboard.html", context)
 
 
 @login_required

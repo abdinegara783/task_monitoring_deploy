@@ -233,66 +233,92 @@ class EmployeeRegistrationForm(forms.ModelForm):
 
 class ActivityReportForm(forms.ModelForm):
     """Form untuk membuat Activity Report"""
-    
+
     class Meta:
         model = ActivityReport
         fields = [
-            'date', 'leader', 'Unit_Code', 'Hmkm', 'start_time', 'end_time',
-            'component', 'activities', 'activities_code'
+            "date",
+            "leader",
+            "Unit_Code",
+            "Hmkm",
+            "start_time",
+            "end_time",
+            "component",
+            "activities",
+            "activities_code",
         ]
         widgets = {
-            'date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-            }),
-            'leader': forms.Select(attrs={
-                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-            }),
-            'Unit_Code': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'placeholder': 'Masukkan kode unit'
-            }),
-            'Hmkm': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'placeholder': 'Masukkan HM/KM'
-            }),
-            'start_time': forms.TimeInput(attrs={
-                'type': 'time',
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-            }),
-            'end_time': forms.TimeInput(attrs={
-                'type': 'time',
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-            }),
-            'component': forms.Select(attrs={
-                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-            }),
-            'activities': forms.Textarea(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'rows': 4,
-                'placeholder': 'Deskripsikan aktivitas yang dilakukan'
-            }),
-            'activities_code': forms.Select(attrs={
-                'class': 'select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-            }),
+            "date": forms.DateInput(
+                attrs={
+                    "type": "date",
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
+            "leader": forms.Select(
+                attrs={
+                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
+            "Unit_Code": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Masukkan kode unit",
+                }
+            ),
+            "Hmkm": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Masukkan HM/KM",
+                }
+            ),
+            "start_time": forms.TimeInput(
+                attrs={
+                    "type": "time",
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
+            "end_time": forms.TimeInput(
+                attrs={
+                    "type": "time",
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
+            "component": forms.Select(
+                attrs={
+                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
+            "activities": forms.Textarea(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "rows": 4,
+                    "placeholder": "Deskripsikan aktivitas yang dilakukan",
+                }
+            ),
+            "activities_code": forms.Select(
+                attrs={
+                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
         }
         labels = {
-            'date': 'Tanggal',
-            'leader': 'Group Leader',
-            'Unit_Code': 'Unit Code',
-            'Hmkm': 'HM/KM',
-            'start_time': 'Waktu Mulai',
-            'end_time': 'Waktu Selesai',
-            'component': 'Component',
-            'activities': 'Activity',
-            'activities_code': 'Activity Code',
+            "date": "Tanggal",
+            "leader": "Group Leader",
+            "Unit_Code": "Unit Code",
+            "Hmkm": "HM/KM",
+            "start_time": "Waktu Mulai",
+            "end_time": "Waktu Selesai",
+            "component": "Component",
+            "activities": "Activity",
+            "activities_code": "Activity Code",
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        
+
         # Set default date to today
         if not self.instance.pk:
             from django.utils import timezone
-            self.fields['date'].initial = timezone.now().date()
+
+            self.fields["date"].initial = timezone.now().date()

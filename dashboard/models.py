@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 class User(AbstractUser):
@@ -118,3 +119,99 @@ class ActivityReport(models.Model):
     activities_code = models.CharField(
         max_length=100, choices=ACTIVITIES_CHOICES, blank=True, null=True
     )
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('activity_reminder', 'Activity Report Reminder'),
+        ('analysis_reminder', 'Analysis Report Reminder'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Auto-remove when task is completed
+    auto_remove_on_completion = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['notification_type', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    
+    @classmethod
+    def create_activity_reminder(cls, user, hours_left):
+        """Create activity report reminder"""
+        if hours_left == 1:
+            title = "⏰ Deadline Activity Report - 1 Jam Lagi!"
+            message = "Jangan lupa isi activity report hari ini. Deadline dalam 1 jam lagi (18:00)."
+        elif hours_left == 0.5:  # 30 minutes
+            title = "🚨 Deadline Activity Report - 30 Menit Lagi!"
+            message = "Segera isi activity report hari ini! Deadline dalam 30 menit lagi (18:00)."
+        elif hours_left == 1/6:  # 10 minutes
+            title = "🔥 URGENT: Activity Report - 10 Menit Lagi!"
+            message = "URGENT! Activity report harus diisi sekarang! Deadline dalam 10 menit lagi (18:00)."
+        else:
+            return None
+        
+        # Check if similar notification already exists today
+        today = timezone.now().date()
+        existing = cls.objects.filter(
+            user=user,
+            notification_type='activity_reminder',
+            created_at__date=today,
+            title=title
+        ).exists()
+        
+        if not existing:
+            return cls.objects.create(
+                user=user,
+                notification_type='activity_reminder',
+                title=title,
+                message=message
+            )
+        return None
+    
+    @classmethod
+    def create_analysis_reminder(cls, user, days_left, missing_count):
+        """Create analysis report reminder"""
+        if days_left == 3:
+            title = f"📊 Analysis Report Reminder - {missing_count} Laporan Kurang"
+            message = f"Anda masih kekurangan {missing_count} analysis report bulan ini. Deadline dalam 3 hari lagi."
+        else:
+            return None
+        
+        # Check if similar notification already exists this month
+        today = timezone.now().date()
+        existing = cls.objects.filter(
+            user=user,
+            notification_type='analysis_reminder',
+            created_at__month=today.month,
+            created_at__year=today.year
+        ).exists()
+        
+        if not existing:
+            return cls.objects.create(
+                user=user,
+                notification_type='analysis_reminder',
+                title=title,
+                message=message
+            )
+        return None
+    
+    @classmethod
+    def remove_completed_notifications(cls, user, notification_type):
+        """Remove notifications when task is completed"""
+        cls.objects.filter(
+            user=user,
+            notification_type=notification_type,
+            auto_remove_on_completion=True
+        ).delete()

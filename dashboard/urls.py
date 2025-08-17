@@ -10,17 +10,17 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
     # Admin URLs for Employee Management
-    path("administrasi/", views.employee_list, name="employee_list"),
-    path("administrasi/create/", views.employee_create, name="employee_create"),
-    path("administrasi/<int:user_id>/", views.employee_detail, name="employee_detail"),
-    path("administrasi/<int:user_id>/edit/", views.employee_edit, name="employee_edit"),
+    path("superadmin/", views.admin_list, name="admin_list"),
+    path("superadmin/create/", views.admin_create, name="admin_create"),
+    path("superadmin/<int:user_id>/", views.admin_detail, name="admin_detail"),
+    path("superadmin/<int:user_id>/edit/", views.admin_edit, name="admin_edit"),
     path(
-        "administrasi/<int:user_id>/delete/",
-        views.employee_delete,
-        name="employee_delete",
+        "superadmin/<int:user_id>/delete/",
+        views.admin_delete,
+        name="admin_delete",
     ),
     # Foreman URLs
-    path("foreman/", views.Foreman_view, name="foreman"),
+    path("foreman_dashboard/", views.Foreman_dashboard, name="foreman_dashboard"),
     path(
         "foreman/create_activity_report/",
         views.create_activity_report,
