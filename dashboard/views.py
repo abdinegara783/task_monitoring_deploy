@@ -3,10 +3,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db import models  # Tambahkan ini
-
-# Atau lebih spesifik:
-# from django.db.models import Q
+from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 from .forms import LoginForm, RegisterForm, EmployeeRegistrationForm, ActivityReportForm
 from .models import User, ActivityReport
 
@@ -195,32 +194,40 @@ def admin_delete(request, user_id):
 
 
 def Foreman_dashboard(request):
-    """Dashboard Foreman"""
-    # Get activity reports for this foreman
+    """Foreman dashboard view with corrected field references"""
+    # Get activity reports for current user, ordered by date (most recent first)
     activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
-        "-created_at"
+        "-date",
+        "-start_time",  # Use 'date' instead of 'created_at'
     )
 
     # Get total reports
     total_reports = activity_reports.count()
 
     # Get reports from today
+    today = timezone.now().date()
     today_reports = activity_reports.filter(
-        created_at__date=models.timezone.now().date()
+        date=today  # Use 'date' field instead of 'created_at__date'
     ).count()
 
     # Get reports from this week
+    week_ago = today - timedelta(days=7)
     this_week_reports = activity_reports.filter(
-        created_at__date__gte=models.timezone.now().date() - models.timedelta(days=7)
+        date__gte=week_ago  # Use 'date__gte' instead of 'created_at__date__gte'
     ).count()
+
+    # Get reports from this month
+    month_start = today.replace(day=1)
+    this_month_reports = activity_reports.filter(date__gte=month_start).count()
 
     context = {
         "activity_reports": activity_reports[:5],  # Latest 5 reports
         "total_reports": total_reports,
         "today_reports": today_reports,
         "this_week_reports": this_week_reports,
+        "this_month_reports": this_month_reports,
         "user": request.user,
-        "current_time": models.timezone.now(),
+        "current_time": timezone.now(),
     }
 
     return render(request, "foreman/foreman_dashboard.html", context)
@@ -228,7 +235,7 @@ def Foreman_dashboard(request):
 
 @login_required
 def create_activity_report(request):
-    """View untuk membuat Activity Report"""
+    """Create activity report view"""
     if request.method == "POST":
         form = ActivityReportForm(request.POST, user=request.user)
         if form.is_valid():
@@ -237,7 +244,7 @@ def create_activity_report(request):
             activity_report.shift = request.user.shift
             activity_report.save()
             messages.success(request, "Activity Report berhasil dibuat!")
-            return redirect("dashboard")
+            return redirect("foreman_dashboard")  # Redirect to correct view name
         else:
             messages.error(
                 request, "Terjadi kesalahan dalam pembuatan Activity Report."
