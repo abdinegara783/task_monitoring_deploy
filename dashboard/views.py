@@ -198,8 +198,7 @@ def Foreman_dashboard(request):
     """Foreman dashboard view with corrected field references"""
     # Get activity reports for current user, ordered by date (most recent first)
     activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
-        "-date",
-        "-start_time"
+        "-date", "-start_time"
     )
 
     # Get total reports
@@ -222,7 +221,7 @@ def Foreman_dashboard(request):
 
     context = {
         "activity_reports": activity_reports[:5],  # Latest 5 reports
-        "recent_reports": activity_reports[:5],   # Add this for template compatibility
+        "recent_reports": activity_reports[:5],  # Add this for template compatibility
         "total_reports": total_reports,
         "today_reports": today_reports,
         "this_week_reports": this_week_reports,
@@ -256,7 +255,7 @@ def create_activity_report(request):
 
     return render(
         request,
-        "foreman/create_activity_report.html",
+        "foreman/foreman_create_activity_report.html",
         {"form": form, "user": request.user},
     )
 

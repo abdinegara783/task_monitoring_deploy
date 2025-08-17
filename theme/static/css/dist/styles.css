@@ -96,6 +96,7 @@
     --tracking-normal: 0em;
     --tracking-wider: 0.05em;
     --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
     --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
@@ -300,6 +301,48 @@
     .diff:has(.diff-item-1:focus) .diff-resizer {
       min-width: 90cqi;
       max-width: 90cqi;
+    }
+  }
+  .modal {
+    pointer-events: none;
+    visibility: hidden;
+    position: fixed;
+    inset: calc(0.25rem * 0);
+    margin: calc(0.25rem * 0);
+    display: grid;
+    height: 100%;
+    max-height: none;
+    width: 100%;
+    max-width: none;
+    align-items: center;
+    justify-items: center;
+    background-color: transparent;
+    padding: calc(0.25rem * 0);
+    color: inherit;
+    overflow-x: hidden;
+    transition: translate 0.3s ease-out, visibility 0.3s allow-discrete, background-color 0.3s ease-out, opacity 0.1s ease-out;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+    z-index: 999;
+  }
+  .modal::backdrop {
+    display: none;
+  }
+  .modal.modal-open, .modal[open], .modal:target {
+    pointer-events: auto;
+    visibility: visible;
+    opacity: 100%;
+    background-color: oklch(0% 0 0/ 0.4);
+  }
+  .modal.modal-open .modal-box, .modal[open] .modal-box, .modal:target .modal-box {
+    translate: 0 0;
+    scale: 1;
+    opacity: 1;
+  }
+  @starting-style {
+    .modal.modal-open, .modal[open], .modal:target {
+      visibility: hidden;
+      opacity: 0%;
     }
   }
   .tooltip {
@@ -1753,6 +1796,9 @@
   .sticky {
     position: sticky;
   }
+  .inset-0 {
+    inset: calc(var(--spacing) * 0);
+  }
   .-top-1 {
     top: calc(var(--spacing) * -1);
   }
@@ -2334,6 +2380,9 @@
   .h-screen {
     height: 100vh;
   }
+  .max-h-\[90vh\] {
+    max-height: 90vh;
+  }
   .min-h-screen {
     min-height: 100vh;
   }
@@ -2546,6 +2595,9 @@
   .overflow-x-auto {
     overflow-x: auto;
   }
+  .overflow-y-auto {
+    overflow-y: auto;
+  }
   .rounded {
     border-radius: 0.25rem;
   }
@@ -2631,6 +2683,9 @@
   }
   .border-yellow-200 {
     border-color: var(--color-yellow-200);
+  }
+  .bg-black {
+    background-color: var(--color-black);
   }
   .bg-blue-50 {
     background-color: var(--color-blue-50);
@@ -2934,6 +2989,10 @@
   .leading-normal {
     --tw-leading: var(--leading-normal);
     line-height: var(--leading-normal);
+  }
+  .leading-relaxed {
+    --tw-leading: var(--leading-relaxed);
+    line-height: var(--leading-relaxed);
   }
   .font-bold {
     --tw-font-weight: var(--font-weight-bold);
@@ -3257,6 +3316,11 @@
   @media (hover: hover) {
     .hover\:text-blue-800:hover {
       color: var(--color-blue-800);
+    }
+  }
+  @media (hover: hover) {
+    .hover\:text-gray-600:hover {
+      color: var(--color-gray-600);
     }
   }
   @media (hover: hover) {
