@@ -227,7 +227,7 @@
                 
                 {% if recent_reports|length > 3 %}
                     <div class="mt-4 text-center">
-                        <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        <a href="{% url 'foreman_reports' %}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                             Lihat Semua Laporan ({{ total_reports }})
                         </a>
                     </div>

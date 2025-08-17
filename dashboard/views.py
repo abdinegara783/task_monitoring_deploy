@@ -262,3 +262,54 @@ def create_activity_report(request):
 
 def create_analysis_report(request):
     return render(request, "foreman/create_analysis_report.html")
+
+
+@login_required
+def foreman_reports(request):
+    """View untuk menampilkan semua laporan foreman"""
+    # Get all activity reports for current user
+    reports = ActivityReport.objects.filter(foreman=request.user).order_by(
+        "-date", "-start_time"
+    )
+    
+    # Filter berdasarkan tanggal jika ada parameter
+    date_filter = request.GET.get('date')
+    if date_filter:
+        try:
+            filter_date = timezone.datetime.strptime(date_filter, '%Y-%m-%d').date()
+            reports = reports.filter(date=filter_date)
+        except ValueError:
+            pass
+    
+    # Filter berdasarkan bulan jika ada parameter
+    month_filter = request.GET.get('month')
+    if month_filter:
+        try:
+            year, month = month_filter.split('-')
+            reports = reports.filter(date__year=year, date__month=month)
+        except ValueError:
+            pass
+    
+    # Pagination
+    paginator = Paginator(reports, 10)  # 10 reports per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Statistics
+    total_reports = reports.count()
+    today = timezone.now().date()
+    this_month_reports = reports.filter(
+        date__year=today.year, 
+        date__month=today.month
+    ).count()
+    
+    context = {
+        'reports': page_obj,
+        'total_reports': total_reports,
+        'this_month_reports': this_month_reports,
+        'user': request.user,
+        'date_filter': date_filter,
+        'month_filter': month_filter,
+    }
+    
+    return render(request, 'foreman/reports_list.html', context)

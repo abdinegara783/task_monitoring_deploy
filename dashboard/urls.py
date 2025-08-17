@@ -20,12 +20,11 @@ urlpatterns = [
         name="admin_delete",
     ),
     # Foreman URLs
-    path("foreman_dashboard/", views.Foreman_dashboard, name="foreman_dashboard"),
-    path(
-        "foreman/create_activity_report/",
-        views.create_activity_report,
-        name="create_activity_report",
-    ),
+    path('foreman/', views.Foreman_dashboard, name='foreman_dashboard'),
+    path('foreman/reports/', views.foreman_reports, name='foreman_reports'),
+    
+    # Activity report
+    path('activity-report/create/', views.create_activity_report, name='create_activity_report'),
     path(
         "foreman/create_analysis_report/",
         views.create_analysis_report,
