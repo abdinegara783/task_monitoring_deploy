@@ -261,7 +261,7 @@ def create_activity_report(request):
 
 
 def create_analysis_report(request):
-    return render(request, "foreman/create_analysis_report.html")
+    return render(request, "foreman/foreman_create_analysis_report.html")
 
 
 @login_required

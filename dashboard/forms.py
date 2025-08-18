@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import widgets
 from .models import User as CustomUser
-from .models import User, ActivityReport
+from .models import User, ActivityReport, AnalysisReport
 
 
 class LoginForm(AuthenticationForm):
@@ -322,3 +322,96 @@ class ActivityReportForm(forms.ModelForm):
             from django.utils import timezone
 
             self.fields["date"].initial = timezone.now().date()
+
+
+class AnalysisReportForm(forms.ModelForm):
+    """Form untuk membuat Analysis Report"""
+    
+    class Meta:
+        model = AnalysisReport
+        fields = [
+            'section_track', 'email', 'no_report', 'report_date', 'WO_Number', 
+            'WO_date', 'unit_code', 'problem', 'Trouble_date', 'Hm', 
+            'title_problem', 'part_no', 'part_name'
+        ]
+        widgets = {
+            'section_track': forms.Select(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'email': forms.EmailInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'email@company.com'
+            }),
+            'no_report': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Nomor laporan'
+            }),
+            'report_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'WO_Number': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Work Order Number'
+            }),
+            'WO_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'unit_code': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Kode unit'
+            }),
+            'problem': forms.Select(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'Trouble_date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+            }),
+            'Hm': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Hour Meter'
+            }),
+            'title_problem': forms.Textarea(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'rows': 4,
+                'placeholder': 'Deskripsikan masalah yang ditemukan'
+            }),
+            'part_no': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Part Number'
+            }),
+            'part_name': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'placeholder': 'Nama Part'
+            }),
+        }
+        labels = {
+            'section_track': 'Section Track',
+            'email': 'Email',
+            'no_report': 'No. Report',
+            'report_date': 'Tanggal Laporan',
+            'WO_Number': 'WO Number',
+            'WO_date': 'WO Date',
+            'unit_code': 'Unit Code',
+            'problem': 'Problem Category',
+            'Trouble_date': 'Trouble Date',
+            'Hm': 'Hour Meter',
+            'title_problem': 'Title Problem',
+            'part_no': 'Part Number',
+            'part_name': 'Part Name',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set default values
+        if not self.instance.pk:
+            from django.utils import timezone
+            self.fields['report_date'].initial = timezone.now().date()
+            self.fields['WO_date'].initial = timezone.now().date()
+            self.fields['Trouble_date'].initial = timezone.now().date()
+            if self.user:
+                self.fields['email'].initial = self.user.email

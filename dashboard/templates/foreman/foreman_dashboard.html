@@ -100,7 +100,7 @@
                             </div>
                         {% endif %}
 
-                        <a href="{% if not activity_report_today %}{% url 'login' %}{% else %}#{% endif %}" 
+                        <a href="{% if not activity_report_today %}{% url 'create_activity_report' %}{% else %}#{% endif %}" 
                            class="block w-full h-12 {% if activity_report_today %}bg-gray-300 text-gray-500 cursor-not-allowed{% else %}bg-primary text-primary-foreground hover:bg-primary/90{% endif %} rounded-md font-medium transition-colors flex items-center justify-center text-lg">
                             {% if activity_report_today %}
                                 <i data-lucide="check-circle-2" class="w-5 h-5 mr-2"></i>
@@ -143,9 +143,9 @@
                                     {% widthratio analysis_reports_count analysis_reports_required 100 %}%
                                 </span>
                             </div>
-                            <!-- <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div class="bg-purple-600 h-3 rounded-full" style="width: {% widthratio analysis_reports_count analysis_reports_required 100 %}%"></div>
-                            </div> -->
+                            <div class="w-full bg-gray-200 rounded-full h-3">
+                                <div class="bg-purple-600 h-3 rounded-full" style="width: widthratio analysis_reports_count analysis_reports_required 100%"></div>
+                            </div>
                         </div>
 
                         {% if analysis_reports_count < analysis_reports_required %}
@@ -162,7 +162,7 @@
                             </div>
                         {% endif %}
 
-                        <a href="{% if analysis_reports_count < analysis_reports_required %}{% url 'reports:create_analysis_report' %}{% else %}#{% endif %}" 
+                        <a href="{% if analysis_reports_count < analysis_reports_required %}{% url 'foreman_create_analysis_report' %}{% else %}#{% endif %}" 
                            class="block w-full h-12 {% if analysis_reports_count >= analysis_reports_required %}bg-gray-300 text-gray-500 cursor-not-allowed{% else %}border border-purple-300 text-purple-700 hover:bg-purple-50{% endif %} rounded-md font-medium transition-colors flex items-center justify-center text-lg">
                             {% if analysis_reports_count >= analysis_reports_required %}
                                 <i data-lucide="check-circle-2" class="w-5 h-5 mr-2"></i>
