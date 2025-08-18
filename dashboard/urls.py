@@ -6,7 +6,6 @@ urlpatterns = [
     path("hello-template/", views.hello_template, name="hello_template"),
     path("hello-world/", views.hello_world_tailwind, name="hello_world_tailwind"),
     path("login/", views.login_view, name="login"),
-    path("dashboard/", views.dashboard, name="dashboard"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
     # Admin URLs for Employee Management
@@ -20,11 +19,30 @@ urlpatterns = [
         name="admin_delete",
     ),
     # Foreman URLs
-    path('foreman/', views.Foreman_dashboard, name='foreman_dashboard'),
-    path('foreman/reports/', views.foreman_reports, name='foreman_reports'),
-    
+    path("foreman/", views.Foreman_dashboard, name="foreman_dashboard"),
+    path("foreman/reports/", views.foreman_reports, name="foreman_reports"),
     # Activity report
-    path('activity-report/create/', views.create_activity_report, name='create_activity_report'),
+    path(
+        "activity-report/create/",
+        views.create_activity_report,
+        name="create_activity_report",
+    ),
     # Analysis report
-    path('analysis-report/create/', views.create_analysis_report, name='create_analysis_report'),
+    path(
+        "analysis-report/create/",
+        views.create_analysis_report,
+        name="create_analysis_report",
+    ),
+    # Leader URLs
+    path("leader/", views.leader_dashboard, name="leader_dashboard"),
+    path(
+        "leader/analysis/",
+        views.leader_validation_analysis,
+        name="leader_validation_analysis",
+    ),
+    path(
+        "leader/activity/",
+        views.leader_validation_activity,
+        name="leader_validation_activity",
+    ),
 ]

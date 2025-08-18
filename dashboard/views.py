@@ -6,7 +6,13 @@ from django.core.paginator import Paginator
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from .forms import LoginForm, RegisterForm, EmployeeRegistrationForm, ActivityReportForm, AnalysisReportForm
+from .forms import (
+    LoginForm,
+    RegisterForm,
+    EmployeeRegistrationForm,
+    ActivityReportForm,
+    AnalysisReportForm,
+)
 from .models import User, ActivityReport, AnalysisReport
 
 
@@ -68,9 +74,17 @@ def login_view(request):
 
 
 @login_required
-def dashboard(request):
-    return render(request, "leader/dashboard.html")
+def leader_dashboard(request):
+    return render(request, "leader/leader_dashboard.html")
 
+
+@login_required
+def leader_validation_analysis(request):
+    return render(request, "leader/leader_validation_analysis.html")
+
+@login_required
+def leader_validation_activity(request):
+    return render(request, "leader/leader_validation_activity.html")
 
 def logout_view(request):
     logout(request)
@@ -218,97 +232,108 @@ def Foreman_dashboard(request):
 
     # Check if user has submitted activity report today
     activity_report_today = activity_reports.filter(date=today).first()
-    
+
     # === ANALYSIS REPORTS ===
     current_month = today.month
     current_year = today.year
-    
+
     # Get all analysis reports for current user
     analysis_reports = AnalysisReport.objects.filter(foreman=request.user).order_by(
         "-report_date"
     )
-    
+
     # Get analysis reports for current month
     analysis_reports_count = analysis_reports.filter(
-        report_date__year=current_year,
-        report_date__month=current_month
+        report_date__year=current_year, report_date__month=current_month
     ).count()
-    
+
     # Analysis report requirements
     analysis_reports_required = 3  # 3 laporan per bulan
-    analysis_reports_remaining = max(0, analysis_reports_required - analysis_reports_count)
+    analysis_reports_remaining = max(
+        0, analysis_reports_required - analysis_reports_count
+    )
     analysis_reports_complete = analysis_reports_count >= analysis_reports_required
-    
+
     # Progress calculation
-    analysis_progress_percentage = min(100, (analysis_reports_count / analysis_reports_required) * 100)
-    
+    analysis_progress_percentage = min(
+        100, (analysis_reports_count / analysis_reports_required) * 100
+    )
+
     # Status text
     if analysis_reports_complete:
         analysis_status_text = "Selesai bulan ini"
     else:
         analysis_status_text = f"{analysis_reports_remaining} laporan lagi"
-    
+
     # === COMBINED RECENT REPORTS ===
     # Get recent activity reports (last 3)
     recent_activity_reports = activity_reports[:3]
-    
+
     # Get recent analysis reports (last 2)
     recent_analysis_reports = analysis_reports[:2]
-    
+
     # Combine reports for "Status Laporan Terbaru"
     combined_reports = []
-    
+
     # Add activity reports
     for report in recent_activity_reports:
-        combined_reports.append({
-            'type': 'activity',
-            'id': report.id,
-            'date': report.date,
-            'title': 'Activity Report',
-            'description': f"{report.Unit_Code or 'N/A'} - {report.component or 'N/A'}",
-            'time': f"{report.start_time} - {report.end_time}",
-            'status': 'completed',
-            'report_data': {
-                'date': report.date.strftime('%d M Y'),
-                'start_time': str(report.start_time),
-                'end_time': str(report.end_time),
-                'unit_code': report.Unit_Code or '-',
-                'component': report.component or '-',
-                'activities': report.activities or 'Tidak ada deskripsi',
-                'leader': report.leader or '-',
-                'hmkm': report.Hmkm or '-',
-                'activities_code': report.activities_code or '-'
+        combined_reports.append(
+            {
+                "type": "activity",
+                "id": report.id,
+                "date": report.date,
+                "title": "Activity Report",
+                "description": f"{report.Unit_Code or 'N/A'} - {report.component or 'N/A'}",
+                "time": f"{report.start_time} - {report.end_time}",
+                "status": "completed",
+                "report_data": {
+                    "date": report.date.strftime("%d M Y"),
+                    "start_time": str(report.start_time),
+                    "end_time": str(report.end_time),
+                    "unit_code": report.Unit_Code or "-",
+                    "component": report.component or "-",
+                    "activities": report.activities or "Tidak ada deskripsi",
+                    "leader": report.leader or "-",
+                    "hmkm": report.Hmkm or "-",
+                    "activities_code": report.activities_code or "-",
+                },
             }
-        })
-    
+        )
+
     # Add analysis reports
     for report in recent_analysis_reports:
-        combined_reports.append({
-            'type': 'analysis',
-            'id': report.id,
-            'date': report.report_date,
-            'title': 'Analysis Report',
-            'description': f"{report.no_report or 'N/A'} - {report.unit_code or 'N/A'}",
-            'time': report.report_date.strftime('%d %b %Y'),
-            'status': 'completed',
-            'report_data': {
-                'report_date': report.report_date.strftime('%d M Y'),
-                'no_report': report.no_report or '-',
-                'section_track': report.section_track or '-',
-                'wo_number': report.WO_Number or '-',
-                'wo_date': report.WO_date.strftime('%d M Y') if report.WO_date else '-',
-                'unit_code': report.unit_code or '-',
-                'problem': report.get_problem_display() if report.problem else '-',
-                'trouble_date': report.Trouble_date.strftime('%d M Y') if report.Trouble_date else '-',
-                'hm': report.Hm or '-',
-                'title_problem': report.title_problem or 'Tidak ada deskripsi',
-                'part_no': report.part_no or '-',
-                'part_name': report.part_name or '-'
+        combined_reports.append(
+            {
+                "type": "analysis",
+                "id": report.id,
+                "date": report.report_date,
+                "title": "Analysis Report",
+                "description": f"{report.no_report or 'N/A'} - {report.unit_code or 'N/A'}",
+                "time": report.report_date.strftime("%d %b %Y"),
+                "status": "completed",
+                "report_data": {
+                    "report_date": report.report_date.strftime("%d M Y"),
+                    "no_report": report.no_report or "-",
+                    "section_track": report.section_track or "-",
+                    "wo_number": report.WO_Number or "-",
+                    "wo_date": report.WO_date.strftime("%d M Y")
+                    if report.WO_date
+                    else "-",
+                    "unit_code": report.unit_code or "-",
+                    "problem": report.get_problem_display() if report.problem else "-",
+                    "trouble_date": report.Trouble_date.strftime("%d M Y")
+                    if report.Trouble_date
+                    else "-",
+                    "hm": report.Hm or "-",
+                    "title_problem": report.title_problem or "Tidak ada deskripsi",
+                    "part_no": report.part_no or "-",
+                    "part_name": report.part_name or "-",
+                },
             }
-        })
-    
+        )
+
     # Sort combined reports by date (most recent first)
-    combined_reports.sort(key=lambda x: x['date'], reverse=True)
+    combined_reports.sort(key=lambda x: x["date"], reverse=True)
     recent_reports = combined_reports[:5]  # Take top 5 most recent
 
     context = {
@@ -320,7 +345,6 @@ def Foreman_dashboard(request):
         "this_week_reports": this_week_reports,
         "this_month_reports": this_month_reports,
         "activity_report_today": activity_report_today,
-        
         # Analysis Report Data
         "analysis_reports_count": analysis_reports_count,
         "analysis_reports_required": analysis_reports_required,
@@ -328,11 +352,10 @@ def Foreman_dashboard(request):
         "analysis_reports_complete": analysis_reports_complete,
         "analysis_progress_percentage": round(analysis_progress_percentage, 1),
         "analysis_status_text": analysis_status_text,
-        
         # General Data
         "user": request.user,
         "current_time": timezone.now(),
-        "month_name": today.strftime('%B %Y'),
+        "month_name": today.strftime("%B %Y"),
     }
 
     return render(request, "foreman/foreman_dashboard.html", context)
@@ -367,25 +390,24 @@ def create_activity_report(request):
 @login_required
 def create_analysis_report(request):
     """Create analysis report view"""
-    if request.method == 'POST':
+    if request.method == "POST":
         form = AnalysisReportForm(request.POST, user=request.user)
         if form.is_valid():
             analysis_report = form.save(commit=False)
             analysis_report.foreman = request.user
             analysis_report.save()
-            messages.success(request, 'Analysis Report berhasil dibuat!')
-            return redirect('foreman_dashboard')
+            messages.success(request, "Analysis Report berhasil dibuat!")
+            return redirect("foreman_dashboard")
         else:
-            messages.error(request, 'Terjadi kesalahan dalam pembuatan Analysis Report.')
+            messages.error(
+                request, "Terjadi kesalahan dalam pembuatan Analysis Report."
+            )
     else:
         form = AnalysisReportForm(user=request.user)
-    
-    context = {
-        'form': form,
-        'user': request.user
-    }
-    
-    return render(request, 'foreman/create_analysis_report.html', context)
+
+    context = {"form": form, "user": request.user}
+
+    return render(request, "foreman/create_analysis_report.html", context)
 
 
 @login_required
@@ -395,45 +417,44 @@ def foreman_reports(request):
     reports = ActivityReport.objects.filter(foreman=request.user).order_by(
         "-date", "-start_time"
     )
-    
+
     # Filter berdasarkan tanggal jika ada parameter
-    date_filter = request.GET.get('date')
+    date_filter = request.GET.get("date")
     if date_filter:
         try:
-            filter_date = timezone.datetime.strptime(date_filter, '%Y-%m-%d').date()
+            filter_date = timezone.datetime.strptime(date_filter, "%Y-%m-%d").date()
             reports = reports.filter(date=filter_date)
         except ValueError:
             pass
-    
+
     # Filter berdasarkan bulan jika ada parameter
-    month_filter = request.GET.get('month')
+    month_filter = request.GET.get("month")
     if month_filter:
         try:
-            year, month = month_filter.split('-')
+            year, month = month_filter.split("-")
             reports = reports.filter(date__year=year, date__month=month)
         except ValueError:
             pass
-    
+
     # Pagination
     paginator = Paginator(reports, 10)  # 10 reports per page
-    page_number = request.GET.get('page')
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    
+
     # Statistics
     total_reports = reports.count()
     today = timezone.now().date()
     this_month_reports = reports.filter(
-        date__year=today.year, 
-        date__month=today.month
+        date__year=today.year, date__month=today.month
     ).count()
-    
+
     context = {
-        'reports': page_obj,
-        'total_reports': total_reports,
-        'this_month_reports': this_month_reports,
-        'user': request.user,
-        'date_filter': date_filter,
-        'month_filter': month_filter,
+        "reports": page_obj,
+        "total_reports": total_reports,
+        "this_month_reports": this_month_reports,
+        "user": request.user,
+        "date_filter": date_filter,
+        "month_filter": month_filter,
     }
-    
-    return render(request, 'foreman/reports_list.html', context)
+
+    return render(request, "foreman/reports_list.html", context)
