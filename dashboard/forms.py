@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.forms import widgets
 from .models import User as CustomUser
 from .models import User, ActivityReport, AnalysisReport
+from django.utils import timezone
 
 
 class LoginForm(AuthenticationForm):
@@ -325,93 +326,115 @@ class ActivityReportForm(forms.ModelForm):
 
 
 class AnalysisReportForm(forms.ModelForm):
-    """Form untuk membuat Analysis Report"""
-    
     class Meta:
         model = AnalysisReport
         fields = [
-            'section_track', 'email', 'no_report', 'report_date', 'WO_Number', 
-            'WO_date', 'unit_code', 'problem', 'Trouble_date', 'Hm', 
-            'title_problem', 'part_no', 'part_name'
+            'section_track', 'email', 'no_report', 'report_date', 
+            'WO_Number', 'WO_date', 'unit_code', 'problem', 
+            'Trouble_date', 'Hm', 'title_problem', 'part_no', 'part_name'
         ]
+        
         widgets = {
             'section_track': forms.Select(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
             }),
             'email': forms.EmailInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'placeholder': 'email@company.com'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Email foreman'
             }),
             'no_report': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                 'placeholder': 'Nomor laporan'
             }),
             'report_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'type': 'date'
             }),
             'WO_Number': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'placeholder': 'Work Order Number'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Nomor Work Order'
             }),
             'WO_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'type': 'date'
             }),
             'unit_code': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                 'placeholder': 'Kode unit'
             }),
             'problem': forms.Select(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
             }),
             'Trouble_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'type': 'date'
             }),
             'Hm': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
                 'placeholder': 'Hour Meter'
             }),
             'title_problem': forms.Textarea(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'rows': 4,
-                'placeholder': 'Deskripsikan masalah yang ditemukan'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Deskripsi masalah secara detail',
+                'rows': 4
             }),
             'part_no': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'placeholder': 'Part Number'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Nomor part'
             }),
             'part_name': forms.TextInput(attrs={
-                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-                'placeholder': 'Nama Part'
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                'placeholder': 'Nama part'
             }),
         }
+        
         labels = {
             'section_track': 'Section Track',
             'email': 'Email',
-            'no_report': 'No. Report',
+            'no_report': 'No. Laporan',
             'report_date': 'Tanggal Laporan',
-            'WO_Number': 'WO Number',
-            'WO_date': 'WO Date',
-            'unit_code': 'Unit Code',
-            'problem': 'Problem Category',
-            'Trouble_date': 'Trouble Date',
+            'WO_Number': 'No. Work Order',
+            'WO_date': 'Tanggal WO',
+            'unit_code': 'Kode Unit',
+            'problem': 'Jenis Masalah',
+            'Trouble_date': 'Tanggal Trouble',
             'Hm': 'Hour Meter',
-            'title_problem': 'Title Problem',
-            'part_no': 'Part Number',
-            'part_name': 'Part Name',
+            'title_problem': 'Deskripsi Masalah',
+            'part_no': 'No. Part',
+            'part_name': 'Nama Part',
         }
-
+    
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         
         # Set default values
+        if user:
+            self.fields['email'].initial = user.email
+        
+        # Set today as default for report_date (sekarang timezone sudah di-import)
+        self.fields['report_date'].initial = timezone.now().date()
+        
+        # Auto-generate report number if creating new
         if not self.instance.pk:
-            from django.utils import timezone
-            self.fields['report_date'].initial = timezone.now().date()
-            self.fields['WO_date'].initial = timezone.now().date()
-            self.fields['Trouble_date'].initial = timezone.now().date()
-            if self.user:
-                self.fields['email'].initial = self.user.email
+            today = timezone.now().date()
+            count = AnalysisReport.objects.filter(
+                report_date__year=today.year,
+                report_date__month=today.month
+            ).count() + 1
+            self.fields['no_report'].initial = f"AR-{today.strftime('%Y%m')}-{count:03d}"
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        report_date = cleaned_data.get('report_date')
+        wo_date = cleaned_data.get('WO_date')
+        trouble_date = cleaned_data.get('Trouble_date')
+        
+        # Validate dates
+        if wo_date and report_date and wo_date > report_date:
+            raise forms.ValidationError("Tanggal WO tidak boleh lebih besar dari tanggal laporan")
+        
+        if trouble_date and report_date and trouble_date > report_date:
+            raise forms.ValidationError("Tanggal trouble tidak boleh lebih besar dari tanggal laporan")
+        
+        return cleaned_data

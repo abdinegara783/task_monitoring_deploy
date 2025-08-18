@@ -6,8 +6,8 @@ from django.core.paginator import Paginator
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from .forms import LoginForm, RegisterForm, EmployeeRegistrationForm, ActivityReportForm
-from .models import User, ActivityReport
+from .forms import LoginForm, RegisterForm, EmployeeRegistrationForm, ActivityReportForm, AnalysisReportForm
+from .models import User, ActivityReport, AnalysisReport
 
 
 def hello_world(request):
@@ -260,8 +260,28 @@ def create_activity_report(request):
     )
 
 
+@login_required
 def create_analysis_report(request):
-    return render(request, "foreman/foreman_create_analysis_report.html")
+    """Create analysis report view"""
+    if request.method == 'POST':
+        form = AnalysisReportForm(request.POST, user=request.user)
+        if form.is_valid():
+            analysis_report = form.save(commit=False)
+            analysis_report.foreman = request.user
+            analysis_report.save()
+            messages.success(request, 'Analysis Report berhasil dibuat!')
+            return redirect('foreman_dashboard')
+        else:
+            messages.error(request, 'Terjadi kesalahan dalam pembuatan Analysis Report.')
+    else:
+        form = AnalysisReportForm(user=request.user)
+    
+    context = {
+        'form': form,
+        'user': request.user
+    }
+    
+    return render(request, 'foreman/create_analysis_report.html', context)
 
 
 @login_required

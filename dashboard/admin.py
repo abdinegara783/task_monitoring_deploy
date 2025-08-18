@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, ActivityReport
+from .models import User, ActivityReport, AnalysisReport
 
 
 @admin.register(User)
@@ -162,3 +162,77 @@ class ActivityReportAdmin(admin.ModelAdmin):
     
     # Add custom methods to list_display if needed
     # list_display = list_display + ("get_foreman_name", "get_duration")
+
+
+@admin.register(AnalysisReport)
+class AnalysisReportAdmin(admin.ModelAdmin):
+    """Custom Analysis Report Admin"""
+    
+    list_display = (
+        "no_report", 
+        "foreman", 
+        "section_track", 
+        "report_date", 
+        "unit_code", 
+        "problem", 
+        "WO_Number",
+        "Trouble_date"
+    )
+    
+    list_filter = (
+        "foreman", 
+        "section_track", 
+        "problem", 
+        "report_date", 
+        "Trouble_date",
+        "WO_date"
+    )
+    
+    search_fields = (
+        "no_report",
+        "foreman__username", 
+        "foreman__name", 
+        "unit_code", 
+        "WO_Number",
+        "title_problem",
+        "part_no",
+        "part_name"
+    )
+    
+    ordering = ("-report_date", "-Trouble_date")
+    
+    date_hierarchy = "report_date"
+    
+    list_per_page = 25
+    
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("foreman", "section_track", "email", "no_report", "report_date")
+        }),
+        ("Work Order Information", {
+            "fields": ("WO_Number", "WO_date", "unit_code", "Hm")
+        }),
+        ("Problem Information", {
+            "fields": ("problem", "Trouble_date", "title_problem")
+        }),
+        ("Part Information", {
+            "fields": ("part_no", "part_name")
+        }),
+    )
+    
+    readonly_fields = ()
+    
+    def get_foreman_name(self, obj):
+        return obj.foreman.name or obj.foreman.get_full_name()
+    get_foreman_name.short_description = "Foreman Name"
+    get_foreman_name.admin_order_field = "foreman__name"
+    
+    def get_problem_display_name(self, obj):
+        return obj.get_problem_display() if obj.problem else "-"
+    get_problem_display_name.short_description = "Problem Type"
+    get_problem_display_name.admin_order_field = "problem"
+    
+    def get_section_display_name(self, obj):
+        return obj.get_section_track_display() if obj.section_track else "-"
+    get_section_display_name.short_description = "Section"
+    get_section_display_name.admin_order_field = "section_track"

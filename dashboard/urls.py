@@ -25,9 +25,6 @@ urlpatterns = [
     
     # Activity report
     path('activity-report/create/', views.create_activity_report, name='create_activity_report'),
-    path(
-        "foreman/create_analysis_report/",
-        views.create_analysis_report,
-        name="create_analysis_report",
-    ),
+    # Analysis report
+    path('analysis-report/create/', views.create_analysis_report, name='create_analysis_report'),
 ]
