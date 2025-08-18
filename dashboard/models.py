@@ -120,6 +120,52 @@ class ActivityReport(models.Model):
         max_length=100, choices=ACTIVITIES_CHOICES, blank=True, null=True
     )
 
+class AnalysisReport(models.Model):
+
+    SECTION_CHOICES = [
+        ("PC1250", "PC1250"),
+        ("CAT395", "CAT395"),
+        ("DX800", "DX800"),
+        ("PC500", "PC500"),
+        ("PC300", "PC300"),
+        ("PC200/210", "PC200/210"),
+        ("D375", "D375"),
+        ("D155", "D155"),
+        ("D85", "D85"),
+        ("EPIROC DM30", "EPIROC DM30"),
+    ]
+    PROBLEM_CHOICES = [
+        ("1000", "Engine"),
+        ("2000", "Clutch System"),
+        ("3000", "Transmission"),
+        ("4000", "Travel Dive-Axle"),
+        ("5000", "Steering"),
+        ("6000", "Undercariage"),
+        ("7000", "Electric"),
+        ("8000", "Attachment"),
+        ("9000", "Periodical Services"),
+    ]
+    
+    foreman = models.ForeignKey(
+        User, on_delete=models.CASCADE, limit_choices_to={"role": "foreman"}
+    )
+    section_track = models.CharField(
+        max_length=100, choices=SECTION_CHOICES, blank=True, null=True
+    )
+    email = models.EmailField(max_length=100, blank=True, null=True)
+    no_report = models.CharField(max_length=100, blank=True, null=True)
+    report_date = models.DateField()
+    WO_Number = models.CharField(max_length=100, blank=True, null=True)
+    WO_date = models.DateField()
+    unit_code = models.CharField(max_length=100, blank=True, null=True)
+    problem = models.CharField(max_length=100, choices=PROBLEM_CHOICES, blank=True, null=True)
+    Trouble_date = models.DateField()
+    Hm = models.CharField(max_length=100, blank=True, null=True)
+    title_problem = models.TextField()
+    part_no = models.CharField(max_length=100, blank=True, null=True)
+    part_name = models.CharField(max_length=100, blank=True, null=True)
+
+
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -215,3 +261,4 @@ class Notification(models.Model):
             notification_type=notification_type,
             auto_remove_on_completion=True
         ).delete()
+
