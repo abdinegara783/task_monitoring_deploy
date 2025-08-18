@@ -195,7 +195,7 @@ def admin_delete(request, user_id):
 
 @login_required
 def Foreman_dashboard(request):
-    """Foreman dashboard view with corrected field references"""
+    """Foreman dashboard view with combined reports in recent status"""
     # Get activity reports for current user, ordered by date (most recent first)
     activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
         "-date", "-start_time"
@@ -218,17 +218,121 @@ def Foreman_dashboard(request):
 
     # Check if user has submitted activity report today
     activity_report_today = activity_reports.filter(date=today).first()
+    
+    # === ANALYSIS REPORTS ===
+    current_month = today.month
+    current_year = today.year
+    
+    # Get all analysis reports for current user
+    analysis_reports = AnalysisReport.objects.filter(foreman=request.user).order_by(
+        "-report_date"
+    )
+    
+    # Get analysis reports for current month
+    analysis_reports_count = analysis_reports.filter(
+        report_date__year=current_year,
+        report_date__month=current_month
+    ).count()
+    
+    # Analysis report requirements
+    analysis_reports_required = 3  # 3 laporan per bulan
+    analysis_reports_remaining = max(0, analysis_reports_required - analysis_reports_count)
+    analysis_reports_complete = analysis_reports_count >= analysis_reports_required
+    
+    # Progress calculation
+    analysis_progress_percentage = min(100, (analysis_reports_count / analysis_reports_required) * 100)
+    
+    # Status text
+    if analysis_reports_complete:
+        analysis_status_text = "Selesai bulan ini"
+    else:
+        analysis_status_text = f"{analysis_reports_remaining} laporan lagi"
+    
+    # === COMBINED RECENT REPORTS ===
+    # Get recent activity reports (last 3)
+    recent_activity_reports = activity_reports[:3]
+    
+    # Get recent analysis reports (last 2)
+    recent_analysis_reports = analysis_reports[:2]
+    
+    # Combine reports for "Status Laporan Terbaru"
+    combined_reports = []
+    
+    # Add activity reports
+    for report in recent_activity_reports:
+        combined_reports.append({
+            'type': 'activity',
+            'id': report.id,
+            'date': report.date,
+            'title': 'Activity Report',
+            'description': f"{report.Unit_Code or 'N/A'} - {report.component or 'N/A'}",
+            'time': f"{report.start_time} - {report.end_time}",
+            'status': 'completed',
+            'report_data': {
+                'date': report.date.strftime('%d M Y'),
+                'start_time': str(report.start_time),
+                'end_time': str(report.end_time),
+                'unit_code': report.Unit_Code or '-',
+                'component': report.component or '-',
+                'activities': report.activities or 'Tidak ada deskripsi',
+                'leader': report.leader or '-',
+                'hmkm': report.Hmkm or '-',
+                'activities_code': report.activities_code or '-'
+            }
+        })
+    
+    # Add analysis reports
+    for report in recent_analysis_reports:
+        combined_reports.append({
+            'type': 'analysis',
+            'id': report.id,
+            'date': report.report_date,
+            'title': 'Analysis Report',
+            'description': f"{report.no_report or 'N/A'} - {report.unit_code or 'N/A'}",
+            'time': report.report_date.strftime('%d %b %Y'),
+            'status': 'completed',
+            'report_data': {
+                'report_date': report.report_date.strftime('%d M Y'),
+                'no_report': report.no_report or '-',
+                'section_track': report.section_track or '-',
+                'wo_number': report.WO_Number or '-',
+                'wo_date': report.WO_date.strftime('%d M Y') if report.WO_date else '-',
+                'unit_code': report.unit_code or '-',
+                'problem': report.get_problem_display() if report.problem else '-',
+                'trouble_date': report.Trouble_date.strftime('%d M Y') if report.Trouble_date else '-',
+                'hm': report.Hm or '-',
+                'title_problem': report.title_problem or 'Tidak ada deskripsi',
+                'part_no': report.part_no or '-',
+                'part_name': report.part_name or '-'
+            }
+        })
+    
+    # Sort combined reports by date (most recent first)
+    combined_reports.sort(key=lambda x: x['date'], reverse=True)
+    recent_reports = combined_reports[:5]  # Take top 5 most recent
 
     context = {
-        "activity_reports": activity_reports[:5],  # Latest 5 reports
-        "recent_reports": activity_reports[:5],  # Add this for template compatibility
+        # Activity Report Data
+        "activity_reports": activity_reports[:5],
+        "recent_reports": recent_reports,  # Combined reports for template
         "total_reports": total_reports,
         "today_reports": today_reports,
         "this_week_reports": this_week_reports,
         "this_month_reports": this_month_reports,
         "activity_report_today": activity_report_today,
+        
+        # Analysis Report Data
+        "analysis_reports_count": analysis_reports_count,
+        "analysis_reports_required": analysis_reports_required,
+        "analysis_reports_remaining": analysis_reports_remaining,
+        "analysis_reports_complete": analysis_reports_complete,
+        "analysis_progress_percentage": round(analysis_progress_percentage, 1),
+        "analysis_status_text": analysis_status_text,
+        
+        # General Data
         "user": request.user,
         "current_time": timezone.now(),
+        "month_name": today.strftime('%B %Y'),
     }
 
     return render(request, "foreman/foreman_dashboard.html", context)
