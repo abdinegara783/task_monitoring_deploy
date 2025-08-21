@@ -58,7 +58,7 @@ def login_view(request):
                 if user.role == "admin":
                     return redirect("admin_dashboard")
                 elif user.role == "leader":
-                    return redirect("dashboard")  # Leader dashboard
+                    return redirect("leader_dashboard")  # Leader dashboard
                 elif user.role == "foreman":
                     return redirect("foreman_dashboard")
                 else:
@@ -82,9 +82,11 @@ def leader_dashboard(request):
 def leader_validation_analysis(request):
     return render(request, "leader/leader_validation_analysis.html")
 
+
 @login_required
 def leader_validation_activity(request):
     return render(request, "leader/leader_validation_activity.html")
+
 
 def logout_view(request):
     logout(request)
@@ -114,6 +116,11 @@ def register_view(request):
 def is_admin(user):
     """Check if user is admin"""
     return user.is_authenticated and (user.is_superuser or user.role == "admin")
+
+
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    return render(request, "admin/admin_dashboard.html")
 
 
 @user_passes_test(is_admin)

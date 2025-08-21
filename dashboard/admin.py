@@ -151,7 +151,7 @@ class ActivityReportAdmin(admin.ModelAdmin):
     
     def get_duration(self, obj):
         if obj.start_time and obj.end_time:
-            from datetime import datetime, timedelta
+            from datetime import datetime
             start = datetime.combine(obj.date, obj.start_time)
             end = datetime.combine(obj.date, obj.end_time)
             duration = end - start

@@ -9,7 +9,8 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_view, name="register"),
     # Admin URLs for Employee Management
-    path("superadmin/", views.admin_list, name="admin_list"),
+    path("superadmin/", views.admin_dashboard, name="admin_dashboard"),
+    path("superadmin/list", views.admin_list, name="admin_list"),
     path("superadmin/create/", views.admin_create, name="admin_create"),
     path("superadmin/<int:user_id>/", views.admin_detail, name="admin_detail"),
     path("superadmin/<int:user_id>/edit/", views.admin_edit, name="admin_edit"),
