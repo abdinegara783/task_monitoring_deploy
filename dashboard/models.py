@@ -119,6 +119,11 @@ class ActivityReport(models.Model):
     activities_code = models.CharField(
         max_length=100, choices=ACTIVITIES_CHOICES, blank=True, null=True
     )
+    
+    # Tambahkan field status dan feedback
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    feedback = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
 
 class AnalysisReport(models.Model):
 

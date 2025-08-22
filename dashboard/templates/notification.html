@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifikasi - Sistem Pelaporan Kerja{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <!-- Header with Back Button -->
+    <div class="flex items-center justify-between mb-6 p-4 bg-white rounded-lg shadow-sm border">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Notifikasi</h1>
+            <p class="text-gray-600">Semua notifikasi dan pengingat</p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <a href="javascript:history.back()" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-sm flex items-center">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-1"></i>
+                Kembali
+            </a>
+            
+            <form method="POST" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="mark_all_read" value="true">
+                <button type="submit" class="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md text-sm flex items-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i>
+                    Tandai Semua Dibaca
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Notification List -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            {% if notifications %}
+                <ul class="divide-y divide-gray-200">
+                    {% for notification in notifications %}
+                        <li class="p-4 {% if not notification.is_read %}bg-blue-50{% endif %}">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-1">
+                                        {% if notification.notification_type == 'activity_reminder' %}
+                                            <span class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-2">
+                                                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                                            </span>
+                                        {% elif notification.notification_type == 'analysis_reminder' %}
+                                            <span class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-2">
+                                                <i data-lucide="bar-chart" class="w-4 h-4"></i>
+                                            </span>
+                                        {% endif %}
+                                        <h3 class="font-semibold text-gray-900">{{ notification.title }}</h3>
+                                    </div>
+                                    <p class="text-gray-700">{{ notification.message }}</p>
+                                    <div class="mt-1 text-xs text-gray-500 flex items-center">
+                                        <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                                        {{ notification.created_at|date:"d M Y, H:i" }}
+                                    </div>
+                                </div>
+                                
+                                {% if not notification.is_read %}
+                                    <form method="POST" class="ml-4">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="notification_id" value="{{ notification.id }}">
+                                        <input type="hidden" name="mark_read" value="true">
+                                        <button type="submit" class="text-blue-600 hover:text-blue-800">
+                                            <i data-lucide="check" class="w-5 h-5"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-8 text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="bell-off" class="w-8 h-8 text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">Tidak Ada Notifikasi</h3>
+                    <p class="text-gray-500">Anda tidak memiliki notifikasi saat ini.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+</script>
+{% endblock %}

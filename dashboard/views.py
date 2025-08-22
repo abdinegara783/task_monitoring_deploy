@@ -13,7 +13,7 @@ from .forms import (
     ActivityReportForm,
     AnalysisReportForm,
 )
-from .models import User, ActivityReport, AnalysisReport
+from .models import User, ActivityReport, AnalysisReport, Notification
 
 
 def hello_world(request):
@@ -29,8 +29,42 @@ def hello_world_tailwind(request):
     return render(request, "hello-world.html")
 
 
-# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+def is_leader(user):
+    """Check if user is leader"""
+    return user.is_authenticated and user.role == "leader"
+
+
+def is_foreman(user):
+    """Check if user is foreman"""
+    return user.is_authenticated and user.role == "foreman"
+
+
+# Decorator untuk redirect jika akses tidak sesuai role
+def role_required(allowed_roles):
+    """Decorator to check if user has the required role"""
+    def decorator(view_func):
+        def wrapped(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return redirect('login')
+            
+            if request.user.role not in allowed_roles:
+                messages.error(request, "Anda tidak memiliki akses ke halaman ini.")
+                
+                # Redirect ke dashboard sesuai role
+                if request.user.role == "admin":
+                    return redirect("admin_dashboard")
+                elif request.user.role == "leader":
+                    return redirect("leader_dashboard")
+                elif request.user.role == "foreman":
+                    return redirect("foreman_dashboard")
+                else:
+                    return redirect("login")
+                    
+            return view_func(request, *args, **kwargs)
+        return wrapped
+    return decorator
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -74,18 +108,80 @@ def login_view(request):
 
 
 @login_required
+@role_required(["leader"])
 def leader_dashboard(request):
-    return render(request, "leader/leader_dashboard.html")
+    # Mendapatkan statistik untuk dashboard
+    total_employees = User.objects.filter(role='foreman').count()
+    
+    # Mendapatkan activity reports
+    today = timezone.now().date()
+    all_activity_reports = ActivityReport.objects.all()
+    
+    # Karena field status baru ditambahkan, kita perlu menggunakan pendekatan yang berbeda
+    # untuk menghitung laporan yang menunggu validasi dan yang sudah divalidasi
+    today_reports = all_activity_reports.filter(date=today).count()
+    
+    # Gunakan filter yang aman (tanpa status dulu)
+    recent_activity_reports = ActivityReport.objects.order_by('-date')[:5]
+    
+    stats = {
+        'total_employees': total_employees,
+        'today_reports': today_reports,
+        'pending_validation': 0,  # Sementara set ke 0
+        'completed_reports': 0    # Sementara set ke 0
+    }
+    
+    context = {
+        'stats': stats,
+        'recent_activity_reports': recent_activity_reports
+    }
+    
+    return render(request, "leader/leader_dashboard.html", context)
 
 
 @login_required
+@role_required(["leader"])
 def leader_validation_analysis(request):
     return render(request, "leader/leader_validation_analysis.html")
 
 
 @login_required
+@role_required(["leader"])
 def leader_validation_activity(request):
-    return render(request, "leader/leader_validation_activity.html")
+    report_id = request.GET.get('report_id')
+    
+    if not report_id:
+        messages.error(request, "ID laporan tidak ditemukan.")
+        return redirect('leader_dashboard')
+    
+    try:
+        report = ActivityReport.objects.get(id=report_id)
+    except ActivityReport.DoesNotExist:
+        messages.error(request, "Laporan tidak ditemukan.")
+        return redirect('leader_dashboard')
+    
+    if request.method == "POST":
+        action = request.POST.get('action')
+        feedback = request.POST.get('feedback', '')
+        
+        if action == 'approve':
+            report.status = 'approved'
+            report.feedback = feedback
+            report.save()
+            messages.success(request, "Laporan berhasil disetujui.")
+            return redirect('leader_dashboard')
+        elif action == 'reject':
+            report.status = 'rejected'
+            report.feedback = feedback
+            report.save()
+            messages.success(request, "Laporan berhasil ditolak.")
+            return redirect('leader_dashboard')
+    
+    context = {
+        'report': report
+    }
+    
+    return render(request, "leader/leader_validation_activity.html", context)
 
 
 def logout_view(request):
@@ -112,18 +208,17 @@ def register_view(request):
     return render(request, "register.html", {"form": form})
 
 
-# NEW: Admin functions
-def is_admin(user):
-    """Check if user is admin"""
-    return user.is_authenticated and (user.is_superuser or user.role == "admin")
 
-
-@user_passes_test(is_admin)
+# Ganti decorator untuk admin_dashboard
+@login_required
+@role_required(["admin"])
 def admin_dashboard(request):
     return render(request, "admin/admin_dashboard.html")
 
 
-@user_passes_test(is_admin)
+# Ganti decorator untuk admin_list
+@login_required
+@role_required(["admin"])
 def admin_list(request):
     """Daftar semua karyawan untuk admin"""
     employees = User.objects.all().order_by("-created_at")
@@ -151,7 +246,9 @@ def admin_list(request):
     return render(request, "admin/admin_list.html", context)
 
 
-@user_passes_test(is_admin)
+# Ganti decorator untuk admin_create
+@login_required
+@role_required(["admin"])
 def admin_create(request):
     """Form untuk admin menambah karyawan baru"""
     if request.method == "POST":
@@ -170,14 +267,18 @@ def admin_create(request):
     return render(request, "admin/admin_create.html", {"form": form})
 
 
-@user_passes_test(is_admin)
+# Ganti decorator untuk admin_detail
+@login_required
+@role_required(["admin"])
 def admin_detail(request, user_id):
     """Detail karyawan"""
     employee = get_object_or_404(User, id=user_id)
     return render(request, "admin/admin_detail.html", {"employee": employee})
 
 
-@user_passes_test(is_admin)
+# Ganti decorator untuk admin_edit
+@login_required
+@role_required(["admin"])
 def admin_edit(request, user_id):
     """Edit data karyawan"""
     employee = get_object_or_404(User, id=user_id)
@@ -200,7 +301,9 @@ def admin_edit(request, user_id):
     )
 
 
-@user_passes_test(is_admin)
+# Ganti decorator untuk admin_delete
+@login_required
+@role_required(["admin"])
 def admin_delete(request, user_id):
     """Hapus karyawan"""
     employee = get_object_or_404(User, id=user_id)
@@ -215,6 +318,7 @@ def admin_delete(request, user_id):
 
 
 @login_required
+@role_required(["foreman"])
 def Foreman_dashboard(request):
     """Foreman dashboard view with combined reports in recent status"""
     # Get activity reports for current user, ordered by date (most recent first)
@@ -281,6 +385,13 @@ def Foreman_dashboard(request):
 
     # Combine reports for "Status Laporan Terbaru"
     combined_reports = []
+
+    notification = Notification.objects.filter(user=request.user).order_by(
+        "created_at"
+    )[:5]
+    unread_notification = Notification.objects.filter(
+        user=request.user, is_read=False
+    ).count()
 
     # Add activity reports
     for report in recent_activity_reports:
@@ -363,12 +474,16 @@ def Foreman_dashboard(request):
         "user": request.user,
         "current_time": timezone.now(),
         "month_name": today.strftime("%B %Y"),
+        # Notification Data
+        "notification": notification,
+        "unread_notification": unread_notification,
     }
 
     return render(request, "foreman/foreman_dashboard.html", context)
 
 
 @login_required
+@role_required(["foreman"])
 def create_activity_report(request):
     """Create activity report view"""
     if request.method == "POST":
@@ -418,6 +533,7 @@ def create_analysis_report(request):
 
 
 @login_required
+@role_required(["foreman"])
 def foreman_reports(request):
     """View untuk menampilkan semua laporan foreman"""
     # Get all activity reports for current user
@@ -465,3 +581,65 @@ def foreman_reports(request):
     }
 
     return render(request, "foreman/reports_list.html", context)
+
+
+@login_required
+def notifications_view(request):
+    """View for displaying user notifications"""
+    # Get user's notifications
+    notifications = Notification.objects.filter(user=request.user).order_by(
+        "-created_at"
+    )
+
+    # Mark notifications as read
+    if request.method == "POST" and "mark_read" in request.POST:
+        notification_id = request.POST.get("notification_id")
+        if notification_id:
+            notification = get_object_or_404(
+                Notification, id=notification_id, user=request.user
+            )
+            notification.is_read = True
+            notification.save()
+            return redirect("notifications")
+        elif "mark_all_read" in request.POST:
+            notifications.update(is_read=True)
+            return redirect("notifications")
+
+    # Context data
+    context = {
+        "notifications": notifications,
+        "unread_count": notifications.filter(is_read=False).count(),
+    }
+
+    return render(request, "notification.html", context)
+
+
+@login_required
+def api_get_notifications(request):
+    """API endpoint to get notifications for AJAX requests"""
+    from django.http import JsonResponse
+
+    notifications = Notification.objects.filter(user=request.user).order_by(
+        "-created_at"
+    )[:5]
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+
+    data = {
+        "unread_count": unread_count,
+        "notifications": [
+            {
+                "id": n.id,
+                "title": n.title,
+                "message": n.message,
+                "is_read": n.is_read,
+                "created_at": n.created_at.strftime("%d %b %Y, %H:%M"),
+                "notification_type": n.notification_type,
+            }
+            for n in notifications
+        ],
+    }
+
+    return JsonResponse(data)
+
+
+# Tambahkan setelah fungsi is_admin yang sudah ada

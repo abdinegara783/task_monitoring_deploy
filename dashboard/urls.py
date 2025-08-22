@@ -46,4 +46,8 @@ urlpatterns = [
         views.leader_validation_activity,
         name="leader_validation_activity",
     ),
+    
+    # Notification URLs
+    path("notifications/", views.notifications_view, name="notifications"),
+    path("api/notifications/", views.api_get_notifications, name="api_notifications"),
 ]
