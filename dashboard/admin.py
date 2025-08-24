@@ -16,6 +16,7 @@ class UserAdmin(BaseUserAdmin):
         "role",
         "department",
         "shift",
+        "leader",
         "is_active",
         "created_at",
     )
@@ -76,90 +77,97 @@ class UserAdmin(BaseUserAdmin):
 
     # Enable date hierarchy
     date_hierarchy = "created_at"
+    # Enable search
+    search_fields = ("username", "email", "name", "nrp", "first_name", "last_name")
+    # Enable list filter
+    list_filter = ("role", "department", "shift", "is_active", "is_staff", "created_at")
 
 
 @admin.register(ActivityReport)
 class ActivityReportAdmin(admin.ModelAdmin):
-    """Custom Activity Report Admin"""
+    """Admin configuration for ActivityReport"""
 
-    # Corrected list_display - using actual fields from ActivityReport model
     list_display = (
-        "id", 
-        "foreman", 
-        "date", 
-        "shift", 
-        "component", 
+        "id",
+        "foreman",
+        "date",
+        "shift",
+        "component",
         "activities_code",
         "Unit_Code",
         "start_time",
-        "end_time"
+        "end_time",
+        "feedback",
+        "created_at",
+        "status",
     )
-    
-    # Corrected list_filter - using actual fields
+
+    # Remove "leader" from list_filter
     list_filter = (
-        "foreman", 
-        "date", 
-        "shift", 
-        "component", 
+        "foreman",
+        "date",
+        "shift",
+        "component",
         "activities_code",
-        "leader"
+        # "leader"  # Remove this line
     )
-    
+
     # Corrected search_fields
     search_fields = (
-        "foreman__username", 
-        "foreman__name", 
-        "Unit_Code", 
+        "foreman__username",
+        "foreman__name",
+        "Unit_Code",
         "activities",
-        "component"
+        "component",
     )
-    
+
     # Ordering by date (most recent first)
     ordering = ("-date", "-start_time")
-    
+
     # Date hierarchy for easy navigation
     date_hierarchy = "date"
-    
+
     # Fields per page
     list_per_page = 25
-    
+
     # Fieldsets for organized form display
     fieldsets = (
-        ("Basic Information", {
-            "fields": ("foreman", "date", "shift")
-        }),
-        ("Time Information", {
-            "fields": ("start_time", "end_time")
-        }),
-        ("Work Details", {
-            "fields": ("leader", "Unit_Code", "Hmkm", "component", "activities_code")
-        }),
-        ("Activities", {
-            "fields": ("activities",),
-            "classes": ("wide",)
-        }),
+        ("Basic Information", {"fields": ("foreman", "date", "shift")}),
+        ("Time Information", {"fields": ("start_time", "end_time")}),
+        (
+            "Work Details",
+            {
+                # Remove "leader" from this fieldset
+                "fields": ("Unit_Code", "Hmkm", "component", "activities_code")
+            },
+        ),
+        ("Activities", {"fields": ("activities", "feedback"), "classes": ("wide",)}),
+        ("Status", {"fields": ("status",), "classes": ("wide",)}),
     )
-    
+
     # Read-only fields (if any)
     readonly_fields = ()
-    
+
     # Custom methods for better display
     def get_foreman_name(self, obj):
         return obj.foreman.name or obj.foreman.get_full_name()
+
     get_foreman_name.short_description = "Foreman Name"
     get_foreman_name.admin_order_field = "foreman__name"
-    
+
     def get_duration(self, obj):
         if obj.start_time and obj.end_time:
             from datetime import datetime
+
             start = datetime.combine(obj.date, obj.start_time)
             end = datetime.combine(obj.date, obj.end_time)
             duration = end - start
             hours = duration.total_seconds() / 3600
             return f"{hours:.1f} jam"
         return "-"
+
     get_duration.short_description = "Duration"
-    
+
     # Add custom methods to list_display if needed
     # list_display = list_display + ("get_foreman_name", "get_duration")
 
@@ -167,72 +175,89 @@ class ActivityReportAdmin(admin.ModelAdmin):
 @admin.register(AnalysisReport)
 class AnalysisReportAdmin(admin.ModelAdmin):
     """Custom Analysis Report Admin"""
-    
+
     list_display = (
-        "no_report", 
-        "foreman", 
-        "section_track", 
-        "report_date", 
-        "unit_code", 
-        "problem", 
+        "no_report",
+        "foreman",
+        "section_track",
+        "report_date",
+        "unit_code",
+        "problem",
         "WO_Number",
-        "Trouble_date"
-    )
-    
-    list_filter = (
-        "foreman", 
-        "section_track", 
-        "problem", 
-        "report_date", 
         "Trouble_date",
-        "WO_date"
+        "feedback",
+        "created_at",
+        "status",
     )
-    
+
+    list_filter = (
+        "foreman",
+        "section_track",
+        "problem",
+        "report_date",
+        "Trouble_date",
+        "WO_date",
+    )
+
     search_fields = (
         "no_report",
-        "foreman__username", 
-        "foreman__name", 
-        "unit_code", 
+        "foreman__username",
+        "foreman__name",
+        "unit_code",
         "WO_Number",
         "title_problem",
         "part_no",
-        "part_name"
+        "part_name",
     )
-    
+
     ordering = ("-report_date", "-Trouble_date")
-    
+
     date_hierarchy = "report_date"
-    
+
     list_per_page = 25
-    
+
     fieldsets = (
-        ("Basic Information", {
-            "fields": ("foreman", "section_track", "email", "no_report", "report_date")
-        }),
-        ("Work Order Information", {
-            "fields": ("WO_Number", "WO_date", "unit_code", "Hm")
-        }),
-        ("Problem Information", {
-            "fields": ("problem", "Trouble_date", "title_problem")
-        }),
-        ("Part Information", {
-            "fields": ("part_no", "part_name")
-        }),
+        (
+            "Basic Information",
+            {
+                "fields": (
+                    "foreman",
+                    "section_track",
+                    "email",
+                    "no_report",
+                    "report_date",
+                )
+            },
+        ),
+        (
+            "Work Order Information",
+            {"fields": ("WO_Number", "WO_date", "unit_code", "Hm")},
+        ),
+        (
+            "Problem Information",
+            {"fields": ("problem", "Trouble_date", "title_problem")},
+        ),
+        ("Part Information", {"fields": ("part_no", "part_name")}),
+        ("Feedback", {"fields": ("feedback",), "classes": ("wide",)}),
+        ("Status", {"fields": ("status",), "classes": ("wide",)}),
     )
-    
+
     readonly_fields = ()
-    
+
     def get_foreman_name(self, obj):
         return obj.foreman.name or obj.foreman.get_full_name()
+
     get_foreman_name.short_description = "Foreman Name"
     get_foreman_name.admin_order_field = "foreman__name"
-    
+
     def get_problem_display_name(self, obj):
         return obj.get_problem_display() if obj.problem else "-"
+
     get_problem_display_name.short_description = "Problem Type"
     get_problem_display_name.admin_order_field = "problem"
-    
+
     def get_section_display_name(self, obj):
         return obj.get_section_track_display() if obj.section_track else "-"
+
     get_section_display_name.short_description = "Section"
     get_section_display_name.admin_order_field = "section_track"

@@ -2,12 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("hello/", views.hello_world, name="hello_world"),
-    path("hello-template/", views.hello_template, name="hello_template"),
     path("hello-world/", views.hello_world_tailwind, name="hello_world_tailwind"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
-    path("register/", views.register_view, name="register"),
+    # path("register/", views.register_view, name="register"),
     # Admin URLs for Employee Management
     path("superadmin/", views.admin_dashboard, name="admin_dashboard"),
     path("superadmin/list", views.admin_list, name="admin_list"),

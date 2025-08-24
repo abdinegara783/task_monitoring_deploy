@@ -4,10 +4,30 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 
 
+class LeaderQuota(models.Model):
+    leader_name = models.CharField(max_length=100, unique=True)
+    max_foreman = models.PositiveIntegerField(default=0)
+    current_foreman_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.leader_name} ({self.current_foreman_count}/{self.max_foreman})"
+
+    def can_add_foreman(self):
+        return self.current_foreman_count < self.max_foreman and self.is_active
+
+    class Meta:
+        verbose_name = "Leader Quota"
+        verbose_name_plural = "Leader Quotas"
+
+
 class User(AbstractUser):
     ROLE_CHOICES = [
-        ("leader", "Leader"),
+        ("superadmin", "Super Admin"),
         ("admin", "Admin"),
+        ("leader", "Leader"),
         ("foreman", "Foreman"),
     ]
     DEPARTMENT_CHOICES = [
@@ -16,6 +36,7 @@ class User(AbstractUser):
         ("PLANT", "Plant Coal Hauling"),
         ("WHEEL", "Wheel"),
     ]
+
     name = models.CharField(max_length=150, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     nrp = models.CharField(max_length=20, blank=True, null=True)
@@ -25,9 +46,48 @@ class User(AbstractUser):
     department = models.CharField(
         max_length=100, choices=DEPARTMENT_CHOICES, blank=True, null=True
     )
+
+    # Relasi untuk hierarki leader-foreman
+    leader = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        limit_choices_to={"role": "leader"},
+        related_name="foremen",
+    )
+
+    # Relasi ke LeaderQuota untuk leader
+    leader_quota = models.OneToOneField(
+        LeaderQuota,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leader_user",
+    )
+
     shift = models.IntegerField(default=1, choices=[(1, "Shift 1"), (2, "Shift 2")])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Auto-update foreman count ketika foreman disimpan
+        if self.role == "foreman" and self.leader:
+            if self.leader.leader_quota:
+                # Jika ini adalah foreman baru
+                if not self.pk:
+                    self.leader.leader_quota.current_foreman_count += 1
+                    self.leader.leader_quota.save()
+
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Update foreman count ketika foreman dihapus
+        if self.role == "foreman" and self.leader and self.leader.leader_quota:
+            self.leader.leader_quota.current_foreman_count -= 1
+            self.leader.leader_quota.save()
+
+        super().delete(*args, **kwargs)
 
 
 class ActivityReport(models.Model):
@@ -35,12 +95,6 @@ class ActivityReport(models.Model):
         ("pending", "Pending"),
         ("approved", "Approved"),
         ("rejected", "Rejected"),
-    ]
-    LEADER_CHOICES = [
-        ("Leader_1", "YUDI SULISTIYONO"),
-        ("Leader_2", "DWI ARI PRASETYA"),
-        ("Leader_3", "ADI RIYANTO"),
-        ("Leader_4", "MOH FADHOLI"),
     ]
 
     COMPONENT_CHOICES = [
@@ -108,9 +162,6 @@ class ActivityReport(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     activities = models.TextField()
-    leader = models.CharField(
-        max_length=100, choices=LEADER_CHOICES, blank=True, null=True
-    )
     Unit_Code = models.CharField(max_length=100, blank=True, null=True)
     Hmkm = models.CharField(max_length=100, blank=True, null=True)
     component = models.CharField(
@@ -119,14 +170,19 @@ class ActivityReport(models.Model):
     activities_code = models.CharField(
         max_length=100, choices=ACTIVITIES_CHOICES, blank=True, null=True
     )
-    
+
     # Tambahkan field status dan feedback
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     feedback = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
-class AnalysisReport(models.Model):
 
+class AnalysisReport(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
     SECTION_CHOICES = [
         ("PC1250", "PC1250"),
         ("CAT395", "CAT395"),
@@ -150,7 +206,7 @@ class AnalysisReport(models.Model):
         ("8000", "Attachment"),
         ("9000", "Periodical Services"),
     ]
-    
+
     foreman = models.ForeignKey(
         User, on_delete=models.CASCADE, limit_choices_to={"role": "foreman"}
     )
@@ -163,41 +219,47 @@ class AnalysisReport(models.Model):
     WO_Number = models.CharField(max_length=100, blank=True, null=True)
     WO_date = models.DateField()
     unit_code = models.CharField(max_length=100, blank=True, null=True)
-    problem = models.CharField(max_length=100, choices=PROBLEM_CHOICES, blank=True, null=True)
+    problem = models.CharField(
+        max_length=100, choices=PROBLEM_CHOICES, blank=True, null=True
+    )
     Trouble_date = models.DateField()
     Hm = models.CharField(max_length=100, blank=True, null=True)
     title_problem = models.TextField()
     part_no = models.CharField(max_length=100, blank=True, null=True)
     part_name = models.CharField(max_length=100, blank=True, null=True)
-
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    feedback = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
 
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
-        ('activity_reminder', 'Activity Report Reminder'),
-        ('analysis_reminder', 'Analysis Report Reminder'),
+        ("activity_reminder", "Activity Report Reminder"),
+        ("analysis_reminder", "Analysis Report Reminder"),
     ]
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="notifications"
+    )
     notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
     title = models.CharField(max_length=200)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     # Auto-remove when task is completed
     auto_remove_on_completion = models.BooleanField(default=True)
-    
+
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user', 'is_read']),
-            models.Index(fields=['notification_type', 'created_at']),
+            models.Index(fields=["user", "is_read"]),
+            models.Index(fields=["notification_type", "created_at"]),
         ]
-    
+
     def __str__(self):
         return f"{self.user.username} - {self.title}"
-    
+
     @classmethod
     def create_activity_reminder(cls, user, hours_left):
         """Create activity report reminder"""
@@ -207,30 +269,30 @@ class Notification(models.Model):
         elif hours_left == 0.5:  # 30 minutes
             title = "🚨 Deadline Activity Report - 30 Menit Lagi!"
             message = "Segera isi activity report hari ini! Deadline dalam 30 menit lagi (18:00)."
-        elif hours_left == 1/6:  # 10 minutes
+        elif hours_left == 1 / 6:  # 10 minutes
             title = "🔥 URGENT: Activity Report - 10 Menit Lagi!"
             message = "URGENT! Activity report harus diisi sekarang! Deadline dalam 10 menit lagi (18:00)."
         else:
             return None
-        
+
         # Check if similar notification already exists today
         today = timezone.now().date()
         existing = cls.objects.filter(
             user=user,
-            notification_type='activity_reminder',
+            notification_type="activity_reminder",
             created_at__date=today,
-            title=title
+            title=title,
         ).exists()
-        
+
         if not existing:
             return cls.objects.create(
                 user=user,
-                notification_type='activity_reminder',
+                notification_type="activity_reminder",
                 title=title,
-                message=message
+                message=message,
             )
         return None
-    
+
     @classmethod
     def create_analysis_reminder(cls, user, days_left, missing_count):
         """Create analysis report reminder"""
@@ -239,31 +301,30 @@ class Notification(models.Model):
             message = f"Anda masih kekurangan {missing_count} analysis report bulan ini. Deadline dalam 3 hari lagi."
         else:
             return None
-        
+
         # Check if similar notification already exists this month
         today = timezone.now().date()
         existing = cls.objects.filter(
             user=user,
-            notification_type='analysis_reminder',
+            notification_type="analysis_reminder",
             created_at__month=today.month,
-            created_at__year=today.year
+            created_at__year=today.year,
         ).exists()
-        
+
         if not existing:
             return cls.objects.create(
                 user=user,
-                notification_type='analysis_reminder',
+                notification_type="analysis_reminder",
                 title=title,
-                message=message
+                message=message,
             )
         return None
-    
+
     @classmethod
     def remove_completed_notifications(cls, user, notification_type):
         """Remove notifications when task is completed"""
         cls.objects.filter(
             user=user,
             notification_type=notification_type,
-            auto_remove_on_completion=True
+            auto_remove_on_completion=True,
         ).delete()
-

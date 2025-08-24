@@ -12,16 +12,11 @@ from .forms import (
     EmployeeRegistrationForm,
     ActivityReportForm,
     AnalysisReportForm,
+    RoleBasedUserCreationForm,
+    LeaderQuotaForm,
 )
-from .models import User, ActivityReport, AnalysisReport, Notification
+from .models import User, ActivityReport, AnalysisReport, Notification, LeaderQuota
 
-
-def hello_world(request):
-    return render(request, "hello.html")
-
-
-def hello_template(request):
-    return render(request, "hello_template.html")
 
 
 def hello_world_tailwind(request):
@@ -66,6 +61,9 @@ def role_required(allowed_roles):
         return wrapped
     return decorator
 
+
+# LOGIN AND LOGOUT VIEW --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
+
 def login_view(request):
     if request.user.is_authenticated:
         # Redirect based on user role
@@ -75,8 +73,6 @@ def login_view(request):
             return redirect("leader_dashboard")  # Leader dashboard
         elif request.user.role == "foreman":
             return redirect("foreman_dashboard")
-        else:
-            return redirect("dashboard")  # Default dashboard
 
     if request.method == "POST":
         form = LoginForm(request, data=request.POST)
@@ -106,34 +102,54 @@ def login_view(request):
 
     return render(request, "login.html", {"form": form})
 
+def logout_view(request):
+    logout(request)
+    messages.success(request, "Anda telah berhasil logout.")
+    return redirect("login")
+
+
+# LEADER VIEW   --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
+
 
 @login_required
 @role_required(["leader"])
 def leader_dashboard(request):
-    # Mendapatkan statistik untuk dashboard
-    total_employees = User.objects.filter(role='foreman').count()
+    # Mendapatkan foreman yang berada di bawah leader ini
+    my_foremen = User.objects.filter(role='foreman', leader=request.user)
+    total_employees = my_foremen.count()
     
-    # Mendapatkan activity reports
+    # Mendapatkan activity reports hanya dari foreman yang berada di bawah leader ini
     today = timezone.now().date()
-    all_activity_reports = ActivityReport.objects.all()
+    my_foremen_reports = ActivityReport.objects.filter(foreman__in=my_foremen)
     
-    # Karena field status baru ditambahkan, kita perlu menggunakan pendekatan yang berbeda
-    # untuk menghitung laporan yang menunggu validasi dan yang sudah divalidasi
-    today_reports = all_activity_reports.filter(date=today).count()
+    # Statistik berdasarkan reports dari foreman bawahan
+    today_reports = my_foremen_reports.filter(date=today).count()
+    pending_validation = my_foremen_reports.filter(status='pending').count()
+    completed_reports = my_foremen_reports.filter(status__in=['approved', 'rejected']).count()
     
-    # Gunakan filter yang aman (tanpa status dulu)
-    recent_activity_reports = ActivityReport.objects.order_by('-date')[:5]
+    # Data untuk setiap tab - PASTIKAN NAMA VARIABEL SESUAI TEMPLATE
+    pending_activity_reports = my_foremen_reports.filter(status='pending').order_by('-date')
+    today_activity_reports = my_foremen_reports.filter(date=today).order_by('-date')
+    validated_reports = my_foremen_reports.filter(status__in=['approved', 'rejected']).order_by('-date')
+    
+    # Recent reports hanya dari foreman bawahan
+    recent_activity_reports = my_foremen_reports.order_by('-date')[:5]
     
     stats = {
         'total_employees': total_employees,
         'today_reports': today_reports,
-        'pending_validation': 0,  # Sementara set ke 0
-        'completed_reports': 0    # Sementara set ke 0
+        'pending_validation': pending_validation,
+        'completed_reports': completed_reports
     }
     
     context = {
         'stats': stats,
-        'recent_activity_reports': recent_activity_reports
+        'recent_activity_reports': recent_activity_reports,
+        'my_foremen': my_foremen,
+        'employees': my_foremen,  # Untuk tab employees-list
+        'pending_activity_reports': pending_activity_reports,  # Untuk tab pending-reports
+        'today_activity_reports': today_activity_reports,  # Untuk tab today-reports
+        'validated_reports': validated_reports,  # Untuk tab validated-reports
     }
     
     return render(request, "leader/leader_dashboard.html", context)
@@ -184,28 +200,24 @@ def leader_validation_activity(request):
     return render(request, "leader/leader_validation_activity.html", context)
 
 
-def logout_view(request):
-    logout(request)
-    messages.success(request, "Anda telah berhasil logout.")
-    return redirect("login")
 
 
-def register_view(request):
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+# def register_view(request):
+#     if request.user.is_authenticated:
+#         return redirect("dashboard")
 
-    if request.method == "POST":
-        form = RegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            messages.success(request, "Akun berhasil dibuat! Silakan login.")
-            return redirect("login")
-        else:
-            messages.error(request, "Terjadi kesalahan dalam pendaftaran.")
-    else:
-        form = RegisterForm()
+#     if request.method == "POST":
+#         form = RegisterForm(request.POST)
+#         if form.is_valid():
+#             user = form.save()
+#             messages.success("Akun berhasil dibuat! Silakan login.")
+#             return redirect("login")
+#         else:
+#             messages.error(request, "Terjadi kesalahan dalam pendaftaran.")
+#     else:
+#         form = RegisterForm()
 
-    return render(request, "register.html", {"form": form})
+#     return render(request, "register.html", {"form": form})
 
 
 
@@ -642,4 +654,49 @@ def api_get_notifications(request):
     return JsonResponse(data)
 
 
-# Tambahkan setelah fungsi is_admin yang sudah ada
+@login_required
+@role_required(["admin", "superadmin"])
+def create_user_with_role(request):
+    if request.method == 'POST':
+        form = RoleBasedUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"User {user.username} berhasil dibuat dengan role {user.role}.")
+            return redirect('admin_list')
+    else:
+        form = RoleBasedUserCreationForm()
+    
+    # Data untuk template
+    leader_quotas = LeaderQuota.objects.filter(is_active=True)
+    
+    return render(request, 'admin/create_user_role_based.html', {
+        'form': form,
+        'leader_quotas': leader_quotas
+    })
+
+@login_required
+@role_required(["admin", "superadmin"])
+def manage_leader_quota(request, quota_id=None):
+    if quota_id:
+        quota = get_object_or_404(LeaderQuota, id=quota_id)
+        form = LeaderQuotaForm(request.POST or None, instance=quota)
+    else:
+        form = LeaderQuotaForm(request.POST or None)
+    
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, "Kuota leader berhasil diperbarui.")
+        return redirect('leader_quota_list')
+    
+    return render(request, 'admin/manage_leader_quota.html', {
+        'form': form,
+        'quota': quota if quota_id else None
+    })
+
+@login_required
+@role_required(["admin", "superadmin"])
+def leader_quota_list(request):
+    quotas = LeaderQuota.objects.all().order_by('leader_name')
+    return render(request, 'admin/leader_quota_list.html', {
+        'quotas': quotas
+    })

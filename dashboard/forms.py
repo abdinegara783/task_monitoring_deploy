@@ -5,8 +5,18 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import widgets
 from .models import User as CustomUser
-from .models import User, ActivityReport, AnalysisReport
+from .models import User, ActivityReport, AnalysisReport, LeaderQuota
 from django.utils import timezone
+
+
+class LeaderQuotaForm(forms.ModelForm):
+    class Meta:
+        model = LeaderQuota
+        fields = ['leader_name', 'max_foreman']
+        widgets = {
+            'leader_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'max_foreman': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
 
 
 class LoginForm(AuthenticationForm):
@@ -239,7 +249,7 @@ class ActivityReportForm(forms.ModelForm):
         model = ActivityReport
         fields = [
             "date",
-            "leader",
+            "foreman",  # Changed from "leader" to "foreman"
             "Unit_Code",
             "Hmkm",
             "start_time",
@@ -255,7 +265,7 @@ class ActivityReportForm(forms.ModelForm):
                     "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
-            "leader": forms.Select(
+            "foreman": forms.Select(  # Changed from "leader" to "foreman"
                 attrs={
                     "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
@@ -304,7 +314,7 @@ class ActivityReportForm(forms.ModelForm):
         }
         labels = {
             "date": "Tanggal",
-            "leader": "Group Leader",
+            "foreman": "Foreman",  # Changed from "leader": "Group Leader" to "foreman": "Foreman"
             "Unit_Code": "Unit Code",
             "Hmkm": "HM/KM",
             "start_time": "Waktu Mulai",
@@ -438,3 +448,105 @@ class AnalysisReportForm(forms.ModelForm):
             raise forms.ValidationError("Tanggal trouble tidak boleh lebih besar dari tanggal laporan")
         
         return cleaned_data
+
+class RoleBasedUserCreationForm(forms.ModelForm):
+    password1 = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={
+            "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm",
+            "placeholder": "Masukkan password",
+        }),
+    )
+    password2 = forms.CharField(
+        label="Konfirmasi Password",
+        widget=forms.PasswordInput(attrs={
+            "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm",
+            "placeholder": "Konfirmasi password",
+        }),
+    )
+    
+    class Meta:
+        model = User
+        fields = [
+            "username", "email", "first_name", "last_name", "name",
+            "phone", "nrp", "role", "department", "shift", "leader"
+        ]
+        widgets = {
+            "role": forms.Select(attrs={
+                "class": "select-field",
+                "onchange": "toggleLeaderField()"
+            }),
+            "leader": forms.Select(attrs={
+                "class": "select-field",
+                "id": "leader-field"
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter leader choices untuk yang memiliki kuota tersedia
+        available_leaders = User.objects.filter(
+            role='leader',
+            leader_quota__isnull=False,
+            leader_quota__is_active=True
+        ).filter(
+            models.Q(leader_quota__current_foreman_count__lt=models.F('leader_quota__max_foreman'))
+        )
+        
+        self.fields['leader'].queryset = available_leaders
+        self.fields['leader'].required = False
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get('role')
+        leader = cleaned_data.get('leader')
+        
+        if role == 'foreman':
+            if not leader:
+                raise forms.ValidationError("Foreman harus memiliki leader.")
+            
+            # Validasi kuota leader
+            if leader.leader_quota and not leader.leader_quota.can_add_foreman():
+                raise forms.ValidationError(
+                    f"Leader {leader.name} sudah mencapai kuota maksimum foreman."
+                )
+        
+        elif role == 'leader':
+            if leader:
+                raise forms.ValidationError("Leader tidak boleh memiliki leader.")
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.set_password(self.cleaned_data["password1"])
+        
+        if commit:
+            user.save()
+            
+            # Jika membuat leader baru, buat LeaderQuota
+            if user.role == 'leader':
+                LeaderQuota.objects.get_or_create(
+                    leader_name=user.name or user.username,
+                    defaults={'max_foreman': 0}  # Admin harus set kuota manual
+                )
+        
+        return user
+
+class LeaderQuotaForm(forms.ModelForm):
+    class Meta:
+        model = LeaderQuota
+        fields = ['leader_name', 'max_foreman', 'is_active']
+        widgets = {
+            'leader_name': forms.TextInput(attrs={
+                'class': 'input-field',
+                'readonly': True
+            }),
+            'max_foreman': forms.NumberInput(attrs={
+                'class': 'input-field',
+                'min': '0'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'checkbox-field'
+            })
+        }
