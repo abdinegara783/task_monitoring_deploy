@@ -16,6 +16,8 @@ from .forms import (
     LeaderQuotaForm,
 )
 from .models import User, ActivityReport, AnalysisReport, Notification, LeaderQuota
+import csv
+from django.http import HttpResponse
 
 
 
@@ -221,11 +223,47 @@ def leader_validation_activity(request):
 
 
 
+
+# ADMIN VIEW   --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
+
+
+
+
+
 # Ganti decorator untuk admin_dashboard
 @login_required
-@role_required(["admin"])
+@role_required(["admin", "superadmin"])
 def admin_dashboard(request):
-    return render(request, "admin/admin_dashboard.html")
+    # Statistik untuk admin
+    total_users = User.objects.count()
+    total_leaders = User.objects.filter(role='leader').count()
+    total_foremen = User.objects.filter(role='foreman').count()
+    pending_reports = ActivityReport.objects.filter(status='pending').count()
+    validated_reports = ActivityReport.objects.filter(status__in=['approved', 'rejected']).count()
+    
+    # Data untuk tabs
+    pending_activity_reports = ActivityReport.objects.filter(status='pending').order_by('-date')
+    validated_activity_reports = ActivityReport.objects.filter(status__in=['approved', 'rejected']).order_by('-date')
+    all_users = User.objects.all().order_by('-date_joined')
+    leader_quotas = LeaderQuota.objects.all().order_by('leader_name')
+    
+    stats = {
+        'total_users': total_users,
+        'total_leaders': total_leaders,
+        'total_foremen': total_foremen,
+        'pending_reports': pending_reports,
+        'validated_reports': validated_reports
+    }
+    
+    context = {
+        'stats': stats,
+        'pending_activity_reports': pending_activity_reports,
+        'validated_activity_reports': validated_activity_reports,
+        'all_users': all_users,
+        'leader_quotas': leader_quotas,
+    }
+    
+    return render(request, "admin/admin_dashboard.html", context)
 
 
 # Ganti decorator untuk admin_list
@@ -329,6 +367,14 @@ def admin_delete(request, user_id):
     return render(request, "admin/admin_delete.html", {"employee": employee})
 
 
+
+
+
+# FOREMAN VIEW   --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
+
+
+
+
 @login_required
 @role_required(["foreman"])
 def Foreman_dashboard(request):
@@ -423,7 +469,7 @@ def Foreman_dashboard(request):
                     "unit_code": report.Unit_Code or "-",
                     "component": report.component or "-",
                     "activities": report.activities or "Tidak ada deskripsi",
-                    "leader": report.leader or "-",
+                    "leader": getattr(report.foreman, 'leader', None) and getattr(report.foreman.leader, 'name', None) or "-",
                     "hmkm": report.Hmkm or "-",
                     "activities_code": report.activities_code or "-",
                 },
@@ -497,28 +543,19 @@ def Foreman_dashboard(request):
 @login_required
 @role_required(["foreman"])
 def create_activity_report(request):
-    """Create activity report view"""
     if request.method == "POST":
-        form = ActivityReportForm(request.POST, user=request.user)
+        form = ActivityReportForm(request.POST)
         if form.is_valid():
             activity_report = form.save(commit=False)
             activity_report.foreman = request.user
-            activity_report.shift = request.user.shift
+            activity_report.status = 'pending'  # Set default status
             activity_report.save()
-            messages.success(request, "Activity Report berhasil dibuat!")
-            return redirect("foreman_dashboard")  # Redirect to correct view name
-        else:
-            messages.error(
-                request, "Terjadi kesalahan dalam pembuatan Activity Report."
-            )
+            messages.success(request, "Laporan aktivitas berhasil dibuat!")
+            return redirect("foreman_dashboard")
     else:
-        form = ActivityReportForm(user=request.user)
-
-    return render(
-        request,
-        "foreman/foreman_create_activity_report.html",
-        {"form": form, "user": request.user},
-    )
+        form = ActivityReportForm()
+    
+    return render(request, "foreman/foreman_create_activity_report.html", {"form": form})
 
 
 @login_required
@@ -542,6 +579,21 @@ def create_analysis_report(request):
     context = {"form": form, "user": request.user}
 
     return render(request, "foreman/create_analysis_report.html", context)
+
+
+@login_required
+@role_required(["foreman"])
+def foreman_report_status(request):
+    # Get all reports for current foreman
+    activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by('-date')
+    analysis_reports = AnalysisReport.objects.filter(foreman=request.user).order_by('-report_date')
+    
+    context = {
+        'activity_reports': activity_reports,
+        'analysis_reports': analysis_reports,
+    }
+    
+    return render(request, "foreman/report_status.html", context)
 
 
 @login_required
@@ -700,3 +752,52 @@ def leader_quota_list(request):
     return render(request, 'admin/leader_quota_list.html', {
         'quotas': quotas
     })
+
+@login_required
+@role_required(["admin", "superadmin"])
+def export_reports_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="activity_reports.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Foreman', 'Leader', 'Unit Code', 'Component', 'Activities', 'Status', 'Feedback'])
+    
+    reports = ActivityReport.objects.all().order_by('-date')
+    for report in reports:
+        writer.writerow([
+            report.date,
+            report.foreman.name or report.foreman.username,
+            report.foreman.leader.name if report.foreman.leader else '-',
+            report.Unit_Code or '-',
+            report.component or '-',
+            report.activities,
+            report.status,
+            report.feedback or '-'
+        ])
+    
+    return response
+
+@login_required
+@role_required(["admin", "superadmin"])
+def export_users_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="users.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Username', 'Email', 'Role', 'Department', 'Leader', 'NRP', 'Phone', 'Shift'])
+    
+    users = User.objects.all().order_by('role', 'name')
+    for user in users:
+        writer.writerow([
+            user.name or user.username,
+            user.username,
+            user.email,
+            user.role,
+            user.department or '-',
+            user.leader.name if user.leader else '-',
+            user.nrp or '-',
+            user.phone or '-',
+            user.shift
+        ])
+    
+    return response

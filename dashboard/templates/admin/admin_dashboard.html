@@ -8,7 +8,7 @@
     <div class="flex items-center justify-between mb-6 p-4 bg-white rounded-lg shadow-sm border">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">Sistem Pelaporan Kerja</h1>
-            <p class="text-gray-600">Dashboard Real-time Monitoring & Validasi</p>
+            <p class="text-gray-600">Dashboard Admin - Monitoring & Management</p>
         </div>
         
         <div class="flex items-center gap-4">
@@ -27,13 +27,13 @@
             <!-- User Menu -->
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span class="text-white font-medium">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                    <span class="text-white font-medium">{{ user.first_name.0|default:user.username.0 }}{{ user.last_name.0 }}</span>
                 </div>
                 <div class="text-left">
-                    <p class="font-semibold text-sm">{{ user.get_full_name }}</p>
-                    <p class="text-xs text-gray-600">{{ user.department }}</p>
+                    <p class="font-semibold text-sm">{{ user.name|default:user.username }}</p>
+                    <p class="text-xs text-gray-600">Admin - {{ user.department|default:'General' }}</p>
                 </div>
-                <a href="" class="ml-2 px-3 py-1 text-red-600 hover:bg-red-50 rounded-md text-sm flex items-center">
+                <a href="{% url 'logout' %}" class="ml-2 px-3 py-1 text-red-600 hover:bg-red-50 rounded-md text-sm flex items-center">
                     <i data-lucide="log-out" class="w-4 h-4 mr-1"></i>
                     Keluar
                 </a>
@@ -42,76 +42,366 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-lg shadow-sm border p-4">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <!-- Total Users Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-users">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600">Total Karyawan</p>
-                    <p class="text-2xl font-bold">{{ stats.total_employees }}</p>
+                    <p class="text-sm text-gray-600">Total Users</p>
+                    <p class="text-2xl font-bold">{{ stats.total_users }}</p>
                 </div>
                 <i data-lucide="users" class="w-8 h-8 text-blue-500"></i>
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-sm border p-4">
+        <!-- Total Leaders Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-leaders">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600">Laporan Hari Ini</p>
-                    <p class="text-2xl font-bold">{{ stats.today_reports }}</p>
+                    <p class="text-sm text-gray-600">Total Leaders</p>
+                    <p class="text-2xl font-bold">{{ stats.total_leaders }}</p>
                 </div>
-                <i data-lucide="file-text" class="w-8 h-8 text-green-500"></i>
+                <i data-lucide="crown" class="w-8 h-8 text-purple-500"></i>
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-sm border p-4">
+        <!-- Total Foremen Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-foremen">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600">Menunggu Validasi</p>
-                    <p class="text-2xl font-bold">{{ stats.pending_validation }}</p>
+                    <p class="text-sm text-gray-600">Total Foremen</p>
+                    <p class="text-2xl font-bold">{{ stats.total_foremen }}</p>
                 </div>
-                <i data-lucide="alert-circle" class="w-8 h-8 text-orange-500"></i>
+                <i data-lucide="hard-hat" class="w-8 h-8 text-orange-500"></i>
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-sm border p-4">
+        <!-- Pending Reports Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-pending">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-gray-600">Sudah Divalidasi</p>
-                    <p class="text-2xl font-bold">{{ stats.completed_reports }}</p>
+                    <p class="text-sm text-gray-600">Pending Reports</p>
+                    <p class="text-2xl font-bold">{{ stats.pending_reports }}</p>
                 </div>
-                <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+                <i data-lucide="alert-circle" class="w-8 h-8 text-yellow-500"></i>
             </div>
         </div>
+        
+        <!-- Validated Reports Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-validated">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Validated Reports</p>
+                    <p class="text-2xl font-bold">{{ stats.validated_reports }}</p>
+                </div>
+                <i data-lucide="check-circle" class="w-8 h-8 text-green-500"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-4 mb-6">
+        <a href="{% url 'admin_list' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            Tambah User Baru
+        </a>
+        <a href="{% url 'export_reports_csv' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download CSV Reports
+        </a>
+        <a href="{% url 'export_users_csv' %}" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download CSV Users
+        </a>
     </div>
 
     <!-- Navigation Tabs -->
     <div class="bg-white rounded-lg shadow-sm border mb-6">
         <div class="border-b">
             <nav class="flex space-x-8 px-6">
-                <a href="" class="py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
-                    Validasi Laporan
+                <a href="#" class="py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 tab-link active" data-tab="pending-reports">
+                    Laporan Pending
                 </a>
-                <a href="" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    Monitoring Foreman
-                </a>
-                <a href="" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="validated-reports">
                     Laporan Tervalidasi
+                </a>
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="user-management">
+                    Manajemen User
+                </a>
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="leader-quota">
+                    Kuota Leader
                 </a>
             </nav>
         </div>
         
+        <!-- Tab Content -->
         <div class="p-6">
-            <div class="flex items-center gap-2 mb-4">
-                <i data-lucide="file-text" class="w-5 h-5"></i>
-                <h2 class="text-xl font-bold">Laporan Foreman Menunggu Validasi</h2>
+            <!-- Pending Reports Tab -->
+            <div class="tab-content active" id="pending-reports">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                        <h2 class="text-xl font-bold">Laporan Menunggu Validasi</h2>
+                    </div>
+                    <span class="text-sm text-gray-500">Admin hanya dapat melihat, tidak dapat melakukan validasi</span>
+                </div>
+                
+                {% if pending_activity_reports %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foreman</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for report in pending_activity_reports %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name|default:report.foreman.username }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.leader.name|default:report.foreman.leader.username|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.component|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                        Menunggu Validasi
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <button onclick="viewReport({{ report.id }})" class="text-blue-600 hover:text-blue-900">Lihat Detail</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="clipboard-list" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada laporan yang menunggu validasi</p>
+                </div>
+                {% endif %}
             </div>
-            <p class="text-gray-600 mb-6">
-                Klik pada laporan untuk melihat detail dan melakukan validasi
-            </p>
             
-            <div class="text-center py-8">
-                <i data-lucide="clipboard-list" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
-                <p class="text-gray-500">Silakan pilih tab di atas untuk melihat laporan yang perlu divalidasi</p>
+            <!-- Validated Reports Tab -->
+            <div class="tab-content hidden" id="validated-reports">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    <h2 class="text-xl font-bold">Laporan Tervalidasi</h2>
+                </div>
+                
+                {% if validated_activity_reports %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foreman</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validated By</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for report in validated_activity_reports %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name|default:report.foreman.username }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.leader.name|default:report.foreman.leader.username|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if report.status == 'approved' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Disetujui
+                                    </span>
+                                    {% elif report.status == 'rejected' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Ditolak
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.leader.name|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <button onclick="viewReport({{ report.id }})" class="text-blue-600 hover:text-blue-900">Lihat Detail</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="check-circle" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada laporan tervalidasi</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- User Management Tab -->
+            <div class="tab-content hidden" id="user-management">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="users" class="w-5 h-5"></i>
+                        <h2 class="text-xl font-bold">Manajemen User</h2>
+                    </div>
+                    <a href="{% url 'admin_list' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        Tambah User
+                    </a>
+                </div>
+                
+                {% if all_users %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for user in all_users %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.name|default:user.username }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.username }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if user.role == 'superadmin' %}bg-purple-100 text-purple-800
+                                        {% elif user.role == 'admin' %}bg-blue-100 text-blue-800
+                                        {% elif user.role == 'leader' %}bg-green-100 text-green-800
+                                        {% elif user.role == 'foreman' %}bg-orange-100 text-orange-800
+                                        {% endif %}">
+                                        {{ user.get_role_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ user.department|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.foreman.leader %}
+                                        {{ report.foreman.leader.name|default:report.foreman.leader.username }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if user.is_active %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Aktif
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Nonaktif
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div class="flex gap-2">
+                                        <a href="{% url 'admin_edit' user.id %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                                        <a href="{% url 'admin_detail' user.id %}" class="text-green-600 hover:text-green-900">Detail</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="users" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada user yang terdaftar</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Leader Quota Tab -->
+            <div class="tab-content hidden" id="leader-quota">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                        <h2 class="text-xl font-bold">Manajemen Kuota Leader</h2>
+                    </div>
+                    <a href="{% url 'admin_list' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Tambah Kuota
+                    </a>
+                </div>
+                
+                {% if leader_quotas %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Foreman</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Count</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for quota in leader_quotas %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.leader_name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.max_foreman }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.current_foreman_count }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.max_foreman|add:quota.current_foreman_count|add:"-"|add:quota.current_foreman_count }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if quota.is_active %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Aktif
+                                    </span>
+                                    {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Nonaktif
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{% url 'admin_list' %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="settings" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada kuota leader yang terdaftar</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Detail Modal -->
+<div id="reportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Detail Laporan</h3>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div id="reportContent">
+                    <!-- Content will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -127,5 +417,58 @@
     
     updateTime();
     setInterval(updateTime, 1000);
+    
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all tabs
+                tabLinks.forEach(tab => tab.classList.remove('active', 'border-blue-500', 'text-blue-600'));
+                tabLinks.forEach(tab => tab.classList.add('border-transparent', 'text-gray-500'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active', 'border-blue-500', 'text-blue-600');
+                this.classList.remove('border-transparent', 'text-gray-500');
+                
+                // Hide all tab contents
+                tabContents.forEach(content => content.classList.add('hidden'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Show the selected tab content
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.remove('hidden');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Card click handlers
+        document.getElementById('show-pending').addEventListener('click', function() {
+            document.querySelector('[data-tab="pending-reports"]').click();
+        });
+        
+        document.getElementById('show-validated').addEventListener('click', function() {
+            document.querySelector('[data-tab="validated-reports"]').click();
+        });
+        
+        document.getElementById('show-users').addEventListener('click', function() {
+            document.querySelector('[data-tab="user-management"]').click();
+        });
+    });
+    
+    // Modal functions
+    function viewReport(reportId) {
+        // You can implement AJAX call to get report details
+        document.getElementById('reportModal').classList.remove('hidden');
+        // Load report content via AJAX or redirect to detail page
+    }
+    
+    function closeModal() {
+        document.getElementById('reportModal').classList.add('hidden');
+    }
 </script>
 {% endblock %}

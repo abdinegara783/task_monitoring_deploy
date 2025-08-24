@@ -48,4 +48,9 @@ urlpatterns = [
     # Notification URLs
     path("notifications/", views.notifications_view, name="notifications"),
     path("api/notifications/", views.api_get_notifications, name="api_notifications"),
+    # Tambahkan ke urlpatterns
+    path('export/reports/', views.export_reports_csv, name='export_reports_csv'),
+    path('export/users/', views.export_users_csv, name='export_users_csv'),
+    # Tambahkan ke urlpatterns
+    path('foreman/report-status/', views.foreman_report_status, name='foreman_report_status'),
 ]
