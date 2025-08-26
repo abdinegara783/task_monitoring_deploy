@@ -243,13 +243,11 @@ class EmployeeRegistrationForm(forms.ModelForm):
 
 
 class ActivityReportForm(forms.ModelForm):
-    """Form untuk membuat Activity Report"""
-
     class Meta:
         model = ActivityReport
         fields = [
             "date",
-            "foreman",  # Changed from "leader" to "foreman"
+            "shift",  # Tambahkan shift yang hilang
             "Unit_Code",
             "Hmkm",
             "start_time",
@@ -257,7 +255,7 @@ class ActivityReportForm(forms.ModelForm):
             "component",
             "activities",
             "activities_code",
-        ]
+        ]  # Hapus "foreman" dari fields
         widgets = {
             "date": forms.DateInput(
                 attrs={
@@ -265,7 +263,7 @@ class ActivityReportForm(forms.ModelForm):
                     "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
-            "foreman": forms.Select(  # Changed from "leader" to "foreman"
+            "shift": forms.Select(
                 attrs={
                     "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
@@ -314,7 +312,7 @@ class ActivityReportForm(forms.ModelForm):
         }
         labels = {
             "date": "Tanggal",
-            "foreman": "Foreman",  # Changed from "leader": "Group Leader" to "foreman": "Foreman"
+            "shift": "Shift",
             "Unit_Code": "Unit Code",
             "Hmkm": "HM/KM",
             "start_time": "Waktu Mulai",
@@ -325,14 +323,11 @@ class ActivityReportForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-
-        # Set default date to today
-        if not self.instance.pk:
-            from django.utils import timezone
-
-            self.fields["date"].initial = timezone.now().date()
+        # Set default values
+        if not self.instance.pk:  # Only for new instances
+            self.fields['date'].initial = timezone.now().date()
+            self.fields['shift'].initial = 1
 
 
 class AnalysisReportForm(forms.ModelForm):
@@ -488,7 +483,7 @@ class RoleBasedUserCreationForm(forms.ModelForm):
         available_leaders = User.objects.filter(
             role='leader',
             leader_quota__isnull=False,
-            leader_quota__is_active=True
+            leader_quota__is_active=True,
         ).filter(
             models.Q(leader_quota__current_foreman_count__lt=models.F('leader_quota__max_foreman'))
         )

@@ -120,37 +120,76 @@ def leader_dashboard(request):
     my_foremen = User.objects.filter(role='foreman', leader=request.user)
     total_employees = my_foremen.count()
     
-    # Mendapatkan activity reports hanya dari foreman yang berada di bawah leader ini
+    # Mendapatkan activity reports dan analysis reports dari foreman bawahan
     today = timezone.now().date()
-    my_foremen_reports = ActivityReport.objects.filter(foreman__in=my_foremen)
+    my_foremen_activity_reports = ActivityReport.objects.filter(foreman__in=my_foremen)
+    my_foremen_analysis_reports = AnalysisReport.objects.filter(foreman__in=my_foremen)
     
-    # Statistik berdasarkan reports dari foreman bawahan
-    today_reports = my_foremen_reports.filter(date=today).count()
-    pending_validation = my_foremen_reports.filter(status='pending').count()
-    completed_reports = my_foremen_reports.filter(status__in=['approved', 'rejected']).count()
+    # Gabungkan kedua jenis laporan dengan menambahkan field 'report_type'
+    combined_reports = []
     
-    # Data untuk setiap tab - PASTIKAN NAMA VARIABEL SESUAI TEMPLATE
-    pending_activity_reports = my_foremen_reports.filter(status='pending').order_by('-date')
-    today_activity_reports = my_foremen_reports.filter(date=today).order_by('-date')
-    validated_reports = my_foremen_reports.filter(status__in=['approved', 'rejected']).order_by('-date')
+    # Tambahkan activity reports
+    for report in my_foremen_activity_reports:
+        combined_reports.append({
+            'id': report.id,
+            'date': report.date,
+            'foreman': report.foreman,
+            'unit_code': report.Unit_Code,
+            'component': report.component,
+            'activities': report.activities_code,
+            'status': report.status,
+            'report_type': 'activity',
+            'report_type_display': 'Activity Report',
+            'validation_url': 'leader_validation_activity',
+            'created_at': report.created_at or report.date,
+        })
     
-    # Recent reports hanya dari foreman bawahan
-    recent_activity_reports = my_foremen_reports.order_by('-date')[:5]
+    # Tambahkan analysis reports
+    for report in my_foremen_analysis_reports:
+        combined_reports.append({
+            'id': report.id,
+            'date': report.report_date,
+            'foreman': report.foreman,
+            'unit_code': report.unit_code,
+            'component': report.get_problem_display() if report.problem else '-',
+            'activities': report.title_problem[:50] + '...' if len(report.title_problem) > 50 else report.title_problem,
+            'status': report.status,
+            'report_type': 'analysis',
+            'report_type_display': 'Analysis Report',
+            'validation_url': 'leader_validation_analysis',
+            'created_at': report.created_at or report.report_date,
+        })
+    
+    # Sort berdasarkan tanggal terbaru
+    combined_reports.sort(key=lambda x: x['created_at'], reverse=True)
+    
+    # Filter berdasarkan status dan tanggal
+    pending_reports = [r for r in combined_reports if r['status'] == 'pending']
+    today_reports = [r for r in combined_reports if r['date'] == today]
+    validated_reports = [r for r in combined_reports if r['status'] in ['approved', 'rejected']]
+    
+    # Statistik
+    today_reports_count = len(today_reports)
+    pending_validation_count = len(pending_reports)
+    completed_reports_count = len(validated_reports)
+    
+    # Recent reports (5 terbaru)
+    recent_reports = combined_reports[:5]
     
     stats = {
         'total_employees': total_employees,
-        'today_reports': today_reports,
-        'pending_validation': pending_validation,
-        'completed_reports': completed_reports
+        'today_reports': today_reports_count,
+        'pending_validation': pending_validation_count,
+        'completed_reports': completed_reports_count
     }
     
     context = {
         'stats': stats,
-        'recent_activity_reports': recent_activity_reports,
+        'recent_reports': recent_reports,
         'my_foremen': my_foremen,
         'employees': my_foremen,  # Untuk tab employees-list
-        'pending_activity_reports': pending_activity_reports,  # Untuk tab pending-reports
-        'today_activity_reports': today_activity_reports,  # Untuk tab today-reports
+        'pending_reports': pending_reports,  # Untuk tab pending-reports
+        'today_reports': today_reports,  # Untuk tab today-reports
         'validated_reports': validated_reports,  # Untuk tab validated-reports
     }
     
@@ -546,12 +585,20 @@ def create_activity_report(request):
     if request.method == "POST":
         form = ActivityReportForm(request.POST)
         if form.is_valid():
-            activity_report = form.save(commit=False)
-            activity_report.foreman = request.user
-            activity_report.status = 'pending'  # Set default status
-            activity_report.save()
-            messages.success(request, "Laporan aktivitas berhasil dibuat!")
-            return redirect("foreman_dashboard")
+            try:
+                activity_report = form.save(commit=False)
+                activity_report.foreman = request.user  # Set foreman dari user yang login
+                activity_report.status = 'pending'  # Set default status
+                activity_report.save()
+                messages.success(request, "Laporan aktivitas berhasil dibuat dan menunggu validasi leader!")
+                return redirect("foreman_dashboard")
+            except Exception as e:
+                messages.error(request, f"Gagal menyimpan laporan: {str(e)}")
+                print(f"Error saving activity report: {e}")  # For debugging
+        else:
+            # Print form errors for debugging
+            print(f"Form errors: {form.errors}")
+            messages.error(request, "Ada kesalahan dalam form. Silakan periksa kembali.")
     else:
         form = ActivityReportForm()
     
@@ -578,7 +625,7 @@ def create_analysis_report(request):
 
     context = {"form": form, "user": request.user}
 
-    return render(request, "foreman/create_analysis_report.html", context)
+    return render(request, "foreman/foreman_create_analysis_report.html", context)
 
 
 @login_required

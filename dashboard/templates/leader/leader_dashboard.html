@@ -119,12 +119,13 @@
                     Klik pada laporan untuk melihat detail dan melakukan validasi
                 </p>
                 
-                {% if pending_activity_reports %}
+                {% if pending_reports %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foreman</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
@@ -134,20 +135,31 @@
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for report in pending_activity_reports %}
+                            {% for report in pending_reports %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.report_type == 'activity' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            📝 Activity
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            📊 Analysis
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.component|default:'-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities_code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities|default:'-' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
                                         Menunggu Validasi
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <a href="{% url 'leader_validation_activity' %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Validasi</a>
+                                    <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Validasi</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -209,48 +221,56 @@
                     <h2 class="text-xl font-bold">Laporan Hari Ini</h2>
                 </div>
                 
-                {% if today_activity_reports %}
+                {% if today_reports %}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foreman</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktivitas</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            {% for report in today_activity_reports %}
+                            {% for report in today_reports %}
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.start_time }} - {{ report.end_time }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.report_type == 'activity' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            📝 Activity
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            📊 Analysis
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.component|default:'-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities_code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     {% if report.status == 'pending' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
-                                        Menunggu Validasi
-                                    </span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                            Menunggu
+                                        </span>
                                     {% elif report.status == 'approved' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Disetujui
-                                    </span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Disetujui
+                                        </span>
                                     {% elif report.status == 'rejected' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Ditolak
-                                    </span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Ditolak
+                                        </span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {% if report.status == 'pending' %}
-                                    <a href="{% url 'leader_validation_activity' %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Validasi</a>
+                                        <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Validasi</a>
                                     {% else %}
-                                    <a href="{% url 'leader_validation_activity' %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Lihat</a>
+                                        <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-gray-600 hover:text-gray-900">Lihat</a>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -279,10 +299,9 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foreman</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktivitas</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
@@ -291,23 +310,32 @@
                             {% for report in validated_reports %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.report_type == 'activity' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            📝 Activity
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            📊 Analysis
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.component|default:'-' }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities_code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     {% if report.status == 'approved' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Disetujui
-                                    </span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            ✅ Disetujui
+                                        </span>
                                     {% elif report.status == 'rejected' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Ditolak
-                                    </span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            ❌ Ditolak
+                                        </span>
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <a href="{% url 'leader_validation_activity' %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Lihat</a>
+                                    <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-gray-600 hover:text-gray-900">Lihat Detail</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -317,7 +345,7 @@
                 {% else %}
                 <div class="text-center py-8">
                     <i data-lucide="check-circle" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
-                    <p class="text-gray-500">Tidak ada laporan tervalidasi</p>
+                    <p class="text-gray-500">Tidak ada laporan yang sudah divalidasi</p>
                 </div>
                 {% endif %}
             </div>
