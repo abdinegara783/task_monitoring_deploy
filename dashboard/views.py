@@ -198,12 +198,6 @@ def leader_dashboard(request):
 
 @login_required
 @role_required(["leader"])
-def leader_validation_analysis(request):
-    return render(request, "leader/leader_validation_analysis.html")
-
-
-@login_required
-@role_required(["leader"])
 def leader_validation_activity(request):
     report_id = request.GET.get('report_id')
     
@@ -212,9 +206,12 @@ def leader_validation_activity(request):
         return redirect('leader_dashboard')
     
     try:
-        report = ActivityReport.objects.get(id=report_id)
+        report = ActivityReport.objects.get(
+            id=report_id, 
+            foreman__leader=request.user
+        )
     except ActivityReport.DoesNotExist:
-        messages.error(request, "Laporan tidak ditemukan.")
+        messages.error(request, "Laporan tidak ditemukan atau Anda tidak memiliki akses.")
         return redirect('leader_dashboard')
     
     if request.method == "POST":
@@ -225,22 +222,62 @@ def leader_validation_activity(request):
             report.status = 'approved'
             report.feedback = feedback
             report.save()
-            messages.success(request, "Laporan berhasil disetujui.")
+            messages.success(request, "Laporan aktivitas berhasil disetujui.")
             return redirect('leader_dashboard')
         elif action == 'reject':
             report.status = 'rejected'
             report.feedback = feedback
             report.save()
-            messages.success(request, "Laporan berhasil ditolak.")
+            messages.success(request, "Laporan aktivitas berhasil ditolak.")
             return redirect('leader_dashboard')
     
     context = {
         'report': report
     }
     
-    return render(request, "leader/leader_validation_activity.html", context)
+    return render(request, "leader/leader_validation_activity_new.html", context)
 
 
+@login_required
+@role_required(["leader"])
+def leader_validation_analysis(request):
+    report_id = request.GET.get('report_id')
+    
+    if not report_id:
+        messages.error(request, "ID laporan tidak ditemukan.")
+        return redirect('leader_dashboard')
+    
+    try:
+        report = AnalysisReport.objects.get(
+            id=report_id, 
+            foreman__leader=request.user
+        )
+    except AnalysisReport.DoesNotExist:
+        messages.error(request, "Laporan tidak ditemukan atau Anda tidak memiliki akses.")
+        return redirect('leader_dashboard')
+    
+    if request.method == "POST":
+        action = request.POST.get('action')
+        feedback = request.POST.get('feedback', '')
+        
+        if action == 'approve':
+            report.status = 'approved'
+            report.feedback = feedback
+            report.save()
+            messages.success(request, "Laporan analisis berhasil disetujui.")
+            return redirect('leader_dashboard')
+        elif action == 'reject':
+            report.status = 'rejected'
+            report.feedback = feedback
+            report.save()
+            messages.success(request, "Laporan analisis berhasil ditolak.")
+            return redirect('leader_dashboard')
+    
+    context = {
+        'report': report
+    }
+    
+    return render(request, "leader/leader_validation_analysis_new.html", context)
 
 
 # def register_view(request):
