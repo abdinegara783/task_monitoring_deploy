@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Tambah User Baru - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Tambah User Baru</h1>
+                <p class="text-gray-600 mt-1">Buat akun pengguna baru untuk sistem</p>
+            </div>
+            <a href="{% url 'admin_dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                ← Kembali
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-sm border p-6">
+        <form method="post" id="createUserForm">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold mb-4 border-b pb-2">Informasi Dasar</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                        <input type="text" name="username" id="username" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Masukkan username">
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input type="email" name="email" id="email" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="user@company.com">
+                    </div>
+                    
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">Nama Depan *</label>
+                        <input type="text" name="first_name" id="first_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nama depan">
+                    </div>
+                    
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Nama Belakang *</label>
+                        <input type="text" name="last_name" id="last_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nama belakang">
+                    </div>
+                    
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                        <input type="text" name="name" id="name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nama lengkap (opsional)">
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
+                        <input type="text" name="phone" id="phone"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="08123456789">
+                    </div>
+                    
+                    <div>
+                        <label for="nrp" class="block text-sm font-medium text-gray-700 mb-2">NRP</label>
+                        <input type="text" name="nrp" id="nrp"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nomor Registrasi Pegawai">
+                    </div>
+                    
+                    <div>
+                        <label for="department" class="block text-sm font-medium text-gray-700 mb-2">Departemen</label>
+                        <select name="department" id="department"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Departemen</option>
+                            <option value="SUPPORT">Support & Fabrikasi</option>
+                            <option value="TRACK">Track</option>
+                            <option value="PLANT">Plant Coal Hauling</option>
+                            <option value="WHEEL">Wheel</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="shift" class="block text-sm font-medium text-gray-700 mb-2">Shift</label>
+                        <select name="shift" id="shift"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">Shift 1</option>
+                            <option value="2">Shift 2</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Role & Password -->
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold mb-4 border-b pb-2">Role & Akses</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="role" class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                        <select name="role" id="role" required onchange="handleRoleChange()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Role</option>
+                            <option value="admin">Admin</option>
+                            <option value="leader">Leader</option>
+                            <option value="foreman">Foreman</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Leader Selection (for Foreman) -->
+                    <div id="leaderSelection" class="hidden">
+                        <label for="leader" class="block text-sm font-medium text-gray-700 mb-2">Leader *</label>
+                        <select name="leader" id="leader"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Leader</option>
+                            {% for leader in available_leaders %}
+                            <option value="{{ leader.id }}">{{ leader.name|default:leader.username }} ({{ leader.department|default:'-' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="password1" class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                        <input type="password" name="password1" id="password1" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Masukkan password">
+                    </div>
+                    
+                    <div>
+                        <label for="password2" class="block text-sm font-medium text-gray-700 mb-2">Konfirmasi Password *</label>
+                        <input type="password" name="password2" id="password2" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Konfirmasi password">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Leader Quota Warning -->
+            <div id="leaderQuotaWarning" class="hidden mb-6">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Perhatian: Leader Quota</h3>
+                            <p class="text-sm text-yellow-700 mt-1">
+                                Untuk membuat Leader baru, Anda perlu mengatur Leader Quota terlebih dahulu. 
+                                Klik tombol "Atur Leader Quota" untuk melanjutkan.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Buttons -->
+            <div class="flex gap-4">
+                <button type="button" id="leaderQuotaBtn" class="hidden bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700"
+                        onclick="redirectToLeaderQuota()">
+                    Atur Leader Quota Dulu
+                </button>
+                
+                <button type="submit" id="submitBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                    Buat User
+                </button>
+                
+                <a href="{% url 'admin_dashboard' %}" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+                    Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function handleRoleChange() {
+    const roleSelect = document.getElementById('role');
+    const leaderSelection = document.getElementById('leaderSelection');
+    const leaderQuotaWarning = document.getElementById('leaderQuotaWarning');
+    const leaderQuotaBtn = document.getElementById('leaderQuotaBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const leaderField = document.getElementById('leader');
+    
+    const selectedRole = roleSelect.value;
+    
+    // Reset visibility
+    leaderSelection.classList.add('hidden');
+    leaderQuotaWarning.classList.add('hidden');
+    leaderQuotaBtn.classList.add('hidden');
+    submitBtn.classList.remove('hidden');
+    leaderField.removeAttribute('required');
+    
+    if (selectedRole === 'foreman') {
+        leaderSelection.classList.remove('hidden');
+        leaderField.setAttribute('required', 'required');
+    } else if (selectedRole === 'leader') {
+        leaderQuotaWarning.classList.remove('hidden');
+        leaderQuotaBtn.classList.remove('hidden');
+        submitBtn.classList.add('hidden');
+    }
+}
+
+function redirectToLeaderQuota() {
+    // Simpan form data ke sessionStorage
+    const formData = new FormData(document.getElementById('createUserForm'));
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    sessionStorage.setItem('pendingUserData', JSON.stringify(data));
+    
+    // Redirect ke halaman leader quota
+    window.location.href = '{% url "manage_leader_quota" %}';
+}
+
+// Auto-fill name field
+document.getElementById('first_name').addEventListener('input', updateFullName);
+document.getElementById('last_name').addEventListener('input', updateFullName);
+
+function updateFullName() {
+    const firstName = document.getElementById('first_name').value;
+    const lastName = document.getElementById('last_name').value;
+    const nameField = document.getElementById('name');
+    
+    if (firstName || lastName) {
+        nameField.value = `${firstName} ${lastName}`.trim();
+    }
+}
+
+// Load pending data if exists
+window.addEventListener('load', function() {
+    const pendingData = sessionStorage.getItem('pendingUserData');
+    if (pendingData) {
+        const data = JSON.parse(pendingData);
+        
+        // Fill form with pending data
+        for (let [key, value] of Object.entries(data)) {
+            const field = document.getElementById(key);
+            if (field) {
+                field.value = value;
+            }
+        }
+        
+        // Trigger role change
+        handleRoleChange();
+        
+        // Clear pending data
+        sessionStorage.removeItem('pendingUserData');
+    }
+});
+</script>
+{% endblock %}

@@ -18,7 +18,9 @@ from .forms import (
 from .models import User, ActivityReport, AnalysisReport, Notification, LeaderQuota
 import csv
 from django.http import HttpResponse
-
+from .services.pdf_service import PDFReportService
+from django.db.models import Q
+from datetime import datetime, timedelta
 
 
 def hello_world_tailwind(request):
@@ -635,11 +637,22 @@ def create_activity_report(request):
         else:
             # Print form errors for debugging
             print(f"Form errors: {form.errors}")
-            messages.error(request, "Ada kesalahan dalam form. Silakan periksa kembali.")
+            # Show specific field errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{form.fields[field].label}: {error}")
     else:
         form = ActivityReportForm()
     
-    return render(request, "foreman/foreman_create_activity_report.html", {"form": form})
+    # Get user with leader relationship
+    user_with_leader = User.objects.select_related('leader').get(id=request.user.id)
+    
+    context = {
+        "form": form,
+        "user": user_with_leader,  # Pass user with leader data
+    }
+    
+    return render(request, "foreman/foreman_create_activity_report.html", context)
 
 
 @login_required
@@ -794,21 +807,121 @@ def api_get_notifications(request):
 @role_required(["admin", "superadmin"])
 def create_user_with_role(request):
     if request.method == 'POST':
-        form = RoleBasedUserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            messages.success(request, f"User {user.username} berhasil dibuat dengan role {user.role}.")
-            return redirect('admin_list')
-    else:
-        form = RoleBasedUserCreationForm()
+        # Get form data
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        name = request.POST.get('name')
+        phone = request.POST.get('phone')
+        nrp = request.POST.get('nrp')
+        role = request.POST.get('role')
+        department = request.POST.get('department')
+        shift = request.POST.get('shift', 1)
+        leader_id = request.POST.get('leader')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+        
+        # Validation
+        if password1 != password2:
+            messages.error(request, "Password tidak cocok.")
+            return render(request, 'admin/create_user.html', get_create_user_context())
+        
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Username sudah digunakan.")
+            return render(request, 'admin/create_user.html', get_create_user_context())
+        
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email sudah digunakan.")
+            return render(request, 'admin/create_user.html', get_create_user_context())
+        
+        # Special handling for leader role
+        if role == 'leader':
+            # Check if leader quota exists
+            leader_name = name or f"{first_name} {last_name}".strip()
+            try:
+                quota = LeaderQuota.objects.get(leader_name=leader_name)
+                if not quota.is_active:
+                    messages.error(request, f"Leader quota untuk {leader_name} tidak aktif.")
+                    return render(request, 'admin/create_user.html', get_create_user_context())
+            except LeaderQuota.DoesNotExist:
+                messages.error(request, f"Leader quota untuk {leader_name} belum dibuat. Silakan buat quota terlebih dahulu.")
+                return render(request, 'admin/create_user.html', get_create_user_context())
+        
+        # Validation for foreman role
+        if role == 'foreman':
+            if not leader_id:
+                messages.error(request, "Leader harus dipilih untuk role foreman.")
+                return render(request, 'admin/create_user.html', get_create_user_context())
+            
+            try:
+                leader = User.objects.get(id=leader_id, role='leader')
+                
+                # Check leader quota
+                if leader.leader_quota:
+                    current_foremen = User.objects.filter(leader=leader).count()
+                    if current_foremen >= leader.leader_quota.max_foreman:
+                        messages.error(request, f"Leader {leader.name} sudah mencapai batas maksimal foreman ({leader.leader_quota.max_foreman}).")
+                        return render(request, 'admin/create_user.html', get_create_user_context())
+                
+            except User.DoesNotExist:
+                messages.error(request, "Leader tidak ditemukan.")
+                return render(request, 'admin/create_user.html', get_create_user_context())
+        
+        try:
+            # Create user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password1,
+                first_name=first_name,
+                last_name=last_name,
+                name=name,
+                phone=phone,
+                nrp=nrp,
+                role=role,
+                department=department,
+                shift=int(shift)
+            )
+            
+            # Set leader for foreman
+            if role == 'foreman' and leader_id:
+                leader = User.objects.get(id=leader_id)
+                user.leader = leader
+                user.save()
+                
+                # Update leader quota count
+                if leader.leader_quota:
+                    leader.leader_quota.current_foreman_count = User.objects.filter(leader=leader).count()
+                    leader.leader_quota.save()
+            
+            # Link leader quota for leader role
+            if role == 'leader':
+                try:
+                    quota = LeaderQuota.objects.get(leader_name=leader_name)
+                    user.leader_quota = quota
+                    user.save()
+                except LeaderQuota.DoesNotExist:
+                    pass
+            
+            messages.success(request, f"User {username} berhasil dibuat dengan role {role}.")
+            return redirect('admin_dashboard')
+            
+        except Exception as e:
+            messages.error(request, f"Gagal membuat user: {str(e)}")
+            return render(request, 'admin/create_user.html', get_create_user_context())
     
-    # Data untuk template
-    leader_quotas = LeaderQuota.objects.filter(is_active=True)
+    return render(request, 'admin/create_user.html', get_create_user_context())
+
+def get_create_user_context():
+    """Helper function to get context for create user form"""
+    # Get available leaders for foreman assignment
+    available_leaders = User.objects.filter(role='leader', is_active=True)
     
-    return render(request, 'admin/create_user_role_based.html', {
-        'form': form,
-        'leader_quotas': leader_quotas
-    })
+    return {
+        'available_leaders': available_leaders,
+    }
+
 
 @login_required
 @role_required(["admin", "superadmin"])
@@ -885,3 +998,95 @@ def export_users_csv(request):
         ])
     
     return response
+
+
+@login_required
+@role_required(["admin", "superadmin"])
+def export_activity_reports_pdf(request):
+    """Export Activity Reports to PDF"""
+    # Get filter parameters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    status = request.GET.get('status')
+    foreman_id = request.GET.get('foreman')
+    
+    # Build query
+    reports = ActivityReport.objects.select_related('foreman').all()
+    
+    # Apply filters
+    if start_date:
+        reports = reports.filter(date__gte=start_date)
+    if end_date:
+        reports = reports.filter(date__lte=end_date)
+    if status:
+        reports = reports.filter(status=status)
+    if foreman_id:
+        reports = reports.filter(foreman_id=foreman_id)
+    
+    # Order by date
+    reports = reports.order_by('-date')
+    
+    # Generate date range string
+    date_range = None
+    if start_date and end_date:
+        date_range = f"{start_date} s/d {end_date}"
+    elif start_date:
+        date_range = f"Mulai {start_date}"
+    elif end_date:
+        date_range = f"Sampai {end_date}"
+    
+    # Generate PDF
+    pdf_service = PDFReportService()
+    return pdf_service.generate_activity_reports_pdf(reports, date_range)
+
+@login_required
+@role_required(["admin", "superadmin"])
+def export_analysis_reports_pdf(request):
+    """Export Analysis Reports to PDF"""
+    # Get filter parameters
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    status = request.GET.get('status')
+    foreman_id = request.GET.get('foreman')
+    
+    # Build query
+    reports = AnalysisReport.objects.select_related('foreman').all()
+    
+    # Apply filters
+    if start_date:
+        reports = reports.filter(report_date__gte=start_date)
+    if end_date:
+        reports = reports.filter(report_date__lte=end_date)
+    if status:
+        reports = reports.filter(status=status)
+    if foreman_id:
+        reports = reports.filter(foreman_id=foreman_id)
+    
+    # Order by date
+    reports = reports.order_by('-report_date')
+    
+    # Generate date range string
+    date_range = None
+    if start_date and end_date:
+        date_range = f"{start_date} s/d {end_date}"
+    elif start_date:
+        date_range = f"Mulai {start_date}"
+    elif end_date:
+        date_range = f"Sampai {end_date}"
+    
+    # Generate PDF
+    pdf_service = PDFReportService()
+    return pdf_service.generate_analysis_reports_pdf(reports, date_range)
+
+@login_required
+@role_required(["admin", "superadmin"])
+def pdf_export_page(request):
+    """PDF Export page with filters"""
+    # Get available foremen for filter
+    foremen = User.objects.filter(role='foreman', is_active=True)
+    
+    context = {
+        'foremen': foremen,
+    }
+    
+    return render(request, 'admin/pdf_export.html', context)

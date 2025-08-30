@@ -53,4 +53,12 @@ urlpatterns = [
     path('export/users/', views.export_users_csv, name='export_users_csv'),
     # Tambahkan ke urlpatterns
     path('foreman/report-status/', views.foreman_report_status, name='foreman_report_status'),
+    # Tambahkan atau update URL patterns
+    path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'),
+    path('superadmin/quota/manage/', views.manage_leader_quota, name='manage_leader_quota'),
+    path('auperadmin/quota/manage/<int:quota_id>/', views.manage_leader_quota, name='manage_leader_quota'),
+    # Tambahkan URL patterns untuk PDF export
+    path('superadmin/pdf-export/', views.pdf_export_page, name='pdf_export_page'),
+    path('superadmin/export/activity-reports-pdf/', views.export_activity_reports_pdf, name='export_activity_reports_pdf'),
+    path('superadmin/export/analysis-reports-pdf/', views.export_analysis_reports_pdf, name='export_analysis_reports_pdf'),
 ]
