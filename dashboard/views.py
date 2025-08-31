@@ -324,6 +324,7 @@ def admin_dashboard(request):
     validated_activity_reports = ActivityReport.objects.filter(status__in=['approved', 'rejected']).order_by('-date')
     all_users = User.objects.all().order_by('-date_joined')
     leader_quotas = LeaderQuota.objects.all().order_by('leader_name')
+    foremen = User.objects.filter(role='foreman', is_active=True)
     
     stats = {
         'total_users': total_users,
@@ -339,6 +340,7 @@ def admin_dashboard(request):
         'validated_activity_reports': validated_activity_reports,
         'all_users': all_users,
         'leader_quotas': leader_quotas,
+        'foremen': foremen,
     }
     
     return render(request, "admin/admin_dashboard.html", context)
@@ -1090,3 +1092,5 @@ def pdf_export_page(request):
     }
     
     return render(request, 'admin/pdf_export.html', context)
+
+
