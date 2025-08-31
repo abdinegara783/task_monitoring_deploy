@@ -1267,6 +1267,94 @@
       border-bottom: var(--border) solid color-mix(in oklch, var(--color-base-content) 5%, #0000);
     }
   }
+  .steps {
+    display: inline-grid;
+    grid-auto-flow: column;
+    overflow: hidden;
+    overflow-x: auto;
+    counter-reset: step;
+    grid-auto-columns: 1fr;
+  }
+  .steps .step {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-template-columns: auto;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 40px 1fr;
+    place-items: center;
+    text-align: center;
+    min-width: 4rem;
+    --step-bg: var(--color-base-300);
+    --step-fg: var(--color-base-content);
+  }
+  .steps .step:before {
+    top: calc(0.25rem * 0);
+    grid-column-start: 1;
+    grid-row-start: 1;
+    height: calc(0.25rem * 2);
+    width: 100%;
+    border: 1px solid;
+    color: var(--step-bg);
+    background-color: var(--step-bg);
+    --tw-content: "";
+    content: var(--tw-content);
+    margin-inline-start: -100%;
+  }
+  .steps .step > .step-icon, .steps .step:not(:has(.step-icon)):after {
+    content: counter(step);
+    counter-increment: step;
+    z-index: 1;
+    color: var(--step-fg);
+    background-color: var(--step-bg);
+    border: 1px solid var(--step-bg);
+    position: relative;
+    grid-column-start: 1;
+    grid-row-start: 1;
+    display: grid;
+    height: calc(0.25rem * 8);
+    width: calc(0.25rem * 8);
+    place-items: center;
+    place-self: center;
+    border-radius: calc(infinity * 1px);
+  }
+  .steps .step:first-child:before {
+    content: none;
+  }
+  .steps .step[data-content]:after {
+    content: attr(data-content);
+  }
+  .steps .step-neutral + .step-neutral:before, .steps .step-neutral:after, .steps .step-neutral > .step-icon {
+    --step-bg: var(--color-neutral);
+    --step-fg: var(--color-neutral-content);
+  }
+  .steps .step-primary + .step-primary:before, .steps .step-primary:after, .steps .step-primary > .step-icon {
+    --step-bg: var(--color-primary);
+    --step-fg: var(--color-primary-content);
+  }
+  .steps .step-secondary + .step-secondary:before, .steps .step-secondary:after, .steps .step-secondary > .step-icon {
+    --step-bg: var(--color-secondary);
+    --step-fg: var(--color-secondary-content);
+  }
+  .steps .step-accent + .step-accent:before, .steps .step-accent:after, .steps .step-accent > .step-icon {
+    --step-bg: var(--color-accent);
+    --step-fg: var(--color-accent-content);
+  }
+  .steps .step-info + .step-info:before, .steps .step-info:after, .steps .step-info > .step-icon {
+    --step-bg: var(--color-info);
+    --step-fg: var(--color-info-content);
+  }
+  .steps .step-success + .step-success:before, .steps .step-success:after, .steps .step-success > .step-icon {
+    --step-bg: var(--color-success);
+    --step-fg: var(--color-success-content);
+  }
+  .steps .step-warning + .step-warning:before, .steps .step-warning:after, .steps .step-warning > .step-icon {
+    --step-bg: var(--color-warning);
+    --step-fg: var(--color-warning-content);
+  }
+  .steps .step-error + .step-error:before, .steps .step-error:after, .steps .step-error > .step-icon {
+    --step-bg: var(--color-error);
+    --step-fg: var(--color-error-content);
+  }
   .range {
     appearance: none;
     webkit-appearance: none;
@@ -2114,6 +2202,9 @@
     padding-inline: calc(0.25rem * 0);
     opacity: 0%;
   }
+  .mx-4 {
+    margin-inline: calc(var(--spacing) * 4);
+  }
   .mx-auto {
     margin-inline: auto;
   }
@@ -2390,6 +2481,9 @@
   .table-cell {
     display: table-cell;
   }
+  .h-1 {
+    height: calc(var(--spacing) * 1);
+  }
   .h-2 {
     height: calc(var(--spacing) * 2);
   }
@@ -2534,6 +2628,12 @@
   }
   .resize {
     resize: both;
+  }
+  .list-inside {
+    list-style-position: inside;
+  }
+  .list-disc {
+    list-style-type: disc;
   }
   .grid-cols-1 {
     grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -2744,6 +2844,9 @@
   }
   .border-red-300 {
     border-color: var(--color-red-300);
+  }
+  .border-red-500 {
+    border-color: var(--color-red-500);
   }
   .border-transparent {
     border-color: transparent;
