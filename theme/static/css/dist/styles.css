@@ -2532,6 +2532,29 @@
     height: var(--tabs-height);
     flex-direction: var(--tabs-direction);
   }
+  .footer {
+    display: grid;
+    width: 100%;
+    grid-auto-flow: row;
+    place-items: start;
+    column-gap: calc(0.25rem * 4);
+    row-gap: calc(0.25rem * 10);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+  .footer > * {
+    display: grid;
+    place-items: start;
+    gap: calc(0.25rem * 2);
+  }
+  .footer.footer-center {
+    grid-auto-flow: column dense;
+    place-items: center;
+    text-align: center;
+  }
+  .footer.footer-center > * {
+    place-items: center;
+  }
   .stat {
     display: inline-grid;
     width: 100%;
