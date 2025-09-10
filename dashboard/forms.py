@@ -123,25 +123,27 @@ class EmployeeRegistrationForm(forms.ModelForm):
 
     password1 = forms.CharField(
         label="Password",
+        required=False,  # Tambahkan required=False untuk edit
         widget=forms.PasswordInput(
             attrs={
                 "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
-                "placeholder": "Masukkan password",
+                "placeholder": "Kosongkan jika tidak ingin mengubah password",
             }
         ),
     )
     password2 = forms.CharField(
         label="Konfirmasi Password",
+        required=False,  # Tambahkan required=False untuk edit
         widget=forms.PasswordInput(
             attrs={
                 "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
-                "placeholder": "Konfirmasi password",
+                "placeholder": "Konfirmasi password baru",
             }
         ),
     )
 
     class Meta:
-        model = CustomUser
+        model = User  # Ganti dari CustomUser ke User
         fields = [
             "username",
             "email",
@@ -197,7 +199,7 @@ class EmployeeRegistrationForm(forms.ModelForm):
                     "placeholder": "Nomor Registrasi Pegawai",
                 }
             ),
-            " f": forms.Select(
+            "role": forms.Select(  # Perbaiki dari " f" ke "role"
                 attrs={
                     "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
                 }
@@ -230,13 +232,25 @@ class EmployeeRegistrationForm(forms.ModelForm):
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
-        if password1 and password2 and password1 != password2:
-            raise forms.ValidationError("Password tidak cocok")
+        
+        # Jika salah satu password diisi, keduanya harus diisi dan cocok
+        if password1 or password2:
+            if not password1:
+                raise forms.ValidationError("Password harus diisi jika ingin mengubah password")
+            if not password2:
+                raise forms.ValidationError("Konfirmasi password harus diisi")
+            if password1 != password2:
+                raise forms.ValidationError("Password tidak cocok")
         return password2
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
+        
+        # Hanya update password jika diisi
+        password1 = self.cleaned_data.get("password1")
+        if password1:
+            user.set_password(password1)
+        
         if commit:
             user.save()
         return user

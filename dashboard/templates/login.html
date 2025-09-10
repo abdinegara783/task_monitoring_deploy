@@ -47,7 +47,7 @@
                     {% csrf_token %}
                     
                     <div class="space-y-2">
-                        <label for="{{ form.username.id_for_label }}" class="text-sm font-medium">Email</label>
+                        <label for="{{ form.username.id_for_label }}" class="text-sm font-medium">Username</label>
                         {{ form.username }}
                     </div>
 
@@ -66,72 +66,11 @@
                         Masuk
                     </button>
                 </form>
-
-                <!-- Demo Accounts Toggle -->
-                <div class="mt-6 pt-6 border-t">
-                    <button onclick="toggleDemoAccounts()" class="w-full h-11 border border-input rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
-                        <span id="demo-toggle-text">Tampilkan Akun Demo</span>
-                    </button>
-                </div>
             </div>
         </div>
-
-        <!-- Demo Accounts -->
-        <div id="demo-accounts" class="hidden bg-white rounded-xl shadow-lg border">
-            <div class="p-6 space-y-1">
-                <h3 class="text-lg font-bold">Akun Demo</h3>
-                <p class="text-gray-600">
-                    Klik salah satu akun di bawah untuk login otomatis
-                </p>
-            </div>
-            <div class="p-6 pt-0 space-y-3">
-                <!-- Employee Account -->
-                <div onclick="fillDemoAccount('ahmad.rizki@company.com', 'password123')" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                            <i data-lucide="users" class="w-5 h-5 text-white"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium">Ahmad Rizki</p>
-                            <p class="text-sm text-gray-600">Production</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 text-xs border rounded-md">Employee</span>
-                </div>
-
-                <!-- Foreman Account -->
-                <div onclick="fillDemoAccount('budi.santoso@company.com', 'foreman123')" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                            <i data-lucide="shield" class="w-5 h-5 text-white"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium">Budi Santoso</p>
-                            <p class="text-sm text-gray-600">Production</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 text-xs border rounded-md">Foreman</span>
-                </div>
-
-                <!-- Admin Account -->
-                <div onclick="fillDemoAccount('admin@company.com', 'admin123')" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
-                            <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium">Dr. Indra Wijaya</p>
-                            <p class="text-sm text-gray-600">Management</p>
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 text-xs border rounded-md">Admin</span>
-                </div>
-            </div>
-        </div>
-
         <!-- Footer -->
         <div class="text-center text-sm text-gray-500">
-            <p>© 2024 PT. Industri Maju Bersama</p>
+            <p>© 2024 PT. Ruang Mitra Lestari</p>
             <p>Sistem Pelaporan Kerja Real-time v1.0</p>
         </div>
     </div>
@@ -150,25 +89,6 @@
             eyeIcon.setAttribute('data-lucide', 'eye');
         }
         lucide.createIcons();
-    }
-
-    function toggleDemoAccounts() {
-        const demoAccounts = document.getElementById('demo-accounts');
-        const toggleText = document.getElementById('demo-toggle-text');
-        
-        if (demoAccounts.classList.contains('hidden')) {
-            demoAccounts.classList.remove('hidden');
-            toggleText.textContent = 'Sembunyikan Akun Demo';
-        } else {
-            demoAccounts.classList.add('hidden');
-            toggleText.textContent = 'Tampilkan Akun Demo';
-        }
-    }
-
-    function fillDemoAccount(email, password) {
-        document.getElementById('{{ form.username.id_for_label }}').value = email;
-        document.getElementById('{{ form.password.id_for_label }}').value = password;
-        toggleDemoAccounts();
     }
 </script>
 {% endblock %}

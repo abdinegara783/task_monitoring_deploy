@@ -418,13 +418,27 @@ def admin_edit(request, user_id):
     if request.method == "POST":
         form = EmployeeRegistrationForm(request.POST, instance=employee)
         if form.is_valid():
-            form.save()
-            messages.success(
-                request, f"Data karyawan {employee.username} berhasil diupdate!"
-            )
-            return redirect("admin_detail", user_id=employee.id)
+            try:
+                form.save()
+                messages.success(
+                    request, f"Data karyawan {employee.username} berhasil diupdate!"
+                )
+                return redirect("admin_detail", user_id=employee.id)
+            except Exception as e:
+                messages.error(request, f"Terjadi kesalahan dalam update data: {str(e)}")
         else:
-            messages.error(request, "Terjadi kesalahan dalam update data.")
+            # Tampilkan error spesifik dari form
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        error_messages.append(error)
+                    else:
+                        field_label = form.fields[field].label or field
+                        error_messages.append(f"{field_label}: {error}")
+            
+            error_text = "; ".join(error_messages)
+            messages.error(request, f"Terjadi kesalahan dalam update data: {error_text}")
     else:
         form = EmployeeRegistrationForm(instance=employee)
 
