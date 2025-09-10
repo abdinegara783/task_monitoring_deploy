@@ -212,4 +212,44 @@
         </div>
     </div>
 </div>
+
+<script>
+// Auto-fill nama lengkap ketika nama depan atau nama belakang berubah
+document.addEventListener('DOMContentLoaded', function() {
+    const firstNameField = document.getElementById('id_first_name');
+    const lastNameField = document.getElementById('id_last_name');
+    const fullNameField = document.getElementById('id_name');
+    
+    function updateFullName() {
+        const firstName = firstNameField.value.trim();
+        const lastName = lastNameField.value.trim();
+        
+        // Gabungkan nama depan dan nama belakang
+        let fullName = '';
+        if (firstName && lastName) {
+            fullName = firstName + ' ' + lastName;
+        } else if (firstName) {
+            fullName = firstName;
+        } else if (lastName) {
+            fullName = lastName;
+        }
+        
+        // Update field nama lengkap
+        if (fullName) {
+            fullNameField.value = fullName;
+        }
+    }
+    
+    // Event listeners untuk auto-update
+    if (firstNameField && lastNameField && fullNameField) {
+        firstNameField.addEventListener('input', updateFullName);
+        firstNameField.addEventListener('blur', updateFullName);
+        lastNameField.addEventListener('input', updateFullName);
+        lastNameField.addEventListener('blur', updateFullName);
+        
+        // Update saat halaman dimuat jika ada nilai
+        updateFullName();
+    }
+});
+</script>
 {% endblock %}

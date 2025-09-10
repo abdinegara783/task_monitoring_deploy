@@ -30,7 +30,6 @@ def hello_world_tailwind(request):
     return render(request, "hello-world.html")
 
 
-
 # ------------------------------------------------------------------------------
 def is_leader(user):
     """Check if user is leader"""
@@ -45,14 +44,15 @@ def is_foreman(user):
 # Decorator untuk redirect jika akses tidak sesuai role
 def role_required(allowed_roles):
     """Decorator to check if user has the required role"""
+
     def decorator(view_func):
         def wrapped(request, *args, **kwargs):
             if not request.user.is_authenticated:
-                return redirect('login')
-            
+                return redirect("login")
+
             if request.user.role not in allowed_roles:
                 messages.error(request, "Anda tidak memiliki akses ke halaman ini.")
-                
+
                 # Redirect ke dashboard sesuai role
                 if request.user.role == "admin":
                     return redirect("admin_dashboard")
@@ -62,13 +62,16 @@ def role_required(allowed_roles):
                     return redirect("foreman_dashboard")
                 else:
                     return redirect("login")
-                    
+
             return view_func(request, *args, **kwargs)
+
         return wrapped
+
     return decorator
 
 
 # LOGIN AND LOGOUT VIEW --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -108,6 +111,7 @@ def login_view(request):
 
     return render(request, "login.html", {"form": form})
 
+
 def logout_view(request):
     logout(request)
     messages.success(request, "Anda telah berhasil logout.")
@@ -121,166 +125,168 @@ def logout_view(request):
 @role_required(["leader"])
 def leader_dashboard(request):
     # Mendapatkan foreman yang berada di bawah leader ini
-    my_foremen = User.objects.filter(role='foreman', leader=request.user)
+    my_foremen = User.objects.filter(role="foreman", leader=request.user)
     total_employees = my_foremen.count()
-    
+
     # Mendapatkan activity reports dan analysis reports dari foreman bawahan
     today = timezone.now().date()
     my_foremen_activity_reports = ActivityReport.objects.filter(foreman__in=my_foremen)
     my_foremen_analysis_reports = AnalysisReport.objects.filter(foreman__in=my_foremen)
-    
+
     # Gabungkan kedua jenis laporan dengan menambahkan field 'report_type'
     combined_reports = []
-    
+
     # Tambahkan activity reports
     for report in my_foremen_activity_reports:
-        combined_reports.append({
-            'id': report.id,
-            'date': report.date,
-            'foreman': report.foreman,
-            'unit_code': report.Unit_Code,
-            'component': report.component,
-            'activities': report.activities_code,
-            'status': report.status,
-            'report_type': 'activity',
-            'report_type_display': 'Activity Report',
-            'validation_url': 'leader_validation_activity',
-            'created_at': report.created_at or report.date,
-        })
-    
+        combined_reports.append(
+            {
+                "id": report.id,
+                "date": report.date,
+                "foreman": report.foreman,
+                "unit_code": report.Unit_Code,
+                "component": report.component,
+                "activities": report.activities_code,
+                "status": report.status,
+                "report_type": "activity",
+                "report_type_display": "Activity Report",
+                "validation_url": "leader_validation_activity",
+                "created_at": report.created_at or report.date,
+            }
+        )
+
     # Tambahkan analysis reports
     for report in my_foremen_analysis_reports:
-        combined_reports.append({
-            'id': report.id,
-            'date': report.report_date,
-            'foreman': report.foreman,
-            'unit_code': report.unit_code,
-            'component': report.get_problem_display() if report.problem else '-',
-            'activities': report.title_problem[:50] + '...' if len(report.title_problem) > 50 else report.title_problem,
-            'status': report.status,
-            'report_type': 'analysis',
-            'report_type_display': 'Analysis Report',
-            'validation_url': 'leader_validation_analysis',
-            'created_at': report.created_at or report.report_date,
-        })
-    
+        combined_reports.append(
+            {
+                "id": report.id,
+                "date": report.report_date,
+                "foreman": report.foreman,
+                "unit_code": report.unit_code,
+                "component": report.get_problem_display() if report.problem else "-",
+                "activities": report.title_problem[:50] + "..."
+                if len(report.title_problem) > 50
+                else report.title_problem,
+                "status": report.status,
+                "report_type": "analysis",
+                "report_type_display": "Analysis Report",
+                "validation_url": "leader_validation_analysis",
+                "created_at": report.created_at or report.report_date,
+            }
+        )
+
     # Sort berdasarkan tanggal terbaru
-    combined_reports.sort(key=lambda x: x['created_at'], reverse=True)
-    
+    combined_reports.sort(key=lambda x: x["created_at"], reverse=True)
+
     # Filter berdasarkan status dan tanggal
-    pending_reports = [r for r in combined_reports if r['status'] == 'pending']
-    today_reports = [r for r in combined_reports if r['date'] == today]
-    validated_reports = [r for r in combined_reports if r['status'] in ['approved', 'rejected']]
-    
+    pending_reports = [r for r in combined_reports if r["status"] == "pending"]
+    today_reports = [r for r in combined_reports if r["date"] == today]
+    validated_reports = [
+        r for r in combined_reports if r["status"] in ["approved", "rejected"]
+    ]
+
     # Statistik
     today_reports_count = len(today_reports)
     pending_validation_count = len(pending_reports)
     completed_reports_count = len(validated_reports)
-    
+
     # Recent reports (5 terbaru)
     recent_reports = combined_reports[:5]
-    
+
     stats = {
-        'total_employees': total_employees,
-        'today_reports': today_reports_count,
-        'pending_validation': pending_validation_count,
-        'completed_reports': completed_reports_count
+        "total_employees": total_employees,
+        "today_reports": today_reports_count,
+        "pending_validation": pending_validation_count,
+        "completed_reports": completed_reports_count,
     }
-    
+
     context = {
-        'stats': stats,
-        'recent_reports': recent_reports,
-        'my_foremen': my_foremen,
-        'employees': my_foremen,  # Untuk tab employees-list
-        'pending_reports': pending_reports,  # Untuk tab pending-reports
-        'today_reports': today_reports,  # Untuk tab today-reports
-        'validated_reports': validated_reports,  # Untuk tab validated-reports
+        "stats": stats,
+        "recent_reports": recent_reports,
+        "my_foremen": my_foremen,
+        "employees": my_foremen,  # Untuk tab employees-list
+        "pending_reports": pending_reports,  # Untuk tab pending-reports
+        "today_reports": today_reports,  # Untuk tab today-reports
+        "validated_reports": validated_reports,  # Untuk tab validated-reports
     }
-    
+
     return render(request, "leader/leader_dashboard.html", context)
 
 
 @login_required
 @role_required(["leader"])
 def leader_validation_activity(request):
-    report_id = request.GET.get('report_id')
-    
+    report_id = request.GET.get("report_id")
+
     if not report_id:
         messages.error(request, "ID laporan tidak ditemukan.")
-        return redirect('leader_dashboard')
-    
+        return redirect("leader_dashboard")
+
     try:
-        report = ActivityReport.objects.get(
-            id=report_id, 
-            foreman__leader=request.user
-        )
+        report = ActivityReport.objects.get(id=report_id, foreman__leader=request.user)
     except ActivityReport.DoesNotExist:
-        messages.error(request, "Laporan tidak ditemukan atau Anda tidak memiliki akses.")
-        return redirect('leader_dashboard')
-    
+        messages.error(
+            request, "Laporan tidak ditemukan atau Anda tidak memiliki akses."
+        )
+        return redirect("leader_dashboard")
+
     if request.method == "POST":
-        action = request.POST.get('action')
-        feedback = request.POST.get('feedback', '')
-        
-        if action == 'approve':
-            report.status = 'approved'
+        action = request.POST.get("action")
+        feedback = request.POST.get("feedback", "")
+
+        if action == "approve":
+            report.status = "approved"
             report.feedback = feedback
             report.save()
             messages.success(request, "Laporan aktivitas berhasil disetujui.")
-            return redirect('leader_dashboard')
-        elif action == 'reject':
-            report.status = 'rejected'
+            return redirect("leader_dashboard")
+        elif action == "reject":
+            report.status = "rejected"
             report.feedback = feedback
             report.save()
             messages.success(request, "Laporan aktivitas berhasil ditolak.")
-            return redirect('leader_dashboard')
-    
-    context = {
-        'report': report
-    }
-    
+            return redirect("leader_dashboard")
+
+    context = {"report": report}
+
     return render(request, "leader/leader_validation_activity_new.html", context)
 
 
 @login_required
 @role_required(["leader"])
 def leader_validation_analysis(request):
-    report_id = request.GET.get('report_id')
-    
+    report_id = request.GET.get("report_id")
+
     if not report_id:
         messages.error(request, "ID laporan tidak ditemukan.")
-        return redirect('leader_dashboard')
-    
+        return redirect("leader_dashboard")
+
     try:
-        report = AnalysisReport.objects.get(
-            id=report_id, 
-            foreman__leader=request.user
-        )
+        report = AnalysisReport.objects.get(id=report_id, foreman__leader=request.user)
     except AnalysisReport.DoesNotExist:
-        messages.error(request, "Laporan tidak ditemukan atau Anda tidak memiliki akses.")
-        return redirect('leader_dashboard')
-    
+        messages.error(
+            request, "Laporan tidak ditemukan atau Anda tidak memiliki akses."
+        )
+        return redirect("leader_dashboard")
+
     if request.method == "POST":
-        action = request.POST.get('action')
-        feedback = request.POST.get('feedback', '')
-        
-        if action == 'approve':
-            report.status = 'approved'
+        action = request.POST.get("action")
+        feedback = request.POST.get("feedback", "")
+
+        if action == "approve":
+            report.status = "approved"
             report.feedback = feedback
             report.save()
             messages.success(request, "Laporan analisis berhasil disetujui.")
-            return redirect('leader_dashboard')
-        elif action == 'reject':
-            report.status = 'rejected'
+            return redirect("leader_dashboard")
+        elif action == "reject":
+            report.status = "rejected"
             report.feedback = feedback
             report.save()
             messages.success(request, "Laporan analisis berhasil ditolak.")
-            return redirect('leader_dashboard')
-    
-    context = {
-        'report': report
-    }
-    
+            return redirect("leader_dashboard")
+
+    context = {"report": report}
+
     return render(request, "leader/leader_validation_analysis_new.html", context)
 
 
@@ -302,12 +308,7 @@ def leader_validation_analysis(request):
 #     return render(request, "register.html", {"form": form})
 
 
-
-
 # ADMIN VIEW   --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
-
-
-
 
 
 # Ganti decorator untuk admin_dashboard
@@ -316,35 +317,41 @@ def leader_validation_analysis(request):
 def admin_dashboard(request):
     # Statistik untuk admin
     total_users = User.objects.count()
-    total_leaders = User.objects.filter(role='leader').count()
-    total_foremen = User.objects.filter(role='foreman').count()
-    pending_reports = ActivityReport.objects.filter(status='pending').count()
-    validated_reports = ActivityReport.objects.filter(status__in=['approved', 'rejected']).count()
-    
+    total_leaders = User.objects.filter(role="leader").count()
+    total_foremen = User.objects.filter(role="foreman").count()
+    pending_reports = ActivityReport.objects.filter(status="pending").count()
+    validated_reports = ActivityReport.objects.filter(
+        status__in=["approved", "rejected"]
+    ).count()
+
     # Data untuk tabs
-    pending_activity_reports = ActivityReport.objects.filter(status='pending').order_by('-date')
-    validated_activity_reports = ActivityReport.objects.filter(status__in=['approved', 'rejected']).order_by('-date')
-    all_users = User.objects.all().order_by('-date_joined')
-    leader_quotas = LeaderQuota.objects.all().order_by('leader_name')
-    foremen = User.objects.filter(role='foreman', is_active=True)
-    
+    pending_activity_reports = ActivityReport.objects.filter(status="pending").order_by(
+        "-date"
+    )
+    validated_activity_reports = ActivityReport.objects.filter(
+        status__in=["approved", "rejected"]
+    ).order_by("-date")
+    all_users = User.objects.all().order_by("-date_joined")
+    leader_quotas = LeaderQuota.objects.all().order_by("leader_name")
+    foremen = User.objects.filter(role="foreman", is_active=True)
+
     stats = {
-        'total_users': total_users,
-        'total_leaders': total_leaders,
-        'total_foremen': total_foremen,
-        'pending_reports': pending_reports,
-        'validated_reports': validated_reports
+        "total_users": total_users,
+        "total_leaders": total_leaders,
+        "total_foremen": total_foremen,
+        "pending_reports": pending_reports,
+        "validated_reports": validated_reports,
     }
-    
+
     context = {
-        'stats': stats,
-        'pending_activity_reports': pending_activity_reports,
-        'validated_activity_reports': validated_activity_reports,
-        'all_users': all_users,
-        'leader_quotas': leader_quotas,
-        'foremen': foremen,
+        "stats": stats,
+        "pending_activity_reports": pending_activity_reports,
+        "validated_activity_reports": validated_activity_reports,
+        "all_users": all_users,
+        "leader_quotas": leader_quotas,
+        "foremen": foremen,
     }
-    
+
     return render(request, "admin/admin_dashboard.html", context)
 
 
@@ -425,20 +432,24 @@ def admin_edit(request, user_id):
                 )
                 return redirect("admin_detail", user_id=employee.id)
             except Exception as e:
-                messages.error(request, f"Terjadi kesalahan dalam update data: {str(e)}")
+                messages.error(
+                    request, f"Terjadi kesalahan dalam update data: {str(e)}"
+                )
         else:
             # Tampilkan error spesifik dari form
             error_messages = []
             for field, errors in form.errors.items():
                 for error in errors:
-                    if field == '__all__':
+                    if field == "__all__":
                         error_messages.append(error)
                     else:
                         field_label = form.fields[field].label or field
                         error_messages.append(f"{field_label}: {error}")
-            
+
             error_text = "; ".join(error_messages)
-            messages.error(request, f"Terjadi kesalahan dalam update data: {error_text}")
+            messages.error(
+                request, f"Terjadi kesalahan dalam update data: {error_text}"
+            )
     else:
         form = EmployeeRegistrationForm(instance=employee)
 
@@ -458,17 +469,12 @@ def admin_delete(request, user_id):
         username = employee.username
         employee.delete()
         messages.success(request, f"Karyawan {username} berhasil dihapus!")
-        return redirect("employee_list")
+        return redirect("admin_dashboard")
 
     return render(request, "admin/admin_delete.html", {"employee": employee})
 
 
-
-
-
 # FOREMAN VIEW   --=-==-=--=-==------==-=-=-=-=--=---=-=-=-=-=-=-=-=-=-=-
-
-
 
 
 @login_required
@@ -565,7 +571,9 @@ def Foreman_dashboard(request):
                     "unit_code": report.Unit_Code or "-",
                     "component": report.component or "-",
                     "activities": report.activities or "Tidak ada deskripsi",
-                    "leader": getattr(report.foreman, 'leader', None) and getattr(report.foreman.leader, 'name', None) or "-",
+                    "leader": getattr(report.foreman, "leader", None)
+                    and getattr(report.foreman.leader, "name", None)
+                    or "-",
                     "hmkm": report.Hmkm or "-",
                     "activities_code": report.activities_code or "-",
                 },
@@ -644,10 +652,15 @@ def create_activity_report(request):
         if form.is_valid():
             try:
                 activity_report = form.save(commit=False)
-                activity_report.foreman = request.user  # Set foreman dari user yang login
-                activity_report.status = 'pending'  # Set default status
+                activity_report.foreman = (
+                    request.user
+                )  # Set foreman dari user yang login
+                activity_report.status = "pending"  # Set default status
                 activity_report.save()
-                messages.success(request, "Laporan aktivitas berhasil dibuat dan menunggu validasi leader!")
+                messages.success(
+                    request,
+                    "Laporan aktivitas berhasil dibuat dan menunggu validasi leader!",
+                )
                 return redirect("foreman_dashboard")
             except Exception as e:
                 messages.error(request, f"Gagal menyimpan laporan: {str(e)}")
@@ -661,15 +674,15 @@ def create_activity_report(request):
                     messages.error(request, f"{form.fields[field].label}: {error}")
     else:
         form = ActivityReportForm()
-    
+
     # Get user with leader relationship
-    user_with_leader = User.objects.select_related('leader').get(id=request.user.id)
-    
+    user_with_leader = User.objects.select_related("leader").get(id=request.user.id)
+
     context = {
         "form": form,
         "user": user_with_leader,  # Pass user with leader data
     }
-    
+
     return render(request, "foreman/foreman_create_activity_report.html", context)
 
 
@@ -683,9 +696,14 @@ def create_analysis_report(request):
             analysis_report = form.save(commit=False)
             analysis_report.foreman = request.user
             analysis_report.save()
-            messages.success(request, "Informasi dasar berhasil disimpan! Silakan lengkapi analisis lanjutan.")
+            messages.success(
+                request,
+                "Informasi dasar berhasil disimpan! Silakan lengkapi analisis lanjutan.",
+            )
             # Redirect ke step 2
-            return redirect("create_analysis_report_step2", report_id=analysis_report.id)
+            return redirect(
+                "create_analysis_report_step2", report_id=analysis_report.id
+            )
         else:
             messages.error(
                 request, "Terjadi kesalahan dalam pembuatan Analysis Report."
@@ -706,26 +724,28 @@ def create_analysis_report_step2(request, report_id):
         # Get the existing report
         analysis_report = AnalysisReport.objects.get(id=report_id, foreman=request.user)
     except AnalysisReport.DoesNotExist:
-        messages.error(request, "Laporan tidak ditemukan atau Anda tidak memiliki akses.")
-        return redirect('foreman_dashboard')
-    
+        messages.error(
+            request, "Laporan tidak ditemukan atau Anda tidak memiliki akses."
+        )
+        return redirect("foreman_dashboard")
+
     if request.method == "POST":
-        form = AnalysisReportExtendedForm(request.POST, request.FILES, instance=analysis_report)
+        form = AnalysisReportExtendedForm(
+            request.POST, request.FILES, instance=analysis_report
+        )
         if form.is_valid():
             form.save()
             messages.success(request, "Analysis Report berhasil dilengkapi!")
             return redirect("foreman_dashboard")
         else:
-            messages.error(request, "Ada kesalahan dalam form. Silakan periksa kembali.")
+            messages.error(
+                request, "Ada kesalahan dalam form. Silakan periksa kembali."
+            )
     else:
         form = AnalysisReportExtendedForm(instance=analysis_report)
-    
-    context = {
-        'form': form,
-        'analysis_report': analysis_report,
-        'user': request.user
-    }
-    
+
+    context = {"form": form, "analysis_report": analysis_report, "user": request.user}
+
     return render(request, "foreman/foreman_create_analysis_report_step2.html", context)
 
 
@@ -733,14 +753,18 @@ def create_analysis_report_step2(request, report_id):
 @role_required(["foreman"])
 def foreman_report_status(request):
     # Get all reports for current foreman
-    activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by('-date')
-    analysis_reports = AnalysisReport.objects.filter(foreman=request.user).order_by('-report_date')
-    
+    activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
+        "-date"
+    )
+    analysis_reports = AnalysisReport.objects.filter(foreman=request.user).order_by(
+        "-report_date"
+    )
+
     context = {
-        'activity_reports': activity_reports,
-        'analysis_reports': analysis_reports,
+        "activity_reports": activity_reports,
+        "analysis_reports": analysis_reports,
     }
-    
+
     return render(request, "foreman/report_status.html", context)
 
 
@@ -857,68 +881,86 @@ def api_get_notifications(request):
 @login_required
 @role_required(["admin", "superadmin"])
 def create_user_with_role(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         # Get form data
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        first_name = request.POST.get('first_name')
-        last_name = request.POST.get('last_name')
-        name = request.POST.get('name')
-        phone = request.POST.get('phone')
-        nrp = request.POST.get('nrp')
-        role = request.POST.get('role')
-        department = request.POST.get('department')
-        shift = request.POST.get('shift', 1)
-        leader_id = request.POST.get('leader')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
-        
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+        name = request.POST.get("name")
+        phone = request.POST.get("phone")
+        nrp = request.POST.get("nrp")
+        role = request.POST.get("role")
+        department = request.POST.get("department")
+        shift = request.POST.get("shift", 1)
+        leader_id = request.POST.get("leader")
+        password1 = request.POST.get("password1")
+        password2 = request.POST.get("password2")
+
         # Validation
         if password1 != password2:
             messages.error(request, "Password tidak cocok.")
-            return render(request, 'admin/create_user.html', get_create_user_context())
-        
+            return render(request, "admin/create_user.html", get_create_user_context())
+
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username sudah digunakan.")
-            return render(request, 'admin/create_user.html', get_create_user_context())
-        
+            return render(request, "admin/create_user.html", get_create_user_context())
+
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email sudah digunakan.")
-            return render(request, 'admin/create_user.html', get_create_user_context())
-        
+            return render(request, "admin/create_user.html", get_create_user_context())
+
         # Special handling for leader role
-        if role == 'leader':
+        if role == "leader":
             # Check if leader quota exists
             leader_name = name or f"{first_name} {last_name}".strip()
             try:
                 quota = LeaderQuota.objects.get(leader_name=leader_name)
                 if not quota.is_active:
-                    messages.error(request, f"Leader quota untuk {leader_name} tidak aktif.")
-                    return render(request, 'admin/create_user.html', get_create_user_context())
+                    messages.error(
+                        request, f"Leader quota untuk {leader_name} tidak aktif."
+                    )
+                    return render(
+                        request, "admin/create_user.html", get_create_user_context()
+                    )
             except LeaderQuota.DoesNotExist:
-                messages.error(request, f"Leader quota untuk {leader_name} belum dibuat. Silakan buat quota terlebih dahulu.")
-                return render(request, 'admin/create_user.html', get_create_user_context())
-        
+                messages.error(
+                    request,
+                    f"Leader quota untuk {leader_name} belum dibuat. Silakan buat quota terlebih dahulu.",
+                )
+                return render(
+                    request, "admin/create_user.html", get_create_user_context()
+                )
+
         # Validation for foreman role
-        if role == 'foreman':
+        if role == "foreman":
             if not leader_id:
                 messages.error(request, "Leader harus dipilih untuk role foreman.")
-                return render(request, 'admin/create_user.html', get_create_user_context())
-            
+                return render(
+                    request, "admin/create_user.html", get_create_user_context()
+                )
+
             try:
-                leader = User.objects.get(id=leader_id, role='leader')
-                
+                leader = User.objects.get(id=leader_id, role="leader")
+
                 # Check leader quota
                 if leader.leader_quota:
                     current_foremen = User.objects.filter(leader=leader).count()
                     if current_foremen >= leader.leader_quota.max_foreman:
-                        messages.error(request, f"Leader {leader.name} sudah mencapai batas maksimal foreman ({leader.leader_quota.max_foreman}).")
-                        return render(request, 'admin/create_user.html', get_create_user_context())
-                
+                        messages.error(
+                            request,
+                            f"Leader {leader.name} sudah mencapai batas maksimal foreman ({leader.leader_quota.max_foreman}).",
+                        )
+                        return render(
+                            request, "admin/create_user.html", get_create_user_context()
+                        )
+
             except User.DoesNotExist:
                 messages.error(request, "Leader tidak ditemukan.")
-                return render(request, 'admin/create_user.html', get_create_user_context())
-        
+                return render(
+                    request, "admin/create_user.html", get_create_user_context()
+                )
+
         try:
             # Create user
             user = User.objects.create_user(
@@ -932,45 +974,50 @@ def create_user_with_role(request):
                 nrp=nrp,
                 role=role,
                 department=department,
-                shift=int(shift)
+                shift=int(shift),
             )
-            
+
             # Set leader for foreman
-            if role == 'foreman' and leader_id:
+            if role == "foreman" and leader_id:
                 leader = User.objects.get(id=leader_id)
                 user.leader = leader
                 user.save()
-                
+
                 # Update leader quota count
                 if leader.leader_quota:
-                    leader.leader_quota.current_foreman_count = User.objects.filter(leader=leader).count()
+                    leader.leader_quota.current_foreman_count = User.objects.filter(
+                        leader=leader
+                    ).count()
                     leader.leader_quota.save()
-            
+
             # Link leader quota for leader role
-            if role == 'leader':
+            if role == "leader":
                 try:
                     quota = LeaderQuota.objects.get(leader_name=leader_name)
                     user.leader_quota = quota
                     user.save()
                 except LeaderQuota.DoesNotExist:
                     pass
-            
-            messages.success(request, f"User {username} berhasil dibuat dengan role {role}.")
-            return redirect('admin_dashboard')
-            
+
+            messages.success(
+                request, f"User {username} berhasil dibuat dengan role {role}."
+            )
+            return redirect("admin_dashboard")
+
         except Exception as e:
             messages.error(request, f"Gagal membuat user: {str(e)}")
-            return render(request, 'admin/create_user.html', get_create_user_context())
-    
-    return render(request, 'admin/create_user.html', get_create_user_context())
+            return render(request, "admin/create_user.html", get_create_user_context())
+
+    return render(request, "admin/create_user.html", get_create_user_context())
+
 
 def get_create_user_context():
     """Helper function to get context for create user form"""
     # Get available leaders for foreman assignment
-    available_leaders = User.objects.filter(role='leader', is_active=True)
-    
+    available_leaders = User.objects.filter(role="leader", is_active=True)
+
     return {
-        'available_leaders': available_leaders,
+        "available_leaders": available_leaders,
     }
 
 
@@ -982,72 +1029,101 @@ def manage_leader_quota(request, quota_id=None):
         form = LeaderQuotaForm(request.POST or None, instance=quota)
     else:
         form = LeaderQuotaForm(request.POST or None)
-    
-    if request.method == 'POST' and form.is_valid():
+
+    if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Kuota leader berhasil diperbarui.")
-        return redirect('leader_quota_list')
-    
-    return render(request, 'admin/manage_leader_quota.html', {
-        'form': form,
-        'quota': quota if quota_id else None
-    })
+        return redirect("leader_quota_list")
+
+    return render(
+        request,
+        "admin/manage_leader_quota.html",
+        {"form": form, "quota": quota if quota_id else None},
+    )
+
 
 @login_required
 @role_required(["admin", "superadmin"])
 def leader_quota_list(request):
-    quotas = LeaderQuota.objects.all().order_by('leader_name')
-    return render(request, 'admin/leader_quota_list.html', {
-        'quotas': quotas
-    })
+    quotas = LeaderQuota.objects.all().order_by("leader_name")
+    return render(request, "admin/leader_quota_list.html", {"quotas": quotas})
+
 
 @login_required
 @role_required(["admin", "superadmin"])
 def export_reports_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="activity_reports.csv"'
-    
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="activity_reports.csv"'
+
     writer = csv.writer(response)
-    writer.writerow(['Date', 'Foreman', 'Leader', 'Unit Code', 'Component', 'Activities', 'Status', 'Feedback'])
-    
-    reports = ActivityReport.objects.all().order_by('-date')
+    writer.writerow(
+        [
+            "Date",
+            "Foreman",
+            "Leader",
+            "Unit Code",
+            "Component",
+            "Activities",
+            "Status",
+            "Feedback",
+        ]
+    )
+
+    reports = ActivityReport.objects.all().order_by("-date")
     for report in reports:
-        writer.writerow([
-            report.date,
-            report.foreman.name or report.foreman.username,
-            report.foreman.leader.name if report.foreman.leader else '-',
-            report.Unit_Code or '-',
-            report.component or '-',
-            report.activities,
-            report.status,
-            report.feedback or '-'
-        ])
-    
+        writer.writerow(
+            [
+                report.date,
+                report.foreman.name or report.foreman.username,
+                report.foreman.leader.name if report.foreman.leader else "-",
+                report.Unit_Code or "-",
+                report.component or "-",
+                report.activities,
+                report.status,
+                report.feedback or "-",
+            ]
+        )
+
     return response
+
 
 @login_required
 @role_required(["admin", "superadmin"])
 def export_users_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="users.csv"'
-    
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="users.csv"'
+
     writer = csv.writer(response)
-    writer.writerow(['Name', 'Username', 'Email', 'Role', 'Department', 'Leader', 'NRP', 'Phone', 'Shift'])
-    
-    users = User.objects.all().order_by('role', 'name')
+    writer.writerow(
+        [
+            "Name",
+            "Username",
+            "Email",
+            "Role",
+            "Department",
+            "Leader",
+            "NRP",
+            "Phone",
+            "Shift",
+        ]
+    )
+
+    users = User.objects.all().order_by("role", "name")
     for user in users:
-        writer.writerow([
-            user.name or user.username,
-            user.username,
-            user.email,
-            user.role,
-            user.department or '-',
-            user.leader.name if user.leader else '-',
-            user.nrp or '-',
-            user.phone or '-',
-            user.shift
-        ])
-    
+        writer.writerow(
+            [
+                user.name or user.username,
+                user.username,
+                user.email,
+                user.role,
+                user.department or "-",
+                user.leader.name if user.leader else "-",
+                user.nrp or "-",
+                user.phone or "-",
+                user.shift,
+            ]
+        )
+
     return response
 
 
@@ -1056,14 +1132,14 @@ def export_users_csv(request):
 def export_activity_reports_pdf(request):
     """Export Activity Reports to PDF"""
     # Get filter parameters
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    status = request.GET.get('status')
-    foreman_id = request.GET.get('foreman')
-    
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    status = request.GET.get("status")
+    foreman_id = request.GET.get("foreman")
+
     # Build query
-    reports = ActivityReport.objects.select_related('foreman').all()
-    
+    reports = ActivityReport.objects.select_related("foreman").all()
+
     # Apply filters
     if start_date:
         reports = reports.filter(date__gte=start_date)
@@ -1073,10 +1149,10 @@ def export_activity_reports_pdf(request):
         reports = reports.filter(status=status)
     if foreman_id:
         reports = reports.filter(foreman_id=foreman_id)
-    
+
     # Order by date
-    reports = reports.order_by('-date')
-    
+    reports = reports.order_by("-date")
+
     # Generate date range string
     date_range = None
     if start_date and end_date:
@@ -1085,24 +1161,25 @@ def export_activity_reports_pdf(request):
         date_range = f"Mulai {start_date}"
     elif end_date:
         date_range = f"Sampai {end_date}"
-    
+
     # Generate PDF
     pdf_service = PDFReportService()
     return pdf_service.generate_activity_reports_pdf(reports, date_range)
+
 
 @login_required
 @role_required(["admin", "superadmin"])
 def export_analysis_reports_pdf(request):
     """Export Analysis Reports to PDF using new TAR format"""
     # Get filter parameters
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    status = request.GET.get('status')
-    foreman_id = request.GET.get('foreman')
-    
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    status = request.GET.get("status")
+    foreman_id = request.GET.get("foreman")
+
     # Build query
-    reports = AnalysisReport.objects.select_related('foreman', 'foreman__leader').all()
-    
+    reports = AnalysisReport.objects.select_related("foreman", "foreman__leader").all()
+
     # Apply filters
     if start_date:
         reports = reports.filter(report_date__gte=start_date)
@@ -1112,22 +1189,25 @@ def export_analysis_reports_pdf(request):
         reports = reports.filter(status=status)
     if foreman_id:
         reports = reports.filter(foreman_id=foreman_id)
-    
+
     # Order by date
-    reports = reports.order_by('-report_date')
-    
+    reports = reports.order_by("-report_date")
+
     # Check if we have reports
     if not reports.exists():
-        messages.warning(request, "Tidak ada laporan analisis yang ditemukan dengan filter yang dipilih.")
-        return redirect('admin_dashboard')
-    
+        messages.warning(
+            request,
+            "Tidak ada laporan analisis yang ditemukan dengan filter yang dipilih.",
+        )
+        return redirect("admin_dashboard")
+
     try:
         # For multiple reports, we'll create a combined PDF or individual PDFs
         # Let's create individual PDFs for each report in a ZIP file
         import zipfile
         import io
         from django.http import HttpResponse
-        
+
         if reports.count() == 1:
             # Single report - generate single TAR PDF
             pdf_service = AnalysisPDFService()
@@ -1135,44 +1215,51 @@ def export_analysis_reports_pdf(request):
         else:
             # Multiple reports - create ZIP with individual TAR PDFs
             zip_buffer = io.BytesIO()
-            
-            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+
+            with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                 pdf_service = AnalysisPDFService()
-                
+
                 for i, report in enumerate(reports, 1):
                     # Generate PDF for each report
-                    pdf_response = pdf_service.generate_technical_analysis_report_pdf(report)
+                    pdf_response = pdf_service.generate_technical_analysis_report_pdf(
+                        report
+                    )
                     pdf_content = pdf_response.content
-                    
+
                     # Create filename
                     filename = f"TAR_{report.no_report or report.id}_{report.report_date.strftime('%Y%m%d')}.pdf"
-                    
+
                     # Add to ZIP
                     zip_file.writestr(filename, pdf_content)
-            
+
             # Prepare response
             zip_buffer.seek(0)
-            response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
-            response['Content-Disposition'] = f'attachment; filename="Technical_Analysis_Reports_{datetime.now().strftime("%Y%m%d")}.zip"'
-            
+            response = HttpResponse(
+                zip_buffer.getvalue(), content_type="application/zip"
+            )
+            response["Content-Disposition"] = (
+                f'attachment; filename="Technical_Analysis_Reports_{datetime.now().strftime("%Y%m%d")}.zip"'
+            )
+
             return response
-            
+
     except Exception as e:
         messages.error(request, f"Error generating PDF: {str(e)}")
-        return redirect('admin_dashboard')
+        return redirect("admin_dashboard")
+
 
 @login_required
 @role_required(["admin", "superadmin"])
 def pdf_export_page(request):
     """PDF Export page with filters"""
     # Get available foremen for filter
-    foremen = User.objects.filter(role='foreman', is_active=True)
-    
+    foremen = User.objects.filter(role="foreman", is_active=True)
+
     context = {
-        'foremen': foremen,
+        "foremen": foremen,
     }
-    
-    return render(request, 'admin/pdf_export.html', context)
+
+    return render(request, "admin/pdf_export.html", context)
 
 
 @login_required
@@ -1180,18 +1267,16 @@ def pdf_export_page(request):
 def export_single_analysis_report_pdf(request, report_id):
     """Export single analysis report as PDF"""
     try:
-        report = AnalysisReport.objects.select_related('foreman', 'foreman__leader').get(
-            id=report_id
-        )
-        
+        report = AnalysisReport.objects.select_related(
+            "foreman", "foreman__leader"
+        ).get(id=report_id)
+
         pdf_service = AnalysisPDFService()
         return pdf_service.generate_technical_analysis_report_pdf(report)
-        
+
     except AnalysisReport.DoesNotExist:
         messages.error(request, "Analysis report tidak ditemukan.")
-        return redirect('admin_dashboard')
+        return redirect("admin_dashboard")
     except Exception as e:
         messages.error(request, f"Error generating PDF: {str(e)}")
-        return redirect('admin_dashboard')
-
-
+        return redirect("admin_dashboard")
