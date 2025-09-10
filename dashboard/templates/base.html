@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistem Pelaporan Kerja{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(214.3 31.8% 91.4%)",
+                        input: "hsl(214.3 31.8% 91.4%)",
+                        ring: "hsl(222.2 84% 4.9%)",
+                        background: "hsl(0 0% 100%)",
+                        foreground: "hsl(222.2 84% 4.9%)",
+                        primary: {
+                            DEFAULT: "hsl(222.2 47.4% 11.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(0 84.2% 60.2%)",
+                            foreground: "hsl(210 40% 98%)",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(215.4 16.3% 46.9%)",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(210 40% 96%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                        card: {
+                            DEFAULT: "hsl(0 0% 100%)",
+                            foreground: "hsl(222.2 84% 4.9%)",
+                        },
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Perbaikan Lucide Icons - gunakan versi yang lebih stabil -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    {% block content %}
+    {% endblock %}
+    
+    <script>
+        // Initialize Lucide icons dengan error handling
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                    console.log('✅ Lucide icons loaded successfully');
+                } else {
+                    console.error('❌ Lucide library not loaded');
+                    // Fallback: load icons again
+                    setTimeout(function() {
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('❌ Error initializing Lucide icons:', error);
+            }
+        });
+        
+        // Re-initialize icons after dynamic content changes
+        function refreshIcons() {
+            try {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } catch (error) {
+                console.error('Error refreshing icons:', error);
+            }
+        }
+        
+        // Auto-hide messages after 5 seconds
+        setTimeout(function() {
+            const messages = document.querySelectorAll('.alert-message');
+            messages.forEach(function(message) {
+                message.style.transition = 'opacity 0.5s';
+                message.style.opacity = '0';
+                setTimeout(function() {
+                    message.remove();
+                }, 500);
+            });
+        }, 5000);
+        
+        // Notification dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const notificationBtn = document.getElementById('notification-btn');
+            const notificationDropdown = document.getElementById('notification-dropdown');
+            
+            if (notificationBtn && notificationDropdown) {
+                // Toggle dropdown
+                notificationBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    notificationDropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!notificationBtn.contains(e.target) && !notificationDropdown.contains(e.target)) {
+                        notificationDropdown.classList.add('hidden');
+                    }
+                });
+                
+                // Prevent dropdown from closing when clicking inside
+                notificationDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+            
+            // Auto-refresh notifications every 30 seconds
+            setInterval(function() {
+                refreshNotifications();
+            }, 30000);
+        });
+        
+        // Function to refresh notifications via AJAX
+        function refreshNotifications() {
+            fetch('/api/notifications/')
+                .then(response => response.json())
+                .then(data => {
+                    updateNotificationUI(data);
+                    // Refresh icons after updating UI
+                    refreshIcons();
+                })
+                .catch(error => {
+                    console.error('Error fetching notifications:', error);
+                });
+        }
+        
+        // Function to update notification UI
+        function updateNotificationUI(data) {
+            const notificationList = document.getElementById('notification-list');
+            const unreadBadge = document.querySelector('#notification-btn .bg-red-500');
+            
+            if (notificationList) {
+                // Update notification list
+                if (data.notifications && data.notifications.length > 0) {
+                    let html = '<ul class="divide-y divide-gray-200">';
+                    data.notifications.forEach(function(notification) {
+                        const bgClass = notification.is_read ? '' : 'bg-blue-50';
+                        const expiredClass = notification.is_expired ? 'opacity-50' : '';
+                        
+                        // Updated icon logic for new type system
+                        let iconClass, iconName;
+                        switch(notification.type) {
+                            case 'reminder':
+                                iconClass = 'bg-orange-100 text-orange-600';
+                                iconName = 'bell';
+                                break;
+                            case 'info':
+                                iconClass = 'bg-blue-100 text-blue-600';
+                                iconName = 'info';
+                                break;
+                            case 'warning':
+                                iconClass = 'bg-yellow-100 text-yellow-600';
+                                iconName = 'alert-triangle';
+                                break;
+                            case 'success':
+                                iconClass = 'bg-green-100 text-green-600';
+                                iconName = 'check-circle';
+                                break;
+                            default:
+                                iconClass = 'bg-gray-100 text-gray-600';
+                                iconName = 'bell';
+                        }
+                        
+                        html += `
+                            <li class="p-3 ${bgClass} ${expiredClass}">
+                                <div class="flex items-start">
+                                    <span class="w-6 h-6 rounded-full ${iconClass} flex items-center justify-center mr-2 flex-shrink-0">
+                                        <i data-lucide="${iconName}" class="w-3 h-3"></i>
+                                    </span>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="font-medium text-sm">${notification.title}</h4>
+                                        <p class="text-xs text-gray-600 mt-1">${notification.message.substring(0, 60)}${notification.message.length > 60 ? '...' : ''}</p>
+                                        <span class="text-xs text-gray-500 mt-1 block">${notification.created_at}</span>
+                                        ${notification.action_url && notification.action_text && !notification.is_expired ? 
+                                            `<a href="${notification.action_url}" class="inline-flex items-center mt-2 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                                                ${notification.action_text}
+                                            </a>` : ''}
+                                    </div>
+                                </div>
+                            </li>
+                        `;
+                    });
+                    html += '</ul>';
+                    notificationList.innerHTML = html;
+                } else {
+                    notificationList.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Tidak ada notifikasi</div>';
+                }
+                
+                // Re-initialize Lucide icons after updating content
+                refreshIcons();
+            }
+            
+            // Update unread badge
+            if (unreadBadge) {
+                if (data.unread_count > 0) {
+                    unreadBadge.textContent = data.unread_count;
+                    unreadBadge.style.display = 'flex';
+                } else {
+                    unreadBadge.style.display = 'none';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

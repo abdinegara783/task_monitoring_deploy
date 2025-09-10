@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analisis Lanjutan - Analysis Report{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4 mb-4">
+                <a href="{% url 'foreman_dashboard' %}" 
+                   class="p-2 bg-white rounded-md shadow-sm border hover:bg-gray-50 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Analisis Lanjutan</h1>
+                    <p class="text-gray-600 mt-2">Lengkapi analisis masalah dan dokumentasi</p>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="bg-white rounded-lg p-4 shadow-sm border">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-blue-600">Step 2 of 2</span>
+                    <span class="text-sm text-gray-500">Analisis Lanjutan</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="bg-white rounded-lg shadow-sm border mb-6">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Ringkasan Laporan</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-700">Unit Code:</span>
+                        <span class="text-gray-900">{{ analysis_report.unit_code|default:'-' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">Problem:</span>
+                        <span class="text-gray-900">{{ analysis_report.get_problem_display|default:'-' }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">Tanggal:</span>
+                        <span class="text-gray-900">{{ analysis_report.report_date }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extended Form -->
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Analisis Mendalam</h2>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" class="p-6">
+                {% csrf_token %}
+                
+                <!-- Component Analysis -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                        Analisis Komponen
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.nama_fungsi_komponen.label }}</label>
+                            {{ form.nama_fungsi_komponen }}
+                            {% if form.nama_fungsi_komponen.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.nama_fungsi_komponen.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.gejala_masalah.label }}</label>
+                            {{ form.gejala_masalah }}
+                            {% if form.gejala_masalah.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.gejala_masalah.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.akar_penyebab_masalah.label }}</label>
+                            {{ form.akar_penyebab_masalah }}
+                            {% if form.akar_penyebab_masalah.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.akar_penyebab_masalah.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 4M1E Analysis -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        Faktor Penyebab (4M1E)
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Pilih faktor-faktor yang berkontribusi terhadap masalah:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                            {{ form.faktor_man }}
+                            <label for="{{ form.faktor_man.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                                {{ form.faktor_man.label }}
+                            </label>
+                        </div>
+                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                            {{ form.faktor_material }}
+                            <label for="{{ form.faktor_material.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                                {{ form.faktor_material.label }}
+                            </label>
+                        </div>
+                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                            {{ form.faktor_machine }}
+                            <label for="{{ form.faktor_machine.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                                {{ form.faktor_machine.label }}
+                            </label>
+                        </div>
+                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                            {{ form.faktor_method }}
+                            <label for="{{ form.faktor_method.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                                {{ form.faktor_method.label }}
+                            </label>
+                        </div>
+                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                            {{ form.faktor_environment }}
+                            <label for="{{ form.faktor_environment.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
+                                {{ form.faktor_environment.label }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Tindakan
+                    </h3>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.tindakan_dilakukan.label }}</label>
+                            {{ form.tindakan_dilakukan }}
+                            {% if form.tindakan_dilakukan.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.tindakan_dilakukan.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.tindakan_pencegahan.label }}</label>
+                            {{ form.tindakan_pencegahan }}
+                            {% if form.tindakan_pencegahan.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.tindakan_pencegahan.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Documentation -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        Dokumentasi
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.dokumentasi_sebelum.label }}</label>
+                            {{ form.dokumentasi_sebelum }}
+                            {% if form.dokumentasi_sebelum.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.dokumentasi_sebelum.errors.0 }}</p>
+                            {% endif %}
+                            <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, PDF, DWG (Max 1MB)</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.dokumentasi_sesudah.label }}</label>
+                            {{ form.dokumentasi_sesudah }}
+                            {% if form.dokumentasi_sesudah.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.dokumentasi_sesudah.errors.0 }}</p>
+                            {% endif %}
+                            <p class="text-xs text-gray-500 mt-1">Format: JPG, PNG, PDF, DWG (Max 1MB)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        {% for error in form.non_field_errors %}
+                            <p class="text-red-600 text-sm">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Submit Buttons -->
+                <div class="flex justify-between pt-6 border-t">
+                    <a href="{% url 'foreman_dashboard' %}" 
+                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                        Simpan Nanti
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        Selesaikan Analysis Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Dashboard - Sistem Pelaporan Kerja{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <!-- Header with Logout -->
+    <div class="flex items-center justify-between mb-6 p-4 bg-white rounded-lg shadow-sm border">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Sistem Pelaporan Kerja</h1>
+            <p class="text-gray-600">Dashboard Real-time Monitoring & Validasi</p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <!-- Current Time & Shift -->
+            <div class="px-3 py-1 border rounded-md flex items-center">
+                <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
+                Shift {{ user.shift }} - <span id="current-time"></span>
+            </div>
+
+            <!-- Notifications -->
+            <button class="relative p-2 hover:bg-gray-100 rounded-md">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+            </button>
+
+            <!-- User Menu -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-medium">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                </div>
+                <div class="text-left">
+                    <p class="font-semibold text-sm">{{ user.get_full_name }}</p>
+                    <p class="text-xs text-gray-600">{{ user.department }}</p>
+                </div>
+                <a href="{% url 'logout' %}" class="ml-2 px-3 py-1 text-red-600 hover:bg-red-50 rounded-md text-sm flex items-center">
+                    <i data-lucide="log-out" class="w-4 h-4 mr-1"></i>
+                    Keluar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Total Karyawan Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-employees">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Total Karyawan</p>
+                    <p class="text-2xl font-bold">{{ stats.total_employees }}</p>
+                </div>
+                <i data-lucide="users" class="w-8 h-8 text-blue-500"></i>
+            </div>
+        </div>
+        
+        <!-- Laporan Hari Ini Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-today-reports">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Laporan Hari Ini</p>
+                    <p class="text-2xl font-bold">{{ stats.today_reports }}</p>
+                </div>
+                <i data-lucide="file-text" class="w-8 h-8 text-green-500"></i>
+            </div>
+        </div>
+        
+        <!-- Menunggu Validasi Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-pending-reports">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Menunggu Validasi</p>
+                    <p class="text-2xl font-bold">{{ stats.pending_validation }}</p>
+                </div>
+                <i data-lucide="alert-circle" class="w-8 h-8 text-orange-500"></i>
+            </div>
+        </div>
+        
+        <!-- Sudah Divalidasi Card -->
+        <div class="bg-white rounded-lg shadow-sm border p-4 cursor-pointer" id="show-validated-reports">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-600">Sudah Divalidasi</p>
+                    <p class="text-2xl font-bold">{{ stats.completed_reports }}</p>
+                </div>
+                <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="border-b">
+            <nav class="flex space-x-8 px-6">
+                <a href="#" class="py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 tab-link active" data-tab="pending-reports">
+                    Validasi Laporan
+                </a>
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="employees-list">
+                    Daftar Karyawan
+                </a>
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="today-reports">
+                    Laporan Hari Ini
+                </a>
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="validated-reports">
+                    Laporan Tervalidasi
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- Pending Reports Tab -->
+            <div class="tab-content active" id="pending-reports">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <h2 class="text-xl font-bold">Laporan Mekanik Menunggu Validasi</h2>
+                </div>
+                <p class="text-gray-600 mb-6">
+                    Klik pada laporan untuk melihat detail dan melakukan validasi
+                </p>
+                
+                {% if pending_reports %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mekanik</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktivitas</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for report in pending_reports %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.report_type == 'activity' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            📝 Activity
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            📊 Analysis
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.component|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                        Menunggu Validasi
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Validasi</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="clipboard-list" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada laporan yang menunggu validasi</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Employees List Tab -->
+            <div class="tab-content hidden" id="employees-list">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <h2 class="text-xl font-bold">Daftar Karyawan (Mekanik)</h2>
+                </div>
+                
+                {% if employees %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NRP</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for employee in employees %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ employee.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ employee.nrp|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ employee.department|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Shift {{ employee.shift }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ employee.email }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="users" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada karyawan yang terdaftar</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Today Reports Tab -->
+            <div class="tab-content hidden" id="today-reports">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
+                    <h2 class="text-xl font-bold">Laporan Hari Ini</h2>
+                </div>
+                
+                {% if today_reports %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mekanik</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for report in today_reports %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.report_type == 'activity' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            📝 Activity
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            📊 Analysis
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if report.status == 'pending' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                            Menunggu
+                                        </span>
+                                    {% elif report.status == 'approved' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            Disetujui
+                                        </span>
+                                    {% elif report.status == 'rejected' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            Ditolak
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.status == 'pending' %}
+                                        <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-blue-600 hover:text-blue-900">Validasi</a>
+                                    {% else %}
+                                        <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-gray-600 hover:text-gray-900">Lihat</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="calendar" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada laporan hari ini</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Validated Reports Tab -->
+            <div class="tab-content hidden" id="validated-reports">
+                <div class="flex items-center gap-2 mb-4">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                    <h2 class="text-xl font-bold">Laporan Tervalidasi</h2>
+                </div>
+                
+                {% if validated_reports %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mekanik</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for report in validated_reports %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {% if report.report_type == 'activity' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            📝 Activity
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            📊 Analysis
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.foreman.name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if report.status == 'approved' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            ✅ Disetujui
+                                        </span>
+                                    {% elif report.status == 'rejected' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            ❌ Ditolak
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <a href="{% url report.validation_url %}?report_id={{ report.id }}" class="text-gray-600 hover:text-gray-900">Lihat Detail</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="check-circle" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <p class="text-gray-500">Tidak ada laporan yang sudah divalidasi</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update current time
+    function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('id-ID');
+        document.getElementById('current-time').textContent = timeString;
+    }
+    
+    updateTime();
+    setInterval(updateTime, 1000);
+    
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all tabs
+                tabLinks.forEach(tab => tab.classList.remove('active', 'border-blue-500', 'text-blue-600'));
+                tabLinks.forEach(tab => tab.classList.add('border-transparent', 'text-gray-500'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active', 'border-blue-500', 'text-blue-600');
+                this.classList.remove('border-transparent', 'text-gray-500');
+                
+                // Hide all tab contents
+                tabContents.forEach(content => content.classList.add('hidden'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Show the selected tab content
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.remove('hidden');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+        
+        // Card click handlers
+        document.getElementById('show-employees').addEventListener('click', function() {
+            document.querySelector('[data-tab="employees-list"]').click();
+        });
+        
+        document.getElementById('show-today-reports').addEventListener('click', function() {
+            document.querySelector('[data-tab="today-reports"]').click();
+        });
+        
+        document.getElementById('show-pending-reports').addEventListener('click', function() {
+            document.querySelector('[data-tab="pending-reports"]').click();
+        });
+        
+        document.getElementById('show-validated-reports').addEventListener('click', function() {
+            document.querySelector('[data-tab="validated-reports"]').click();
+        });
+    });
+</script>
+{% endblock %}

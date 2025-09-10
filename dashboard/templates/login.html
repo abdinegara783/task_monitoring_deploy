@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Sistem Pelaporan Kerja{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-md space-y-6">
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="building-2" class="w-8 h-8 text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Sistem Pelaporan Kerja</h1>
+            <p class="text-gray-600">Masuk ke dashboard pelaporan real-time</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="bg-white rounded-xl shadow-lg border">
+            <div class="p-6 space-y-1">
+                <h2 class="text-2xl font-bold text-center">Masuk</h2>
+                <p class="text-center text-gray-600">
+                    Masukkan email dan password untuk mengakses sistem
+                </p>
+            </div>
+            <div class="p-6 pt-0">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert-message mb-4 p-4 rounded-lg border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+                            <div class="flex items-center">
+                                <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i>
+                                {{ message }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if form.errors %}
+                    <div class="alert-message mb-4 p-4 rounded-lg border bg-red-50 border-red-200 text-red-800">
+                        <div class="flex items-center">
+                            <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i>
+                            Email atau password salah
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div class="space-y-2">
+                        <label for="{{ form.username.id_for_label }}" class="text-sm font-medium">Email</label>
+                        {{ form.username }}
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="{{ form.password.id_for_label }}" class="text-sm font-medium">Password</label>
+                        <div class="relative">
+                            {{ form.password }}
+                            <button type="button" onclick="togglePassword()" class="absolute right-0 top-0 h-11 w-10 flex items-center justify-center">
+                                <i data-lucide="eye" id="eye-icon" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full h-11 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center justify-center">
+                        <i data-lucide="log-in" class="w-4 h-4 mr-2"></i>
+                        Masuk
+                    </button>
+                </form>
+
+                <!-- Demo Accounts Toggle -->
+                <div class="mt-6 pt-6 border-t">
+                    <button onclick="toggleDemoAccounts()" class="w-full h-11 border border-input rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
+                        <span id="demo-toggle-text">Tampilkan Akun Demo</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Accounts -->
+        <div id="demo-accounts" class="hidden bg-white rounded-xl shadow-lg border">
+            <div class="p-6 space-y-1">
+                <h3 class="text-lg font-bold">Akun Demo</h3>
+                <p class="text-gray-600">
+                    Klik salah satu akun di bawah untuk login otomatis
+                </p>
+            </div>
+            <div class="p-6 pt-0 space-y-3">
+                <!-- Employee Account -->
+                <div onclick="fillDemoAccount('ahmad.rizki@company.com', 'password123')" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                            <i data-lucide="users" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Ahmad Rizki</p>
+                            <p class="text-sm text-gray-600">Production</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs border rounded-md">Employee</span>
+                </div>
+
+                <!-- Foreman Account -->
+                <div onclick="fillDemoAccount('budi.santoso@company.com', 'foreman123')" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                            <i data-lucide="shield" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Budi Santoso</p>
+                            <p class="text-sm text-gray-600">Production</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs border rounded-md">Foreman</span>
+                </div>
+
+                <!-- Admin Account -->
+                <div onclick="fillDemoAccount('admin@company.com', 'admin123')" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                            <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Dr. Indra Wijaya</p>
+                            <p class="text-sm text-gray-600">Management</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs border rounded-md">Admin</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-sm text-gray-500">
+            <p>© 2024 PT. Industri Maju Bersama</p>
+            <p>Sistem Pelaporan Kerja Real-time v1.0</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const passwordField = document.getElementById('{{ form.password.id_for_label }}');
+        const eyeIcon = document.getElementById('eye-icon');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            eyeIcon.setAttribute('data-lucide', 'eye-off');
+        } else {
+            passwordField.type = 'password';
+            eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        lucide.createIcons();
+    }
+
+    function toggleDemoAccounts() {
+        const demoAccounts = document.getElementById('demo-accounts');
+        const toggleText = document.getElementById('demo-toggle-text');
+        
+        if (demoAccounts.classList.contains('hidden')) {
+            demoAccounts.classList.remove('hidden');
+            toggleText.textContent = 'Sembunyikan Akun Demo';
+        } else {
+            demoAccounts.classList.add('hidden');
+            toggleText.textContent = 'Tampilkan Akun Demo';
+        }
+    }
+
+    function fillDemoAccount(email, password) {
+        document.getElementById('{{ form.username.id_for_label }}').value = email;
+        document.getElementById('{{ form.password.id_for_label }}').value = password;
+        toggleDemoAccounts();
+    }
+</script>
+{% endblock %}

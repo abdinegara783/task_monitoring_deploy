@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %}Validasi Activity Report - Leader Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-6xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'leader_dashboard' %}" class="p-2 hover:bg-gray-100 rounded-md">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold">Validasi Activity Report</h1>
+                <p class="text-gray-600">{{ report.foreman.name|default:report.foreman.username }} - {{ report.date }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-3 py-1 text-sm font-medium rounded-full 
+                {% if report.status == 'pending' %}bg-orange-100 text-orange-800
+                {% elif report.status == 'approved' %}bg-green-100 text-green-800
+                {% elif report.status == 'rejected' %}bg-red-100 text-red-800
+                {% endif %}">
+                {{ report.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Report Details -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="p-6 border-b">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-6 h-6 text-blue-600"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">Activity Report Details</h2>
+                    <p class="text-sm text-gray-600">
+                        ID: AR{{ report.id|stringformat:"03d" }} | Dibuat: {{ report.created_at|date:"d M Y H:i"|default:'-' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- Basic Information -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Left Column -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">Informasi Dasar</h3>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium">{{ report.date }}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Shift</label>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium">Shift {{ report.shift }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Mulai</label>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium">{{ report.start_time }}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Waktu Selesai</label>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm font-medium">{{ report.end_time }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mekanik</label>
+                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-sm font-medium text-blue-900">{{ report.foreman.name|default:report.foreman.username }}</p>
+                            <p class="text-xs text-blue-700">{{ report.foreman.department|default:'-' }} | NRP: {{ report.foreman.nrp|default:'-' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">Detail Operasional</h3>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Unit Code</label>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm font-medium">{{ report.Unit_Code|default:'Tidak ada unit code' }}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">HM/KM</label>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm font-medium">{{ report.Hmkm|default:'Tidak ada data HM/KM' }}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Komponen</label>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm font-medium">{{ report.get_component_display|default:'Tidak ada komponen' }}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kode Aktivitas</label>
+                        <div class="p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm font-medium">{{ report.get_activities_code_display|default:'Tidak ada kode aktivitas' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activities Description -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Deskripsi Aktivitas</h3>
+                <div class="p-4 bg-gray-50 rounded-lg border">
+                    <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ report.activities|default:'Tidak ada deskripsi aktivitas' }}</p>
+                </div>
+            </div>
+
+            <!-- Current Status -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Status Laporan</h3>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-700">Status Saat Ini:</span>
+                        <span class="px-3 py-1 text-sm font-semibold rounded-full 
+                            {% if report.status == 'pending' %}bg-orange-100 text-orange-800
+                            {% elif report.status == 'approved' %}bg-green-100 text-green-800
+                            {% elif report.status == 'rejected' %}bg-red-100 text-red-800
+                            {% endif %}">
+                            {{ report.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        Dibuat: {{ report.created_at|date:"d M Y H:i"|default:'-' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previous Feedback (if any) -->
+            {% if report.feedback %}
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Feedback Sebelumnya</h3>
+                <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p class="text-sm text-yellow-800 leading-relaxed">{{ report.feedback }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Validation Form -->
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Validasi Leader</h3>
+                
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="feedback" class="block text-sm font-medium text-gray-700 mb-2">
+                            Feedback/Catatan untuk Mekanik
+                        </label>
+                        <textarea 
+                            name="feedback" 
+                            id="feedback" 
+                            rows="4" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                            placeholder="Berikan feedback, catatan, atau saran untuk mekanik..."{% if report.status != 'pending' %} readonly{% endif %}>{% if report.status != 'pending' %}{{ report.feedback|default:'' }}{% endif %}</textarea>
+                        <p class="text-xs text-gray-500 mt-1">
+                            {% if report.status == 'pending' %}
+                                Berikan feedback yang konstruktif untuk membantu mekanik meningkatkan kualitas laporan.
+                            {% else %}
+                                Laporan ini sudah divalidasi. Feedback tidak dapat diubah.
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-between items-center pt-4">
+                        <a href="{% url 'leader_dashboard' %}" 
+                           class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            Kembali ke Dashboard
+                        </a>
+                        
+                        {% if report.status == 'pending' %}
+                        <div class="flex gap-3">
+                            <button type="submit" name="action" value="reject" 
+                                    class="px-6 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
+                                    onclick="return confirm('Apakah Anda yakin ingin menolak laporan ini?')">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                Tolak Laporan
+                            </button>
+                            <button type="submit" name="action" value="approve" 
+                                    class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                                    onclick="return confirm('Apakah Anda yakin ingin menyetujui laporan ini?')">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                Setujui Laporan
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="text-sm text-gray-600 italic">
+                            Laporan ini sudah divalidasi
+                        </div>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.whitespace-pre-wrap {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .lg\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+textarea:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+button:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+</style>
+{% endblock %}
+
+
+## 6. Cek Console Browser
+
+Buka Developer Tools di browser dan lihat:
+- Console errors
+- Network tab untuk melihat response
+- Elements tab untuk melihat apakah data ter-render
+
+## 7. Simplified Template untuk Debug
+
+Buat template sederhana untuk debug:
+```html
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>DEBUG: Leader Validation Activity</h1>
+    
+    <h2>Report Object:</h2>
+    <p>Report: {{ report }}</p>
+    <p>Report ID: {{ report.id }}</p>
+    <p>Foreman: {{ report.foreman }}</p>
+    <p>Foreman Username: {{ report.foreman.username }}</p>
+    <p>Date: {{ report.date }}</p>
+    <p>Status: {{ report.status }}</p>
+    <p>Unit Code: {{ report.Unit_Code }}</p>
+    <p>Activities: {{ report.activities }}</p>
+    
+    <h2>All Report Fields:</h2>
+    <ul>
+        <li>ID: {{ report.id|default:'NONE' }}</li>
+        <li>Foreman: {{ report.foreman|default:'NONE' }}</li>
+        <li>Date: {{ report.date|default:'NONE' }}</li>
+        <li>Shift: {{ report.shift|default:'NONE' }}</li>
+        <li>Start Time: {{ report.start_time|default:'NONE' }}</li>
+        <li>End Time: {{ report.end_time|default:'NONE' }}</li>
+        <li>Unit Code: {{ report.Unit_Code|default:'NONE' }}</li>
+        <li>HM/KM: {{ report.Hmkm|default:'NONE' }}</li>
+        <li>Component: {{ report.component|default:'NONE' }}</li>
+        <li>Activities: {{ report.activities|default:'NONE' }}</li>
+        <li>Activities Code: {{ report.activities_code|default:'NONE' }}</li>
+        <li>Status: {{ report.status|default:'NONE' }}</li>
+        <li>Feedback: {{ report.feedback|default:'NONE' }}</li>
+        <li>Created At: {{ report.created_at|default:'NONE' }}</li>
+    </ul>
+    
+    <h2>Context Debug:</h2>
+    <p>User: {{ user }}</p>
+    <p>User Role: {{ user.role }}</p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <textarea name="feedback" placeholder="Test feedback"></textarea>
+        <button type="submit" name="action" value="approve">Approve</button>
+        <button type="submit" name="action" value="reject">Reject</button>
+    </form>
+</div>
+{% endblock %}

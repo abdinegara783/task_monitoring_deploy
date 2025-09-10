@@ -1,0 +1,661 @@
+{% extends 'base.html' %}
+
+{% block title %}Tambah User Baru - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Tambah User Baru</h1>
+                <p class="text-gray-600 mt-1">Buat akun pengguna baru untuk sistem</p>
+            </div>
+            <a href="{% url 'admin_dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                ← Kembali
+            </a>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                    <div id="step1-indicator" class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                        1
+                    </div>
+                    <span class="ml-2 text-sm font-medium text-blue-600">Informasi Dasar</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-4">
+                    <div id="progress-bar-1" class="h-1 bg-blue-600 transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="flex items-center">
+                    <div id="step2-indicator" class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
+                        2
+                    </div>
+                    <span class="ml-2 text-sm font-medium text-gray-600">Role & Akses</span>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-4">
+                    <div id="progress-bar-2" class="h-1 bg-blue-600 transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="flex items-center">
+                    <div id="step3-indicator" class="w-8 h-8 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center text-sm font-medium">
+                        3
+                    </div>
+                    <span class="ml-2 text-sm font-medium text-gray-600">Konfirmasi</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-6 p-4 rounded-lg flex items-center space-x-3 {% if message.tags == 'error' %}bg-red-50 border border-red-200{% else %}bg-green-50 border border-green-200{% endif %}">
+                {% if message.tags == 'error' %}
+                    <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-red-700 font-medium">{{ message }}</span>
+                {% else %}
+                    <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="text-green-700 font-medium">{{ message }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Error Messages Container -->
+    <div id="error-container" class="hidden mb-6">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-start">
+                <svg class="h-5 w-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Terdapat kesalahan pada form:</h3>
+                    <ul id="error-list" class="mt-2 text-sm text-red-700 list-disc list-inside">
+                        <!-- Error messages will be inserted here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg shadow-sm border p-6">
+        <form method="post" id="createUserForm">
+            {% csrf_token %}
+            
+            <!-- Step 1: Basic Information -->
+            <div id="step1" class="step-content">
+                <h2 class="text-lg font-semibold mb-4 border-b pb-2">Step 1: Informasi Dasar</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
+                        <input type="text" name="username" id="username" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Masukkan username">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="username-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input type="email" name="email" id="email" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="user@company.com">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="email-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">Nama Depan *</label>
+                        <input type="text" name="first_name" id="first_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nama depan">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="first_name-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Nama Belakang *</label>
+                        <input type="text" name="last_name" id="last_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nama belakang">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="last_name-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
+                        <input type="text" name="name" id="name"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nama lengkap (opsional)" readonly>
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon</label>
+                        <input type="text" name="phone" id="phone"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="08123456789">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="phone-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="nrp" class="block text-sm font-medium text-gray-700 mb-2">NRP</label>
+                        <input type="text" name="nrp" id="nrp"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Nomor Registrasi Pegawai">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="nrp-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="department" class="block text-sm font-medium text-gray-700 mb-2">Departemen</label>
+                        <select name="department" id="department"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Departemen</option>
+                            <option value="SUPPORT">Support & Fabrikasi</option>
+                            <option value="TRACK">Track</option>
+                            <option value="PLANT">Plant Coal Hauling</option>
+                            <option value="WHEEL">Wheel</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="shift" class="block text-sm font-medium text-gray-700 mb-2">Shift</label>
+                        <select name="shift" id="shift"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">Shift 1</option>
+                            <option value="2">Shift 2</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end mt-6">
+                    <button type="button" id="nextStep1" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        Lanjut ke Role & Akses →
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Role & Access -->
+            <div id="step2" class="step-content hidden">
+                <h2 class="text-lg font-semibold mb-4 border-b pb-2">Step 2: Role & Akses</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="role" class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                        <select name="role" id="role" required onchange="handleRoleChange()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Role</option>
+                            <option value="admin">Admin</option>
+                            <option value="leader">Leader</option>
+                            <option value="foreman">Mekanik</option>
+                        </select>
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="role-error"></div>
+                    </div>
+                    
+                    <!-- Leader Selection (for Foreman) -->
+                    <div id="leaderSelection" class="hidden">
+                        <label for="leader" class="block text-sm font-medium text-gray-700 mb-2">
+                            Pilih Leader * 
+                            <span class="text-xs text-gray-500">(Wajib untuk Mekanik)</span>
+                        </label>
+                        <select name="leader" id="leader"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Pilih Leader</option>
+                            {% for leader in available_leaders %}
+                            <option value="{{ leader.id }}" data-quota="{{ leader.leader_quota.max_foreman|default:0 }}" data-current="{{ leader.current_foremen_count }}">
+                                {{ leader.name|default:leader.username }} 
+                                ({{ leader.department|default:'-' }}) 
+                                - Quota: {{ leader.current_foremen_count }}/{{ leader.leader_quota.max_foreman|default:0 }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="leader-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="password1" class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                        <input type="password" name="password1" id="password1" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Masukkan password">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="password1-error"></div>
+                    </div>
+                    
+                    <div>
+                        <label for="password2" class="block text-sm font-medium text-gray-700 mb-2">Konfirmasi Password *</label>
+                        <input type="password" name="password2" id="password2" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="Konfirmasi password">
+                        <div class="error-message text-red-600 text-sm mt-1 hidden" id="password2-error"></div>
+                    </div>
+                </div>
+                
+                <!-- Leader Quota Warning -->
+                <div id="leaderQuotaWarning" class="hidden mt-6">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-yellow-800">Perhatian: Leader Quota</h3>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    Untuk membuat Leader baru, Anda perlu mengatur Leader Quota terlebih dahulu.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between mt-6">
+                    <button type="button" id="prevStep2" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+                        ← Kembali
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="button" id="leaderQuotaBtn" class="hidden bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700"
+                                onclick="redirectToLeaderQuota()">
+                            Atur Leader Quota Dulu
+                        </button>
+                        <button type="button" id="nextStep2" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                            Lanjut ke Konfirmasi →
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Confirmation -->
+            <div id="step3" class="step-content hidden">
+                <h2 class="text-lg font-semibold mb-4 border-b pb-2">Step 3: Konfirmasi Data</h2>
+                
+                <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                    <h3 class="text-md font-semibold mb-4">Review Data User</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Username:</span>
+                            <span id="review-username" class="ml-2 text-sm text-gray-900"></span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Email:</span>
+                            <span id="review-email" class="ml-2 text-sm text-gray-900"></span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Nama Lengkap:</span>
+                            <span id="review-name" class="ml-2 text-sm text-gray-900"></span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Role:</span>
+                            <span id="review-role" class="ml-2 text-sm text-gray-900 font-semibold"></span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Departemen:</span>
+                            <span id="review-department" class="ml-2 text-sm text-gray-900"></span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Shift:</span>
+                            <span id="review-shift" class="ml-2 text-sm text-gray-900"></span>
+                        </div>
+                        <div id="review-leader-section" class="hidden">
+                            <span class="text-sm font-medium text-gray-700">Leader:</span>
+                            <span id="review-leader" class="ml-2 text-sm text-gray-900"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button type="button" id="prevStep3" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+                        ← Kembali
+                    </button>
+                    <div class="flex gap-3">
+                        <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                            ✓ Buat User
+                        </button>
+                        <a href="{% url 'admin_dashboard' %}" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
+                            Batal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 3;
+
+// Step navigation functions
+function showStep(step) {
+    // Hide all steps
+    for (let i = 1; i <= totalSteps; i++) {
+        document.getElementById(`step${i}`).classList.add('hidden');
+        document.getElementById(`step${i}-indicator`).classList.remove('bg-blue-600', 'text-white');
+        document.getElementById(`step${i}-indicator`).classList.add('bg-gray-300', 'text-gray-600');
+    }
+    
+    // Show current step
+    document.getElementById(`step${step}`).classList.remove('hidden');
+    
+    // Update indicators
+    for (let i = 1; i <= step; i++) {
+        document.getElementById(`step${i}-indicator`).classList.remove('bg-gray-300', 'text-gray-600');
+        document.getElementById(`step${i}-indicator`).classList.add('bg-blue-600', 'text-white');
+    }
+    
+    // Update progress bars
+    for (let i = 1; i < totalSteps; i++) {
+        const progressBar = document.getElementById(`progress-bar-${i}`);
+        if (i < step) {
+            progressBar.style.width = '100%';
+        } else if (i === step) {
+            progressBar.style.width = '50%';
+        } else {
+            progressBar.style.width = '0%';
+        }
+    }
+    
+    currentStep = step;
+}
+
+// Validation functions
+function validateStep1() {
+    const errors = [];
+    clearErrors();
+    
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const firstName = document.getElementById('first_name').value.trim();
+    const lastName = document.getElementById('last_name').value.trim();
+    
+    if (!username) {
+        showFieldError('username', 'Username wajib diisi');
+        errors.push('Username wajib diisi');
+    } else if (username.length < 3) {
+        showFieldError('username', 'Username minimal 3 karakter');
+        errors.push('Username minimal 3 karakter');
+    }
+    
+    if (!email) {
+        showFieldError('email', 'Email wajib diisi');
+        errors.push('Email wajib diisi');
+    } else if (!isValidEmail(email)) {
+        showFieldError('email', 'Format email tidak valid');
+        errors.push('Format email tidak valid');
+    }
+    
+    if (!firstName) {
+        showFieldError('first_name', 'Nama depan wajib diisi');
+        errors.push('Nama depan wajib diisi');
+    }
+    
+    if (!lastName) {
+        showFieldError('last_name', 'Nama belakang wajib diisi');
+        errors.push('Nama belakang wajib diisi');
+    }
+    
+    if (errors.length > 0) {
+        showErrors(errors);
+        return false;
+    }
+    
+    return true;
+}
+
+function validateStep2() {
+    const errors = [];
+    clearErrors();
+    
+    const role = document.getElementById('role').value;
+    const password1 = document.getElementById('password1').value;
+    const password2 = document.getElementById('password2').value;
+    const leader = document.getElementById('leader').value;
+    
+    if (!role) {
+        showFieldError('role', 'Role wajib dipilih');
+        errors.push('Role wajib dipilih');
+    }
+    
+    if (role === 'foreman' && !leader) {
+        showFieldError('leader', 'Leader wajib dipilih untuk role foreman');
+        errors.push('Leader wajib dipilih untuk role foreman');
+    }
+    
+    if (!password1) {
+        showFieldError('password1', 'Password wajib diisi');
+        errors.push('Password wajib diisi');
+    } else if (password1.length < 6) {
+        showFieldError('password1', 'Password minimal 6 karakter');
+        errors.push('Password minimal 6 karakter');
+    }
+    
+    if (!password2) {
+        showFieldError('password2', 'Konfirmasi password wajib diisi');
+        errors.push('Konfirmasi password wajib diisi');
+    } else if (password1 !== password2) {
+        showFieldError('password2', 'Password tidak cocok');
+        errors.push('Password tidak cocok');
+    }
+    
+    if (errors.length > 0) {
+        showErrors(errors);
+        return false;
+    }
+    
+    return true;
+}
+
+function showFieldError(fieldId, message) {
+    const errorElement = document.getElementById(`${fieldId}-error`);
+    const fieldElement = document.getElementById(fieldId);
+    
+    if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.classList.remove('hidden');
+    }
+    
+    if (fieldElement) {
+        fieldElement.classList.add('border-red-500');
+        fieldElement.classList.remove('border-gray-300');
+    }
+}
+
+function clearErrors() {
+    const errorElements = document.querySelectorAll('.error-message');
+    errorElements.forEach(element => {
+        element.classList.add('hidden');
+        element.textContent = '';
+    });
+    
+    const fieldElements = document.querySelectorAll('input, select');
+    fieldElements.forEach(element => {
+        element.classList.remove('border-red-500');
+        element.classList.add('border-gray-300');
+    });
+    
+    document.getElementById('error-container').classList.add('hidden');
+}
+
+function showErrors(errors) {
+    const errorContainer = document.getElementById('error-container');
+    const errorList = document.getElementById('error-list');
+    
+    errorList.innerHTML = '';
+    errors.forEach(error => {
+        const li = document.createElement('li');
+        li.textContent = error;
+        errorList.appendChild(li);
+    });
+    
+    errorContainer.classList.remove('hidden');
+    errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// Update review data
+function updateReviewData() {
+    document.getElementById('review-username').textContent = document.getElementById('username').value || '-';
+    document.getElementById('review-email').textContent = document.getElementById('email').value || '-';
+    document.getElementById('review-name').textContent = document.getElementById('name').value || '-';
+    
+    const roleSelect = document.getElementById('role');
+    const roleText = roleSelect.options[roleSelect.selectedIndex].text || '-';
+    document.getElementById('review-role').textContent = roleText;
+    
+    const deptSelect = document.getElementById('department');
+    const deptText = deptSelect.options[deptSelect.selectedIndex].text || '-';
+    document.getElementById('review-department').textContent = deptText;
+    
+    const shiftSelect = document.getElementById('shift');
+    const shiftText = shiftSelect.options[shiftSelect.selectedIndex].text || '-';
+    document.getElementById('review-shift').textContent = shiftText;
+    
+    // Show leader info if foreman
+    const leaderSection = document.getElementById('review-leader-section');
+    if (roleSelect.value === 'foreman') {
+        const leaderSelect = document.getElementById('leader');
+        const leaderText = leaderSelect.options[leaderSelect.selectedIndex].text || '-';
+        document.getElementById('review-leader').textContent = leaderText;
+        leaderSection.classList.remove('hidden');
+    } else {
+        leaderSection.classList.add('hidden');
+    }
+}
+
+// Role change handler
+function handleRoleChange() {
+    const roleSelect = document.getElementById('role');
+    const leaderSelection = document.getElementById('leaderSelection');
+    const leaderQuotaWarning = document.getElementById('leaderQuotaWarning');
+    const leaderQuotaBtn = document.getElementById('leaderQuotaBtn');
+    const nextStep2Btn = document.getElementById('nextStep2');
+    const leaderField = document.getElementById('leader');
+    
+    const selectedRole = roleSelect.value;
+    
+    // Reset visibility
+    leaderSelection.classList.add('hidden');
+    leaderQuotaWarning.classList.add('hidden');
+    leaderQuotaBtn.classList.add('hidden');
+    nextStep2Btn.classList.remove('hidden');
+    leaderField.removeAttribute('required');
+    
+    if (selectedRole === 'foreman') {
+        leaderSelection.classList.remove('hidden');
+        leaderField.setAttribute('required', 'required');
+    } else if (selectedRole === 'leader') {
+        leaderQuotaWarning.classList.remove('hidden');
+        leaderQuotaBtn.classList.remove('hidden');
+        nextStep2Btn.classList.add('hidden');
+    }
+}
+
+function redirectToLeaderQuota() {
+    // Save form data
+    const formData = new FormData(document.getElementById('createUserForm'));
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    sessionStorage.setItem('pendingUserData', JSON.stringify(data));
+    
+    // Redirect
+    window.location.href = '{% url "manage_leader_quota" %}';
+}
+
+// Auto-fill name field
+function updateFullName() {
+    const firstName = document.getElementById('first_name').value;
+    const lastName = document.getElementById('last_name').value;
+    const nameField = document.getElementById('name');
+    
+    if (firstName || lastName) {
+        nameField.value = `${firstName} ${lastName}`.trim();
+    }
+}
+
+// Event listeners
+document.getElementById('first_name').addEventListener('input', updateFullName);
+document.getElementById('last_name').addEventListener('input', updateFullName);
+
+document.getElementById('nextStep1').addEventListener('click', function() {
+    if (validateStep1()) {
+        showStep(2);
+    }
+});
+
+document.getElementById('prevStep2').addEventListener('click', function() {
+    showStep(1);
+});
+
+document.getElementById('nextStep2').addEventListener('click', function() {
+    if (validateStep2()) {
+        updateReviewData();
+        showStep(3);
+    }
+});
+
+document.getElementById('prevStep3').addEventListener('click', function() {
+    showStep(2);
+});
+
+// Load pending data if exists
+window.addEventListener('load', function() {
+    const pendingData = sessionStorage.getItem('pendingUserData');
+    if (pendingData) {
+        const data = JSON.parse(pendingData);
+        
+        for (let [key, value] of Object.entries(data)) {
+            const field = document.getElementById(key);
+            if (field) {
+                field.value = value;
+            }
+        }
+        
+        handleRoleChange();
+        sessionStorage.removeItem('pendingUserData');
+    }
+    
+    // Initialize first step
+    showStep(1);
+});
+</script>
+
+<style>
+.step-content {
+    min-height: 400px;
+}
+
+.error-message {
+    transition: all 0.3s ease;
+}
+
+.border-red-500 {
+    border-color: #ef4444 !important;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Smooth transitions */
+.step-content {
+    transition: opacity 0.3s ease;
+}
+
+.step-content.hidden {
+    opacity: 0;
+}
+
+.step-content:not(.hidden) {
+    opacity: 1;
+}
+{% endblock %}

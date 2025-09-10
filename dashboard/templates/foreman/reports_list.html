@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Semua Laporan - Foreman{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'foreman_dashboard' %}" 
+                       class="p-2 bg-white rounded-md shadow-sm border hover:bg-gray-50 transition-colors">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Semua Laporan Activity</h1>
+                        <p class="text-gray-600 mt-2">Riwayat lengkap laporan aktivitas Anda</p>
+                    </div>
+                </div>
+                
+                <a href="{% url 'create_activity_report' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:bg-primary/90 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Buat Laporan Baru
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Laporan</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_reports }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1M8 7h8m-8 0H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V9a2 2 0 00-2-2h-2m-8 0V7"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Bulan Ini</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ this_month_reports }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Rata-rata/Bulan</p>
+                        <p class="text-2xl font-bold text-gray-900">{{ total_reports|floatformat:0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Filter Laporan</h3>
+            <form method="GET" class="flex flex-wrap gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Spesifik</label>
+                    <input type="date" name="date" value="{{ date_filter }}" 
+                           class="input-field px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Bulan</label>
+                    <input type="month" name="month" value="{{ month_filter }}" 
+                           class="input-field px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        Filter
+                    </button>
+                    <a href="{% url 'foreman_reports' %}" 
+                       class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Reports List -->
+        <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div class="px-6 py-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-900">Daftar Laporan</h3>
+            </div>
+            
+            {% if reports %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Component</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for report in reports %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.date|date:"d M Y" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.start_time }} - {{ report.end_time }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.Unit_Code|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.get_component_display|default:report.component|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ report.get_leader_display|default:report.leader|default:"-" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <!-- <button onclick="showReportDetail('{{ report.id }}', '{{ report.date|date:'d M Y'}}', '{{ report.start_time }}', '{{ report.end_time }}', '{{ report.Unit_Code }}', '{{ report.component }}', '{{ report.activities|escapejs }}', '{{ report.leader }}', '{{ report.Hmkm }}', '{{ report.activities_code }}')" 
+                                        class="text-blue-600 hover:text-blue-900 transition-colors">
+                                    Lihat Detail
+                                </button> -->
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if reports.has_other_pages %}
+            <div class="bg-white px-6 py-3 border-t">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Menampilkan {{ reports.start_index }} - {{ reports.end_index }} dari {{ reports.paginator.count }} laporan
+                    </div>
+                    <div class="flex space-x-2">
+                        {% if reports.has_previous %}
+                            <a href="?page={{ reports.previous_page_number }}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}" 
+                               class="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                Previous
+                            </a>
+                        {% endif %}
+                        
+                        <span class="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-md">
+                            {{ reports.number }}
+                        </span>
+                        
+                        {% if reports.has_next %}
+                            <a href="?page={{ reports.next_page_number }}{% if date_filter %}&date={{ date_filter }}{% endif %}{% if month_filter %}&month={{ month_filter }}{% endif %}" 
+                               class="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                Next
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="p-12 text-center">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum Ada Laporan</h3>
+                <p class="text-gray-600 mb-4">Anda belum membuat laporan aktivitas apapun.</p>
+                <a href="{% url 'create_activity_report' %}" 
+                   class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                    Buat Laporan Pertama
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Include the same popup modal from dashboard -->
+<div id="reportModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <!-- Same modal content as in dashboard -->
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 8px; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto;">
+        <!-- Header -->
+        <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 18px; font-weight: bold; margin: 0;">Detail Activity Report</h3>
+            <button id="closeModal" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <!-- Basic Info -->
+                <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                    <h4 style="font-weight: 600; margin-bottom: 12px; color: #374151;">📅 Informasi Dasar</h4>
+                    <div style="font-size: 14px; line-height: 1.5;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Tanggal:</span>
+                            <span id="modalDate" style="font-weight: 500;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Waktu:</span>
+                            <span id="modalTime" style="font-weight: 500;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Unit Code:</span>
+                            <span id="modalUnitCode" style="font-weight: 500;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #6b7280;">HM/KM:</span>
+                            <span id="modalHmkm" style="font-weight: 500;">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Work Details -->
+                <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                    <h4 style="font-weight: 600; margin-bottom: 12px; color: #374151;">🔧 Detail Pekerjaan</h4>
+                    <div style="font-size: 14px; line-height: 1.5;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Leader:</span>
+                            <span id="modalLeader" style="font-weight: 500;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #6b7280;">Component:</span>
+                            <span id="modalComponent" style="font-weight: 500;">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #6b7280;">Activity Code:</span>
+                            <span id="modalActivityCode" style="font-weight: 500;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Activities -->
+            <div style="background: #f9fafb; padding: 16px; border-radius: 8px;">
+                <h4 style="font-weight: 600; margin-bottom: 12px; color: #374151;">📝 Deskripsi Aktivitas</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <p id="modalActivities" style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151;">-</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="padding: 20px; border-top: 1px solid #e5e7eb; text-align: right; background: #f9fafb;">
+            <button id="closeModalBtn" style="background: #6b7280; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Tutup</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Same popup script as in dashboard
+function showReportDetail(id, date, startTime, endTime, unitCode, component, activities, leader, hmkm, activityCode) {
+    console.log('Showing report detail:', { id, date, startTime, endTime });
+    
+    // Update modal content
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('modalTime').textContent = startTime + ' - ' + endTime;
+    document.getElementById('modalUnitCode').textContent = unitCode || '-';
+    document.getElementById('modalHmkm').textContent = hmkm || '-';
+    document.getElementById('modalLeader').textContent = getLeaderName(leader);
+    document.getElementById('modalComponent').textContent = getComponentName(component);
+    document.getElementById('modalActivityCode').textContent = activityCode || '-';
+    document.getElementById('modalActivities').textContent = activities || 'Tidak ada deskripsi aktivitas';
+    
+    // Show modal
+    const modal = document.getElementById('reportModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+// Close modal functions
+function closeModal() {
+    const modal = document.getElementById('reportModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const closeBtn = document.getElementById('closeModal');
+    const closeBtnFooter = document.getElementById('closeModalBtn');
+    const modal = document.getElementById('reportModal');
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    
+    if (closeBtnFooter) {
+        closeBtnFooter.addEventListener('click', closeModal);
+    }
+    
+    // Close when clicking outside
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }
+    
+    // Close with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal && modal.style.display === 'block') {
+            closeModal();
+        }
+    });
+});
+
+// Helper functions
+function getLeaderName(leaderCode) {
+    const leaders = {
+        'Leader_1': 'YUDI SULISTIYONO',
+        'Leader_2': 'DWI ARI PRASETYA',
+        'Leader_3': 'ADI RIYANTO',
+        'Leader_4': 'MOH FADHOLI'
+    };
+    return leaders[leaderCode] || leaderCode || '-';
+}
+
+function getComponentName(componentCode) {
+    const components = {
+        'Component_1': 'Engine',
+        'Component_2': 'Clutch - Couper',
+        'Component_3': 'PTO',
+        'Component_4': 'Transmisi',
+        'Component_5': 'Final Drive',
+        'Component_6': 'Travel - Axle',
+        'Component_7': 'Steering',
+        'Component_8': 'Under Carriage',
+        'Component_9': 'Wheel',
+        'Component_10': 'Frame & Guard',
+        'Component_11': 'Electric',
+        'Component_12': 'Brake',
+        'Component_13': 'Suspension',
+        'Component_14': 'Hydraulic',
+        'Component_15': 'Pneumatic'
+    };
+    return components[componentCode] || componentCode || '-';
+}
+</script>
+{% endblock %}

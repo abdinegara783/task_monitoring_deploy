@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Hapus Karyawan - {{ employee.name|default:employee.get_full_name }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 py-8">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'admin_dashboard' %}" 
+                   class="p-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-red-900">Hapus Karyawan</h1>
+                    <p class="text-red-600 mt-2">Konfirmasi penghapusan data karyawan</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Card -->
+        <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Warning Header -->
+            <div class="bg-gradient-to-r from-red-600 to-pink-600 px-8 py-6">
+                <div class="flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                    </div>
+                    <div class="text-white">
+                        <h2 class="text-2xl font-bold">Peringatan!</h2>
+                        <p class="text-red-100">Tindakan ini tidak dapat dibatalkan</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Info -->
+            <div class="p-8">
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Data yang akan dihapus:</h3>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                                {{ employee.first_name|first }}{{ employee.last_name|first }}
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-900">{{ employee.name|default:employee.get_full_name }}</h4>
+                                <p class="text-gray-600">{{ employee.get_role_display }} - {{ employee.department|default:"Tidak ada departemen" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">Username:</span>
+                                <span class="text-gray-900 font-medium ml-2">{{ employee.username }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Email:</span>
+                                <span class="text-gray-900 font-medium ml-2">{{ employee.email }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">NRP:</span>
+                                <span class="text-gray-900 font-medium ml-2">{{ employee.nrp|default:"-" }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Shift:</span>
+                                <span class="text-gray-900 font-medium ml-2">Shift {{ employee.shift }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Message -->
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start space-x-3">
+                        <svg class="w-5 h-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <h4 class="text-red-800 font-semibold">Konsekuensi Penghapusan:</h4>
+                            <ul class="text-red-700 text-sm mt-2 space-y-1">
+                                <li>• Semua data karyawan akan dihapus permanen</li>
+                                <li>• Riwayat login dan aktivitas akan hilang</li>
+                                <li>• Data tidak dapat dipulihkan setelah dihapus</li>
+                                <li>• Akses sistem akan langsung dinonaktifkan</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confirmation Form -->
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" id="confirm-delete" required 
+                                   class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500">
+                            <label for="confirm-delete" class="text-yellow-800 font-medium">
+                                Saya memahami konsekuensi dan yakin ingin menghapus karyawan ini
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <a href="{% url 'admin_dashboard' %}" 
+                           class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Batal
+                        </a>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white font-semibold rounded-xl hover:from-red-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                                id="delete-btn" disabled>
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            Hapus Karyawan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enable delete button only when checkbox is checked
+document.getElementById('confirm-delete').addEventListener('change', function() {
+    const deleteBtn = document.getElementById('delete-btn');
+    deleteBtn.disabled = !this.checked;
+    
+    if (this.checked) {
+        deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+        deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+});
+</script>
+{% endblock %}

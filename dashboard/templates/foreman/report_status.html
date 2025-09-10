@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Status Laporan - Sistem Pelaporan Kerja{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Status Laporan</h1>
+            <p class="text-gray-600">Lihat status semua laporan Anda</p>
+        </div>
+        <a href="{% url 'foreman_dashboard' %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+            Kembali ke Dashboard
+        </a>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="border-b">
+            <nav class="flex space-x-8 px-6">
+                <a href="#" class="py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 tab-link active" data-tab="activity-reports">
+                    Activity Reports
+                </a>
+                <a href="#" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-link" data-tab="analysis-reports">
+                    Analysis Reports
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Activity Reports Tab -->
+        <div class="tab-content active p-6" id="activity-reports">
+            <h2 class="text-xl font-bold mb-4">Activity Reports</h2>
+            
+            {% if activity_reports %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktivitas</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for report in activity_reports %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.get_component_display|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities_code|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if report.status == 'pending' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                        Menunggu Validasi
+                                    </span>
+                                {% elif report.status == 'approved' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Disetujui
+                                    </span>
+                                {% elif report.status == 'rejected' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Ditolak
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {{ report.feedback|default:'-' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i data-lucide="file-text" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                <p class="text-gray-500">Belum ada activity report</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Analysis Reports Tab -->
+        <div class="tab-content hidden p-6" id="analysis-reports">
+            <h2 class="text-xl font-bold mb-4">Analysis Reports</h2>
+            
+            {% if analysis_reports %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Problem</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for report in analysis_reports %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.report_date }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.unit_code|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.get_problem_display|default:'-' }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">{{ report.title_problem|truncatechars:50 }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if report.status == 'pending' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                        Menunggu Validasi
+                                    </span>
+                                {% elif report.status == 'approved' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Disetujui
+                                    </span>
+                                {% elif report.status == 'rejected' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Ditolak
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {{ report.feedback|default:'-' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i data-lucide="bar-chart" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                <p class="text-gray-500">Belum ada analysis report</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all tabs
+                tabLinks.forEach(tab => tab.classList.remove('active', 'border-blue-500', 'text-blue-600'));
+                tabLinks.forEach(tab => tab.classList.add('border-transparent', 'text-gray-500'));
+                
+                // Add active class to clicked tab
+                this.classList.add('active', 'border-blue-500', 'text-blue-600');
+                this.classList.remove('border-transparent', 'text-gray-500');
+                
+                // Hide all tab contents
+                tabContents.forEach(content => content.classList.add('hidden'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                // Show the selected tab content
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(tabId).classList.remove('hidden');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

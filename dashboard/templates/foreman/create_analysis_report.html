@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buat Analysis Report{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex items-center space-x-4 mb-4">
+                <a href="{% url 'foreman_dashboard' %}" 
+                   class="p-2 bg-white rounded-md shadow-sm border hover:bg-gray-50 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </a>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Buat Analysis Report</h1>
+                    <p class="text-gray-600 mt-2">Laporan analisis masalah dan troubleshooting</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-lg shadow-sm border">
+            <div class="px-6 py-4 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Form Analysis Report</h2>
+            </div>
+            
+            <form method="post" class="p-6">
+                {% csrf_token %}
+                
+                <!-- Basic Information -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Informasi Dasar
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.section_track.label }}</label>
+                            {{ form.section_track }}
+                            {% if form.section_track.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.section_track.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.no_report.label }}</label>
+                            {{ form.no_report }}
+                            {% if form.no_report.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.no_report.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.report_date.label }}</label>
+                            {{ form.report_date }}
+                            {% if form.report_date.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.report_date.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Work Order Information -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v11a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5h2a2 2 0 012 2v11a2 2 0 01-2 2h-2a2 2 0 01-2-2V7a2 2 0 012-2z"></path>
+                        </svg>
+                        Informasi Work Order
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.WO_Number.label }}</label>
+                            {{ form.WO_Number }}
+                            {% if form.WO_Number.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.WO_Number.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.WO_date.label }}</label>
+                            {{ form.WO_date }}
+                            {% if form.WO_date.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.WO_date.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.unit_code.label }}</label>
+                            {{ form.unit_code }}
+                            {% if form.unit_code.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.unit_code.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.Hm.label }}</label>
+                            {{ form.Hm }}
+                            {% if form.Hm.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.Hm.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Problem Information -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-red-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        Informasi Masalah
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.problem.label }}</label>
+                            {{ form.problem }}
+                            {% if form.problem.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.problem.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.Trouble_date.label }}</label>
+                            {{ form.Trouble_date }}
+                            {% if form.Trouble_date.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.Trouble_date.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.title_problem.label }}</label>
+                        {{ form.title_problem }}
+                        {% if form.title_problem.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ form.title_problem.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Part Information -->
+                <div class="mb-8">
+                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                        </svg>
+                        Informasi Part
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.part_no.label }}</label>
+                            {{ form.part_no }}
+                            {% if form.part_no.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.part_no.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.part_name.label }}</label>
+                            {{ form.part_name }}
+                            {% if form.part_name.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.part_name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        {% for error in form.non_field_errors %}
+                            <p class="text-red-600 text-sm">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-4 pt-6 border-t">
+                    <a href="{% url 'foreman_dashboard' %}" 
+                       class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                        Batal
+                    </a>
+                    <button type="submit" 
+                            class="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+                        Simpan Analysis Report
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

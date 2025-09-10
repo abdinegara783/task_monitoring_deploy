@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+
+{% block title %}Validasi Analysis Report - Leader Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-6xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'leader_dashboard' %}" class="p-2 hover:bg-gray-100 rounded-md">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold">Validasi Analysis Report</h1>
+                <p class="text-gray-600">{{ report.foreman.name|default:report.foreman.username }} - {{ report.report_date }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                Menunggu Validasi
+            </span>
+        </div>
+    </div>
+
+    <!-- Report Details -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="p-6 border-b">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <i data-lucide="bar-chart" class="w-5 h-5 text-green-600"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold">Analysis Report</h2>
+                    <p class="text-sm text-gray-600">
+                        {{ report.report_date }} | {{ report.section_track }} | ID: {{ report.no_report|default:report.id }}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Basic Info -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-green-50 rounded-lg">
+                <div>
+                    <p class="text-sm font-medium text-green-900">Mekanik</p>
+                    <p class="text-sm text-green-800">{{ report.foreman.name|default:report.foreman.username }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-green-900">Unit Code</p>
+                    <p class="text-sm text-green-800">{{ report.unit_code|default:'-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-green-900">WO Number</p>
+                    <p class="text-sm text-green-800">{{ report.WO_Number|default:'-' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-green-900">Tanggal Kirim</p>
+                    <p class="text-sm text-green-800">{{ report.created_at|date:"d M Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-8">
+            <!-- Basic Report Information -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i data-lucide="info" class="w-5 h-5 text-blue-600 mr-2"></i>
+                        Informasi Dasar
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <h4 class="text-sm font-medium mb-1">Judul Problem</h4>
+                            <div class="p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm">{{ report.title_problem|default:'-' }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">Problem Type</h4>
+                                <div class="p-2 bg-gray-50 rounded">
+                                    <p class="text-sm">{{ report.get_problem_display|default:'-' }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">Trouble Date</h4>
+                                <div class="p-2 bg-gray-50 rounded">
+                                    <p class="text-sm">{{ report.Trouble_date|default:'-' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">Part Number</h4>
+                                <div class="p-2 bg-gray-50 rounded">
+                                    <p class="text-sm">{{ report.part_no|default:'-' }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">Part Name</h4>
+                                <div class="p-2 bg-gray-50 rounded">
+                                    <p class="text-sm">{{ report.part_name|default:'-' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i data-lucide="settings" class="w-5 h-5 text-purple-600 mr-2"></i>
+                        Detail Teknis
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">HM</h4>
+                                <div class="p-2 bg-gray-50 rounded">
+                                    <p class="text-sm">{{ report.Hm|default:'-' }}</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium mb-1">WO Date</h4>
+                                <div class="p-2 bg-gray-50 rounded">
+                                    <p class="text-sm">{{ report.WO_date|default:'-' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-sm font-medium mb-1">Email</h4>
+                            <div class="p-2 bg-gray-50 rounded">
+                                <p class="text-sm">{{ report.email|default:'-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extended Analysis Fields -->
+            {% if report.nama_fungsi_komponen or report.gejala_masalah or report.akar_penyebab_masalah %}
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="search" class="w-5 h-5 text-orange-600 mr-2"></i>
+                    Analisis Mendalam
+                </h3>
+                
+                <div class="space-y-4">
+                    {% if report.nama_fungsi_komponen %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Nama & Fungsi Komponen</h4>
+                        <div class="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <p class="text-sm">{{ report.nama_fungsi_komponen }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.gejala_masalah %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Gejala Masalah yang Dihadapi</h4>
+                        <div class="p-3 bg-red-50 rounded-lg border border-red-200">
+                            <p class="text-sm">{{ report.gejala_masalah }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.akar_penyebab_masalah %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Akar Penyebab Masalah</h4>
+                        <div class="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <p class="text-sm">{{ report.akar_penyebab_masalah }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 4M1E Analysis -->
+            {% if report.faktor_man or report.faktor_material or report.faktor_machine or report.faktor_method or report.faktor_environment %}
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="target" class="w-5 h-5 text-blue-600 mr-2"></i>
+                    Analisis Faktor Penyebab (4M1E)
+                </h3>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div class="flex items-center p-3 rounded-lg border {{ report.faktor_man|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
+                        <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_man|yesno:'bg-red-500,bg-gray-400' }}"></div>
+                        <span class="text-sm font-medium {{ report.faktor_man|yesno:'text-red-800,text-gray-600' }}">Man (Manusia)</span>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg border {{ report.faktor_material|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
+                        <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_material|yesno:'bg-red-500,bg-gray-400' }}"></div>
+                        <span class="text-sm font-medium {{ report.faktor_material|yesno:'text-red-800,text-gray-600' }}">Material</span>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg border {{ report.faktor_machine|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
+                        <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_machine|yesno:'bg-red-500,bg-gray-400' }}"></div>
+                        <span class="text-sm font-medium {{ report.faktor_machine|yesno:'text-red-800,text-gray-600' }}">Machine</span>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg border {{ report.faktor_method|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
+                        <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_method|yesno:'bg-red-500,bg-gray-400' }}"></div>
+                        <span class="text-sm font-medium {{ report.faktor_method|yesno:'text-red-800,text-gray-600' }}">Method</span>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg border {{ report.faktor_environment|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
+                        <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_environment|yesno:'bg-red-500,bg-gray-400' }}"></div>
+                        <span class="text-sm font-medium {{ report.faktor_environment|yesno:'text-red-800,text-gray-600' }}">Environment</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions Taken -->
+            {% if report.tindakan_dilakukan or report.tindakan_pencegahan %}
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-green-600 mr-2"></i>
+                    Tindakan yang Dilakukan
+                </h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {% if report.tindakan_dilakukan %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Tindakan yang Dilakukan</h4>
+                        <div class="p-3 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-sm">{{ report.tindakan_dilakukan }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.tindakan_pencegahan %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Tindakan Pencegahan</h4>
+                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="text-sm">{{ report.tindakan_pencegahan }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Documentation -->
+            {% if report.dokumentasi_sebelum or report.dokumentasi_sesudah %}
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="image" class="w-5 h-5 text-purple-600 mr-2"></i>
+                    Dokumentasi
+                </h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {% if report.dokumentasi_sebelum %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Dokumentasi Sebelum</h4>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <a href="{{ report.dokumentasi_sebelum.url }}" target="_blank" class="flex items-center text-blue-600 hover:text-blue-800">
+                                <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                                <span class="text-sm">Lihat Dokumentasi</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if report.dokumentasi_sesudah %}
+                    <div>
+                        <h4 class="text-sm font-medium mb-2">Dokumentasi Sesudah</h4>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <a href="{{ report.dokumentasi_sesudah.url }}" target="_blank" class="flex items-center text-blue-600 hover:text-blue-800">
+                                <i data-lucide="external-link" class="w-4 h-4 mr-2"></i>
+                                <span class="text-sm">Lihat Dokumentasi</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Validation Form -->
+            <form method="post" class="border-t pt-6">
+                {% csrf_token %}
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="feedback" class="block text-sm font-medium text-gray-700 mb-2">Feedback/Catatan untuk Mekanik</label>
+                        <textarea name="feedback" id="feedback" rows="4" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Berikan feedback atau catatan untuk mekanik...">{{ report.feedback|default:'' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="submit" name="action" value="reject" class="px-6 py-2 border border-red-300 text-red-700 rounded-md hover:bg-red-50 transition-colors flex items-center gap-2" onclick="return confirm('Apakah Anda yakin ingin menolak laporan ini?')">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i>
+                        Tolak
+                    </button>
+                    <button type="submit" name="action" value="approve" class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2" onclick="return confirm('Apakah Anda yakin ingin menyetujui laporan ini?')">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        Setujui
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
