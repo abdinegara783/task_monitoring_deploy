@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+# Tambahkan URL untuk API
 urlpatterns = [
     path("hello-world/", views.hello_world_tailwind, name="hello_world_tailwind"),
     path("login/", views.login_view, name="login"),
@@ -65,4 +66,5 @@ urlpatterns = [
     path('foreman/create-analysis-report/step2/<int:report_id>/', views.create_analysis_report_step2, name='create_analysis_report_step2'),
     # Tambahkan URL untuk download single analysis report
     path('superadmin/export/analysis-report/<int:report_id>/pdf/', views.export_single_analysis_report_pdf, name='export_single_analysis_report_pdf'),
+    path('api/check-leader-quota/', views.api_check_leader_quota, name='api_check_leader_quota'),
 ]

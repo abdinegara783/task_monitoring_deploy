@@ -22,7 +22,7 @@ from django.http import HttpResponse
 from .services.pdf_service import PDFReportService
 from .services.analysis_pdf_service import AnalysisPDFService
 from django.db.models import Q
-from datetime import datetime, timedelta
+from django.http import JsonResponse\
 
 
 def hello_world_tailwind(request):
@@ -1260,6 +1260,43 @@ def pdf_export_page(request):
     }
 
     return render(request, "admin/pdf_export.html", context)
+
+@login_required
+@role_required(["admin", "superadmin"])
+def api_check_leader_quota(request):
+    """API untuk cek apakah username terdaftar di leader quota"""
+    if request.method == 'POST':
+        import json
+        data = json.loads(request.body)
+        username = data.get('username', '').strip()
+        
+        if not username:
+            return JsonResponse({
+                'is_registered': False,
+                'message': 'Username tidak boleh kosong'
+            })
+        
+        # Cek di LeaderQuota
+        is_registered = LeaderQuota.is_username_registered(username)
+        quota_info = None
+        
+        if is_registered:
+            quota = LeaderQuota.get_quota_by_username(username)
+            if quota:
+                quota_info = {
+                    'leader_name': quota.leader_name,
+                    'max_foreman': quota.max_foreman,
+                    'current_count': quota.current_foreman_count,
+                    'available_slots': quota.available_slots
+                }
+        
+        return JsonResponse({
+            'is_registered': is_registered,
+            'quota_info': quota_info,
+            'message': 'Username terdaftar' if is_registered else 'Username belum terdaftar'
+        })
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 @login_required

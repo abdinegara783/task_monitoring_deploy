@@ -431,11 +431,15 @@
                 </div>
                 
                 {% if leader_quotas %}
+                <!-- Perbaiki bagian Leader Quota Tab (line 434-450) -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
+                        <!-- Update tabel kuota leader untuk menampilkan username -->
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status User</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max Mekanik</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Count</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Available</th>
@@ -447,9 +451,27 @@
                             {% for quota in leader_quotas %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.leader_name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    <span class="font-mono">@{{ quota.leader_username }}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    {% if quota.leader_user %}
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                                            User Dibuat
+                                        </span>
+                                    {% else %}
+                                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                                            Belum Dibuat
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.max_foreman }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.current_foreman_count }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ quota.max_foreman|add:quota.current_foreman_count|add:"-"|add:quota.current_foreman_count }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <span class="px-2 py-1 {% if quota.available_slots > 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} rounded-full text-xs font-medium">
+                                        {{ quota.available_slots }}
+                                    </span>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     {% if quota.is_active %}
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -462,7 +484,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <a href="{% url 'admin_list' %}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                                    <a href="{% url 'manage_leader_quota' %}" class="text-blue-600 hover:text-blue-900">Edit</a>
                                 </td>
                             </tr>
                             {% endfor %}

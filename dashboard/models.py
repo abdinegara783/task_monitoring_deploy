@@ -5,7 +5,16 @@ from datetime import datetime, timedelta
 
 
 class LeaderQuota(models.Model):
-    leader_name = models.CharField(max_length=100, unique=True)
+    leader_name = models.CharField(max_length=100)
+    leader_username = models.CharField(max_length=150, unique=True)  # Tambah field username
+    leader_user = models.ForeignKey(
+        'User', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        limit_choices_to={'role': 'leader'},
+        related_name='quota_as_leader'  # Ubah related_name untuk menghindari konflik
+    )
     max_foreman = models.PositiveIntegerField(default=0)
     current_foreman_count = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -13,10 +22,38 @@ class LeaderQuota(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.leader_name} ({self.current_foreman_count}/{self.max_foreman})"
+        return f"{self.leader_name} (@{self.leader_username}) - {self.current_foreman_count}/{self.max_foreman}"
 
     def can_add_foreman(self):
         return self.current_foreman_count < self.max_foreman and self.is_active
+    
+    @property
+    def available_slots(self):
+        return max(0, self.max_foreman - self.current_foreman_count)
+    
+    def update_foreman_count(self):
+        if self.leader_user:
+            actual_count = User.objects.filter(
+                leader=self.leader_user, 
+                role='foreman', 
+                is_active=True
+            ).count()
+            self.current_foreman_count = actual_count
+            self.save()
+        return self.current_foreman_count
+    
+    @classmethod
+    def is_username_registered(cls, username):
+        """Cek apakah username terdaftar di kuota leader"""
+        return cls.objects.filter(leader_username=username, is_active=True).exists()
+    
+    @classmethod
+    def get_quota_by_username(cls, username):
+        """Ambil kuota berdasarkan username"""
+        try:
+            return cls.objects.get(leader_username=username, is_active=True)
+        except cls.DoesNotExist:
+            return None
 
     class Meta:
         verbose_name = "Leader Quota"
@@ -28,7 +65,7 @@ class User(AbstractUser):
         ("superadmin", "Super Admin"),
         ("admin", "Admin"),
         ("leader", "Leader"),
-        ("foreman", "Mekanik"),  # Ubah dari "Foreman" menjadi "Mekanik"
+        ("foreman", "Mekanik"),
     ]
     DEPARTMENT_CHOICES = [
         ("SUPPORT", "Support & Fabrikasi"),
@@ -57,15 +94,6 @@ class User(AbstractUser):
         related_name="foremen",
     )
 
-    # Relasi ke LeaderQuota untuk leader
-    leader_quota = models.OneToOneField(
-        LeaderQuota,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="leader_user",
-    )
-
     shift = models.IntegerField(default=1, choices=[(1, "Shift 1"), (2, "Shift 2")])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -73,21 +101,37 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         # Auto-update foreman count ketika foreman disimpan
         if self.role == "foreman" and self.leader:
-            if self.leader.leader_quota:
+            # Gunakan reverse relation yang baru: quota_as_leader
+            quota = self.leader.quota_as_leader.first()
+            if quota:
                 # Jika ini adalah foreman baru
                 if not self.pk:
-                    self.leader.leader_quota.current_foreman_count += 1
-                    self.leader.leader_quota.save()
+                    quota.current_foreman_count += 1
+                    quota.save()
 
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         # Update foreman count ketika foreman dihapus
-        if self.role == "foreman" and self.leader and self.leader.leader_quota:
-            self.leader.leader_quota.current_foreman_count -= 1
-            self.leader.leader_quota.save()
-
+        if self.role == "foreman" and self.leader:
+            quota = self.leader.quota_as_leader.first()
+            if quota:
+                quota.current_foreman_count = max(0, quota.current_foreman_count - 1)
+                quota.save()
+        
         super().delete(*args, **kwargs)
+
+    def get_full_name(self):
+        if self.name:
+            return self.name
+        return f"{self.first_name} {self.last_name}".strip() or self.username
+
+    def __str__(self):
+        return self.get_full_name()
+
+    class Meta:
+        verbose_name = "User"
+        verbose_name_plural = "Users"
 
 
 class ActivityReport(models.Model):

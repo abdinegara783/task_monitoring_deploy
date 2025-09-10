@@ -14,9 +14,45 @@ class LeaderQuotaForm(forms.ModelForm):
         model = LeaderQuota
         fields = ['leader_name', 'max_foreman']
         widgets = {
-            'leader_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'max_foreman': forms.NumberInput(attrs={'class': 'form-control'}),
+            'leader_name': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
+                'placeholder': 'Nama lengkap leader'
+            }),
+            'leader_username': forms.TextInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
+                'placeholder': 'Username yang akan digunakan leader'
+            }),
+            'max_foreman': forms.NumberInput(attrs={
+                'class': 'input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400',
+                'placeholder': 'Maksimal jumlah mekanik',
+                'min': '1'
+            })
         }
+        labels = {
+            'leader_name': 'Nama Leader',
+            'leader_username': 'Username Leader',
+            'max_foreman': 'Maksimal Mekanik'
+        }
+    
+    def clean_leader_username(self):
+        username = self.cleaned_data.get('leader_username')
+        if username:
+            # Cek apakah username sudah digunakan di User
+            if User.objects.filter(username=username).exists():
+                raise forms.ValidationError("Username ini sudah digunakan oleh user lain.")
+            
+            # Cek apakah username sudah ada di kuota lain (untuk edit)
+            if self.instance.pk:
+                existing = LeaderQuota.objects.filter(
+                    leader_username=username
+                ).exclude(pk=self.instance.pk)
+            else:
+                existing = LeaderQuota.objects.filter(leader_username=username)
+            
+            if existing.exists():
+                raise forms.ValidationError("Username ini sudah terdaftar di kuota leader lain.")
+        
+        return username
 
 
 class LoginForm(AuthenticationForm):
