@@ -1,8 +1,8 @@
+from datetime import datetime, timedelta
+import calendar
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import datetime, timedelta
 from dashboard.models import User, ActivityReport, AnalysisReport, Notification
-import calendar
 
 class Command(BaseCommand):
     help = 'Send automatic notifications for activity and analysis reports'
@@ -23,22 +23,36 @@ class Command(BaseCommand):
         now = timezone.now()
         today = now.date()
         
-        # Deadline is 18:00 (6 PM)
-        deadline_time = datetime.combine(today, datetime.min.time().replace(hour=18))
-        deadline_time = timezone.make_aware(deadline_time)
-        
-        # Skip if deadline has passed
-        if now > deadline_time:
-            return
-        
-        # Calculate hours until deadline
-        time_until_deadline = deadline_time - now
-        hours_left = time_until_deadline.total_seconds() / 3600
-        
         # Get all foreman users
         foreman_users = User.objects.filter(role='foreman', is_active=True)
         
         for user in foreman_users:
+            # Determine deadline based on user's shift
+            if user.shift == 1:
+                # Shift 1: deadline jam 18:00
+                deadline_hour = 18
+            else:
+                # Shift 2: deadline jam 05:00 (next day)
+                deadline_hour = 5
+                
+            # Set deadline time based on shift
+            if user.shift == 1:
+                deadline_time = datetime.combine(today, datetime.min.time().replace(hour=deadline_hour))
+            else:
+                # For shift 2, deadline is 05:00 next day
+                next_day = today + timedelta(days=1)
+                deadline_time = datetime.combine(next_day, datetime.min.time().replace(hour=deadline_hour))
+                
+            deadline_time = timezone.make_aware(deadline_time)
+            
+            # Skip if deadline has passed
+            if now > deadline_time:
+                continue
+            
+            # Calculate hours until deadline
+            time_until_deadline = deadline_time - now
+            hours_left = time_until_deadline.total_seconds() / 3600
+            
             # Check if user has already submitted activity report today
             has_report_today = ActivityReport.objects.filter(
                 foreman=user,
@@ -50,17 +64,20 @@ class Command(BaseCommand):
                 if 0.9 <= hours_left <= 1.1:  # 1 hour before (with 6-minute tolerance)
                     notification = Notification.create_activity_reminder(user, 1)
                     if notification:
-                        self.stdout.write(f'📧 Sent 1-hour reminder to {user.username}')
+                        shift_text = "Shift 1 (18:00)" if user.shift == 1 else "Shift 2 (05:00)"
+                        self.stdout.write(f'📧 Sent 1-hour reminder to {user.username} - {shift_text}')
                 
                 elif 0.4 <= hours_left <= 0.6:  # 30 minutes before
                     notification = Notification.create_activity_reminder(user, 0.5)
                     if notification:
-                        self.stdout.write(f'🚨 Sent 30-minute reminder to {user.username}')
+                        shift_text = "Shift 1 (18:00)" if user.shift == 1 else "Shift 2 (05:00)"
+                        self.stdout.write(f'🚨 Sent 30-minute reminder to {user.username} - {shift_text}')
                 
                 elif 0.1 <= hours_left <= 0.2:  # 10 minutes before
                     notification = Notification.create_activity_reminder(user, 1/6)
                     if notification:
-                        self.stdout.write(f'🔥 Sent 10-minute URGENT reminder to {user.username}')
+                        shift_text = "Shift 1 (18:00)" if user.shift == 1 else "Shift 2 (05:00)"
+                        self.stdout.write(f'🔥 Sent 10-minute URGENT reminder to {user.username} - {shift_text}')
     
     def check_analysis_reminders(self):
         """Check and send analysis report reminders"""

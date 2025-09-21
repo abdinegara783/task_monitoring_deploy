@@ -9,8 +9,6 @@ urlpatterns = [
     # path("register/", views.register_view, name="register"),
     # Admin URLs for Employee Management
     path("superadmin/", views.admin_dashboard, name="admin_dashboard"),
-    path("superadmin/list", views.admin_list, name="admin_list"),
-    path("superadmin/create/", views.admin_create, name="admin_create"),
     path("superadmin/<int:user_id>/", views.admin_detail, name="admin_detail"),
     path("superadmin/<int:user_id>/edit/", views.admin_edit, name="admin_edit"),
     path(
@@ -18,8 +16,9 @@ urlpatterns = [
         views.admin_delete,
         name="admin_delete",
     ),
+    path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'),
     # Foreman URLs
-    path("foreman/", views.Foreman_dashboard, name="foreman_dashboard"),
+    path("foreman/", views.foreman_dashboard, name="foreman_dashboard"),
     path("foreman/reports/", views.foreman_reports, name="foreman_reports"),
     # Activity report
     path(
@@ -49,13 +48,12 @@ urlpatterns = [
     # Notification URLs
     path("notifications/", views.notifications_view, name="notifications"),
     path("api/notifications/", views.api_get_notifications, name="api_notifications"),
+    path("api/notifications/<int:notification_id>/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
     # Tambahkan ke urlpatterns
     path('export/reports/', views.export_reports_csv, name='export_reports_csv'),
     path('export/users/', views.export_users_csv, name='export_users_csv'),
     # Tambahkan ke urlpatterns
     path('foreman/report-status/', views.foreman_report_status, name='foreman_report_status'),
-    # Tambahkan atau update URL patterns
-    path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'),
     path('superadmin/quota/manage/', views.manage_leader_quota, name='manage_leader_quota'),
     path('auperadmin/quota/manage/<int:quota_id>/', views.manage_leader_quota, name='manage_leader_quota'),
     # Tambahkan URL patterns untuk PDF export
@@ -67,4 +65,13 @@ urlpatterns = [
     # Tambahkan URL untuk download single analysis report
     path('superadmin/export/analysis-report/<int:report_id>/pdf/', views.export_single_analysis_report_pdf, name='export_single_analysis_report_pdf'),
     path('api/check-leader-quota/', views.api_check_leader_quota, name='api_check_leader_quota'),
+    # Notification monitoring URLs
+    path('superadmin/notification-monitor/', views.notification_monitor, name='notification_monitor'),
+    # Notification management
+    path('superadmin/send-activity-reminder/<int:user_id>/', views.send_activity_reminder, name='send_activity_reminder'),
+    path('superadmin/send-analysis-reminder/<int:user_id>/', views.send_analysis_reminder, name='send_analysis_reminder'),
+    path('superadmin/send-bulk-activity-reminder/', views.send_bulk_activity_reminder, name='send_bulk_activity_reminder'),
+    path('superadmin/send-bulk-analysis-reminder/', views.send_bulk_analysis_reminder, name='send_bulk_analysis_reminder'),
+    path('superadmin/send-custom-notification/', views.send_custom_notification, name='send_custom_notification'),
+    path('superadmin/notification-analytics/', views.notification_analytics, name='notification_analytics'),
 ]

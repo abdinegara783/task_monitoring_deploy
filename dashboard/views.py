@@ -21,8 +21,12 @@ import csv
 from django.http import HttpResponse
 from .services.pdf_service import PDFReportService
 from .services.analysis_pdf_service import AnalysisPDFService
-from django.db.models import Q
-from django.http import JsonResponse\
+from django.db.models import Q, Count
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+import json
+import datetime
 
 
 def hello_world_tailwind(request):
@@ -192,6 +196,11 @@ def leader_dashboard(request):
     # Recent reports (5 terbaru)
     recent_reports = combined_reports[:5]
 
+    # Untuk semua dashboard (foreman, leader, admin)
+    unread_notifications_count = Notification.objects.filter(
+        user=request.user, status='unread'
+    ).count()
+
     stats = {
         "total_employees": total_employees,
         "today_reports": today_reports_count,
@@ -207,6 +216,7 @@ def leader_dashboard(request):
         "pending_reports": pending_reports,  # Untuk tab pending-reports
         "today_reports": today_reports,  # Untuk tab today-reports
         "validated_reports": validated_reports,  # Untuk tab validated-reports
+        "unread_notifications_count": unread_notifications_count,
     }
 
     return render(request, "leader/leader_dashboard.html", context)
@@ -335,6 +345,11 @@ def admin_dashboard(request):
     leader_quotas = LeaderQuota.objects.all().order_by("leader_name")
     foremen = User.objects.filter(role="foreman", is_active=True)
 
+    # Untuk semua dashboard (foreman, leader, admin)
+    unread_notifications_count = Notification.objects.filter(
+        user=request.user, status='unread'
+    ).count()
+
     stats = {
         "total_users": total_users,
         "total_leaders": total_leaders,
@@ -350,60 +365,10 @@ def admin_dashboard(request):
         "all_users": all_users,
         "leader_quotas": leader_quotas,
         "foremen": foremen,
+        "unread_notifications_count": unread_notifications_count,
     }
 
     return render(request, "admin/admin_dashboard.html", context)
-
-
-# Ganti decorator untuk admin_list
-@login_required
-@role_required(["admin"])
-def admin_list(request):
-    """Daftar semua karyawan untuk admin"""
-    employees = User.objects.all().order_by("-created_at")
-
-    # Search functionality
-    search_query = request.GET.get("search", "")
-    if search_query:
-        employees = employees.filter(
-            models.Q(username__icontains=search_query)
-            | models.Q(email__icontains=search_query)  # noqa: F821
-            | models.Q(name__icontains=search_query)
-            | models.Q(nrp__icontains=search_query)
-        )
-
-    # Pagination
-    paginator = Paginator(employees, 10)  # 10 employees per page
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        "employees": page_obj,
-        "search_query": search_query,
-        "total_employees": employees.count(),
-    }
-    return render(request, "admin/admin_list.html", context)
-
-
-# Ganti decorator untuk admin_create
-@login_required
-@role_required(["admin"])
-def admin_create(request):
-    """Form untuk admin menambah karyawan baru"""
-    if request.method == "POST":
-        form = EmployeeRegistrationForm(request.POST)
-        if form.is_valid():
-            employee = form.save()
-            messages.success(
-                request, f"Karyawan {employee.username} berhasil didaftarkan!"
-            )
-            return redirect("admin_list")
-        else:
-            messages.error(request, "Terjadi kesalahan dalam pendaftaran karyawan.")
-    else:
-        form = EmployeeRegistrationForm()
-
-    return render(request, "admin/admin_create.html", {"form": form})
 
 
 # Ganti decorator untuk admin_detail
@@ -479,7 +444,7 @@ def admin_delete(request, user_id):
 
 @login_required
 @role_required(["foreman"])
-def Foreman_dashboard(request):
+def foreman_dashboard(request):
     """Foreman dashboard view with combined reports in recent status"""
     # Get activity reports for current user, ordered by date (most recent first)
     activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
@@ -546,11 +511,12 @@ def Foreman_dashboard(request):
     # Combine reports for "Status Laporan Terbaru"
     combined_reports = []
 
+    # Untuk semua dashboard (foreman, leader, admin)
     notification = Notification.objects.filter(user=request.user).order_by(
-        "created_at"
+        "-created_at"
     )[:5]
-    unread_notification = Notification.objects.filter(
-        user=request.user, is_read=False
+    unread_notifications_count = Notification.objects.filter(
+        user=request.user, status='unread'
     ).count()
 
     # Add activity reports
@@ -638,7 +604,7 @@ def Foreman_dashboard(request):
         "month_name": today.strftime("%B %Y"),
         # Notification Data
         "notification": notification,
-        "unread_notification": unread_notification,
+        "unread_notifications_count": unread_notifications_count,
     }
 
     return render(request, "foreman/foreman_dashboard.html", context)
@@ -834,17 +800,17 @@ def notifications_view(request):
             notification = get_object_or_404(
                 Notification, id=notification_id, user=request.user
             )
-            notification.is_read = True
-            notification.save()
+            notification.mark_as_read()
             return redirect("notifications")
         elif "mark_all_read" in request.POST:
-            notifications.update(is_read=True)
+            from django.utils import timezone
+            notifications.filter(status='unread').update(status='read', read_at=timezone.now())
             return redirect("notifications")
 
     # Context data
     context = {
         "notifications": notifications,
-        "unread_count": notifications.filter(is_read=False).count(),
+        "unread_count": notifications.filter(status='unread').count(),
     }
 
     return render(request, "notification.html", context)
@@ -858,7 +824,7 @@ def api_get_notifications(request):
     notifications = Notification.objects.filter(user=request.user).order_by(
         "-created_at"
     )[:5]
-    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+    unread_count = Notification.objects.filter(user=request.user, status='unread').count()
 
     data = {
         "unread_count": unread_count,
@@ -867,7 +833,7 @@ def api_get_notifications(request):
                 "id": n.id,
                 "title": n.title,
                 "message": n.message,
-                "is_read": n.is_read,
+                "is_read": n.status != 'unread',
                 "created_at": n.created_at.strftime("%d %b %Y, %H:%M"),
                 "notification_type": n.notification_type,
             }
@@ -879,8 +845,64 @@ def api_get_notifications(request):
 
 
 @login_required
+def api_mark_notification_read(request, notification_id):
+    """API endpoint to mark a specific notification as read"""
+    if request.method == 'POST':
+        try:
+            notification = get_object_or_404(
+                Notification, id=notification_id, user=request.user
+            )
+            notification.mark_as_read()
+            
+            # Return updated count
+            unread_count = Notification.objects.filter(
+                user=request.user, status='unread'
+            ).count()
+            
+            return JsonResponse({
+                'success': True,
+                'unread_count': unread_count,
+                'message': 'Notification marked as read'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
 @role_required(["admin", "superadmin"])
 def create_user_with_role(request):
+    """Create user with specific role validation"""
+    
+    def get_create_user_context():
+        """Helper function to get context for create user template"""
+        leaders = User.objects.filter(role="leader", is_active=True)
+        leaders_with_quota = []
+        
+        for leader in leaders:
+            quota = leader.quota_as_leader.first()
+            if quota:
+                current_count = User.objects.filter(leader=leader, role="foreman", is_active=True).count()
+                available = quota.max_foreman - current_count
+                leaders_with_quota.append({
+                    'leader': leader,
+                    'quota': quota,
+                    'current_count': current_count,
+                    'available': available,
+                    'is_available': available > 0
+                })
+        
+        return {
+            'leaders_with_quota': leaders_with_quota,
+            'departments': User.DEPARTMENT_CHOICES,
+            'roles': User.ROLE_CHOICES,
+            'available_leaders': User.objects.filter(role="leader", is_active=True)
+        }
+    
     if request.method == "POST":
         # Get form data
         username = request.POST.get("username")
@@ -896,73 +918,69 @@ def create_user_with_role(request):
         leader_id = request.POST.get("leader")
         password1 = request.POST.get("password1")
         password2 = request.POST.get("password2")
-
-        # Validation
+        
+        # Basic validation
+        if not all([username, email, role]):
+            messages.error(request, "Username, email, dan role wajib diisi.")
+            return render(request, "admin/create_user.html", get_create_user_context())
+        
+        # Password validation
         if password1 != password2:
-            messages.error(request, "Password tidak cocok.")
+            messages.error(request, "Password dan konfirmasi password tidak cocok.")
             return render(request, "admin/create_user.html", get_create_user_context())
-
+        
+        # Check if username already exists
         if User.objects.filter(username=username).exists():
-            messages.error(request, "Username sudah digunakan.")
+            messages.error(request, f"Username '{username}' sudah digunakan.")
             return render(request, "admin/create_user.html", get_create_user_context())
-
+        
+        # Check if email already exists
         if User.objects.filter(email=email).exists():
-            messages.error(request, "Email sudah digunakan.")
+            messages.error(request, f"Email '{email}' sudah digunakan.")
             return render(request, "admin/create_user.html", get_create_user_context())
-
-        # Special handling for leader role
+        
+        # Role-specific validation
         if role == "leader":
-            # Check if leader quota exists
-            leader_name = name or f"{first_name} {last_name}".strip()
-            try:
-                quota = LeaderQuota.objects.get(leader_name=leader_name)
-                if not quota.is_active:
-                    messages.error(
-                        request, f"Leader quota untuk {leader_name} tidak aktif."
-                    )
-                    return render(
-                        request, "admin/create_user.html", get_create_user_context()
-                    )
-            except LeaderQuota.DoesNotExist:
+            # Validate leader quota registration
+            if not LeaderQuota.is_username_registered(username):
                 messages.error(
                     request,
-                    f"Leader quota untuk {leader_name} belum dibuat. Silakan buat quota terlebih dahulu.",
+                    f"Username '{username}' belum terdaftar di kuota leader. Silakan daftarkan terlebih dahulu."
                 )
-                return render(
-                    request, "admin/create_user.html", get_create_user_context()
-                )
-
-        # Validation for foreman role
-        if role == "foreman":
+                return render(request, "admin/create_user.html", get_create_user_context())
+        
+        elif role == "foreman":
+            # Validate leader selection
             if not leader_id:
-                messages.error(request, "Leader harus dipilih untuk role foreman.")
-                return render(
-                    request, "admin/create_user.html", get_create_user_context()
-                )
-
+                messages.error(request, "Mekanik harus memiliki leader.")
+                return render(request, "admin/create_user.html", get_create_user_context())
+            
             try:
                 leader = User.objects.get(id=leader_id, role="leader")
-
-                # Check leader quota
-                if leader.leader_quota:
-                    current_foremen = User.objects.filter(leader=leader).count()
-                    if current_foremen >= leader.leader_quota.max_foreman:
+                
+                # Check leader quota menggunakan reverse relation yang baru
+                quota = leader.quota_as_leader.first()
+                if quota:
+                    current_foremen = User.objects.filter(leader=leader, role="foreman", is_active=True).count()
+                    if current_foremen >= quota.max_foreman:
                         messages.error(
                             request,
-                            f"Leader {leader.name} sudah mencapai batas maksimal foreman ({leader.leader_quota.max_foreman}).",
+                            f"Leader {leader.name} sudah mencapai batas maksimal mekanik ({quota.max_foreman}). Saat ini: {current_foremen}/{quota.max_foreman}",
                         )
-                        return render(
-                            request, "admin/create_user.html", get_create_user_context()
-                        )
-
+                        return render(request, "admin/create_user.html", get_create_user_context())
+                else:
+                    messages.error(
+                        request,
+                        f"Leader {leader.name} tidak memiliki kuota yang terdaftar. Silakan daftarkan kuota terlebih dahulu.",
+                    )
+                    return render(request, "admin/create_user.html", get_create_user_context())
+            
             except User.DoesNotExist:
                 messages.error(request, "Leader tidak ditemukan.")
-                return render(
-                    request, "admin/create_user.html", get_create_user_context()
-                )
-
+                return render(request, "admin/create_user.html", get_create_user_context())
+        
+        # Create user
         try:
-            # Create user
             user = User.objects.create_user(
                 username=username,
                 email=email,
@@ -976,38 +994,36 @@ def create_user_with_role(request):
                 department=department,
                 shift=int(shift),
             )
-
+            
             # Set leader for foreman
             if role == "foreman" and leader_id:
                 leader = User.objects.get(id=leader_id)
                 user.leader = leader
                 user.save()
-
-                # Update leader quota count
-                if leader.leader_quota:
-                    leader.leader_quota.current_foreman_count = User.objects.filter(
-                        leader=leader
-                    ).count()
-                    leader.leader_quota.save()
-
+                
+                # Update quota count if role is foreman
+                quota = leader.quota_as_leader.first()
+                if quota:
+                    quota.update_foreman_count()
+            
             # Link leader quota for leader role
             if role == "leader":
-                try:
-                    quota = LeaderQuota.objects.get(leader_name=leader_name)
-                    user.leader_quota = quota
-                    user.save()
-                except LeaderQuota.DoesNotExist:
-                    pass
-
+                quota = LeaderQuota.get_quota_by_username(username)
+                if quota:
+                    quota.leader_user = user
+                    quota.save()
+            
             messages.success(
-                request, f"User {username} berhasil dibuat dengan role {role}."
+                request,
+                f"User {user.name or user.username} berhasil dibuat dengan role {role}!"
             )
             return redirect("admin_dashboard")
-
+        
         except Exception as e:
-            messages.error(request, f"Gagal membuat user: {str(e)}")
+            messages.error(request, f"Terjadi kesalahan saat membuat user: {str(e)}")
             return render(request, "admin/create_user.html", get_create_user_context())
-
+    
+    # GET request
     return render(request, "admin/create_user.html", get_create_user_context())
 
 
@@ -1033,7 +1049,7 @@ def manage_leader_quota(request, quota_id=None):
     if request.method == "POST" and form.is_valid():
         form.save()
         messages.success(request, "Kuota leader berhasil diperbarui.")
-        return redirect("leader_quota_list")
+        return redirect("admin_dashboard")
 
     return render(
         request,
@@ -1261,6 +1277,263 @@ def pdf_export_page(request):
 
     return render(request, "admin/pdf_export.html", context)
 
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+def notification_monitor(request):
+    """Halaman monitoring dan pengiriman notifikasi manual"""
+    today = timezone.now().date()
+    current_month = timezone.now().month
+    current_year = timezone.now().year
+    
+    # Get all foremen
+    foremen = User.objects.filter(role='foreman', is_active=True).order_by('name')
+    
+    foremen_status = []
+    activity_complete_count = 0
+    activity_pending_count = 0
+    analysis_pending_count = 0
+    
+    for foreman in foremen:
+        # Check activity report today
+        has_activity_today = ActivityReport.objects.filter(
+            foreman=foreman,
+            date=today
+        ).exists()
+        
+        # Check analysis reports this month
+        analysis_count = AnalysisReport.objects.filter(
+            foreman=foreman,
+            report_date__month=current_month,
+            report_date__year=current_year
+        ).count()
+        
+        analysis_remaining = max(0, 3 - analysis_count)
+        
+        foremen_status.append({
+            'id': foreman.id,
+            'name': foreman.name,
+            'username': foreman.username,
+            'shift': foreman.shift,
+            'has_activity_today': has_activity_today,
+            'analysis_count': analysis_count,
+            'analysis_remaining': analysis_remaining,
+        })
+        
+        # Count for summary
+        if has_activity_today:
+            activity_complete_count += 1
+        else:
+            activity_pending_count += 1
+            
+        if analysis_count < 3:
+            analysis_pending_count += 1
+    
+    context = {
+        'foremen_status': foremen_status,
+        'today': today,
+        'total_foremen': len(foremen),
+        'activity_complete_count': activity_complete_count,
+        'activity_pending_count': activity_pending_count,
+        'analysis_pending_count': analysis_pending_count,
+    }
+    
+    return render(request, 'admin/notification_monitor.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+@require_http_methods(["POST"])
+def send_activity_reminder(request, user_id):
+    """Kirim reminder activity report ke user tertentu (Manual)"""
+    try:
+        user = User.objects.get(id=user_id, role='foreman', is_active=True)
+        
+        # Check if already has report today
+        today = timezone.now().date()
+        has_report = ActivityReport.objects.filter(
+            foreman=user,
+            date=today
+        ).exists()
+        
+        if has_report:
+            return JsonResponse({
+                'success': False,
+                'message': f'{user.name} sudah mengisi activity report hari ini'
+            })
+        
+        # Create manual reminder notification
+        deadline_text = "18:00" if user.shift == 1 else "05:00"
+        shift_text = "Shift 1" if user.shift == 1 else "Shift 2"
+        
+        notification = Notification.objects.create(
+            user=user,
+            title=f"📧 Reminder Manual - Activity Report ({shift_text})",
+            message=f"Reminder manual dari admin {request.user.name}: Harap segera isi activity report hari ini. Deadline: {deadline_text}. Silakan login ke sistem untuk mengisi laporan.",
+            notification_type='activity_reminder',
+            priority='high',
+            created_by=request.user,
+            is_manual=True,
+            requires_acknowledgment=True
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Reminder activity berhasil dikirim ke {user.name}',
+            'notification_id': notification.id
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'User tidak ditemukan'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+@require_http_methods(["POST"])
+def send_analysis_reminder(request, user_id):
+    """Kirim reminder analysis report ke user tertentu (Manual)"""
+    try:
+        user = User.objects.get(id=user_id, role='foreman', is_active=True)
+        
+        # Check analysis reports this month
+        current_month = timezone.now().month
+        current_year = timezone.now().year
+        analysis_count = AnalysisReport.objects.filter(
+            foreman=user,
+            report_date__month=current_month,
+            report_date__year=current_year
+        ).count()
+        
+        missing_count = max(0, 3 - analysis_count)
+        
+        if missing_count == 0:
+            return JsonResponse({
+                'success': False,
+                'message': f'{user.name} sudah lengkap analysis report bulan ini'
+            })
+        
+        # Create manual reminder notification
+        notification = Notification.objects.create(
+            user=user,
+            title=f"📊 Reminder Manual - Analysis Report",
+            message=f"Reminder manual dari admin {request.user.name}: Anda masih kekurangan {missing_count} analysis report bulan ini. Harap segera dilengkapi. Silakan login ke sistem untuk mengisi laporan.",
+            notification_type='analysis_reminder',
+            priority='high',
+            created_by=request.user,
+            is_manual=True,
+            requires_acknowledgment=True
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Reminder analysis berhasil dikirim ke {user.name} (kurang {missing_count} laporan)',
+            'notification_id': notification.id
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'User tidak ditemukan'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+@require_http_methods(["POST"])
+def send_bulk_activity_reminder(request):
+    """Kirim reminder activity report ke semua foremen yang belum mengisi"""
+    try:
+        today = timezone.now().date()
+        
+        # Get foremen who haven't submitted activity report today
+        foremen_without_report = User.objects.filter(
+            role='foreman',
+            is_active=True
+        ).exclude(
+            id__in=ActivityReport.objects.filter(
+                date=today
+            ).values_list('foreman_id', flat=True)
+        )
+        
+        sent_count = 0
+        for foreman in foremen_without_report:
+            deadline_text = "18:00" if foreman.shift == 1 else "05:00"
+            shift_text = "Shift 1" if foreman.shift == 1 else "Shift 2"
+            
+            Notification.objects.create(
+                user=foreman,
+                title=f"📧 Reminder Bulk - Activity Report ({shift_text})",
+                message=f"Reminder dari admin: Harap segera isi activity report hari ini. Deadline: {deadline_text}",
+                notification_type='activity_reminder'
+            )
+            sent_count += 1
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Reminder activity berhasil dikirim ke {sent_count} foremen'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        })
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+@require_http_methods(["POST"])
+def send_bulk_analysis_reminder(request):
+    """Kirim reminder analysis report ke semua foremen yang kurang laporan"""
+    try:
+        current_month = timezone.now().month
+        current_year = timezone.now().year
+        
+        foremen = User.objects.filter(role='foreman', is_active=True)
+        sent_count = 0
+        
+        for foreman in foremen:
+            analysis_count = AnalysisReport.objects.filter(
+                foreman=foreman,
+                report_date__month=current_month,
+                report_date__year=current_year
+            ).count()
+            
+            missing_count = max(0, 3 - analysis_count)
+            
+            if missing_count > 0:
+                Notification.objects.create(
+                    user=foreman,
+                    title=f"📊 Reminder Bulk - Analysis Report",
+                    message=f"Reminder dari admin: Anda masih kekurangan {missing_count} analysis report bulan ini. Harap segera dilengkapi.",
+                    notification_type='analysis_reminder'
+                )
+                sent_count += 1
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Reminder analysis berhasil dikirim ke {sent_count} foremen'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        })
+
 @login_required
 @role_required(["admin", "superadmin"])
 def api_check_leader_quota(request):
@@ -1317,3 +1590,102 @@ def export_single_analysis_report_pdf(request, report_id):
     except Exception as e:
         messages.error(request, f"Error generating PDF: {str(e)}")
         return redirect("admin_dashboard")
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+def send_custom_notification(request):
+    """Kirim notifikasi custom ke user tertentu atau grup"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            title = data.get('title', '').strip()
+            message = data.get('message', '').strip()
+            priority = data.get('priority', 'medium')
+            user_ids = data.get('user_ids', [])
+            requires_ack = data.get('requires_acknowledgment', False)
+            
+            if not title or not message:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Title dan message wajib diisi'
+                })
+            
+            if not user_ids:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Pilih minimal satu user'
+                })
+            
+            # Create notifications for selected users
+            notifications_created = []
+            for user_id in user_ids:
+                try:
+                    user = User.objects.get(id=user_id, is_active=True)
+                    notification = Notification.objects.create(
+                        user=user,
+                        title=f"📢 {title}",
+                        message=f"Pesan dari admin {request.user.name}: {message}",
+                        notification_type='manual_message',
+                        priority=priority,
+                        created_by=request.user,
+                        is_manual=True,
+                        requires_acknowledgment=requires_ack
+                    )
+                    notifications_created.append(notification.id)
+                except User.DoesNotExist:
+                    continue
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'Notifikasi berhasil dikirim ke {len(notifications_created)} user',
+                'notification_ids': notifications_created
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'message': 'Format data tidak valid'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Terjadi kesalahan: {str(e)}'
+            })
+    
+    # GET request - show form
+    users = User.objects.filter(role='foreman', is_active=True).order_by('name')
+    return render(request, 'admin/send_custom_notification.html', {
+        'users': users
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+def notification_analytics(request):
+    """Analytics untuk notifikasi yang dikirim admin"""
+    # Get notification statistics
+    total_sent = Notification.objects.filter(is_manual=True).count()
+    unread_count = Notification.objects.filter(is_manual=True, status='unread').count()
+    acknowledged_count = Notification.objects.filter(is_manual=True, status='acknowledged').count()
+    
+    # Recent notifications
+    recent_notifications = Notification.objects.filter(
+        is_manual=True
+    ).select_related('user', 'created_by').order_by('-created_at')[:20]
+    
+    # Notification by type
+    type_stats = Notification.objects.filter(is_manual=True).values(
+        'notification_type'
+    ).annotate(count=Count('id')).order_by('-count')
+    
+    context = {
+        'total_sent': total_sent,
+        'unread_count': unread_count,
+        'acknowledged_count': acknowledged_count,
+        'recent_notifications': recent_notifications,
+        'type_stats': type_stats,
+    }
+    
+    return render(request, 'admin/notification_analytics.html', context)

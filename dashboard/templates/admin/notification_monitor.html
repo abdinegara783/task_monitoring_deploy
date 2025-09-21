@@ -1,0 +1,294 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Monitor & Kirim Notifikasi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .status-complete {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    .status-pending {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    .btn-send {
+        background-color: #3b82f6;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+    }
+    .btn-send:hover {
+        background-color: #2563eb;
+    }
+    .btn-send:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h1 class="text-2xl font-bold text-gray-900">Monitor & Kirim Notifikasi</h1>
+            <p class="text-gray-600 mt-2">Monitor status laporan dan kirim notifikasi manual kepada mekanik</p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="px-6 py-4 bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-4 rounded-lg border">
+                    <div class="text-2xl font-bold text-blue-600">{{ total_foremen }}</div>
+                    <div class="text-sm text-gray-600">Total Foremen</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg border">
+                    <div class="text-2xl font-bold text-green-600">{{ activity_complete_count }}</div>
+                    <div class="text-sm text-gray-600">Activity Report Selesai</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg border">
+                    <div class="text-2xl font-bold text-orange-600">{{ activity_pending_count }}</div>
+                    <div class="text-sm text-gray-600">Activity Report Pending</div>
+                </div>
+                <div class="bg-white p-4 rounded-lg border">
+                    <div class="text-2xl font-bold text-purple-600">{{ analysis_pending_count }}</div>
+                    <div class="text-sm text-gray-600">Analysis Report Kurang</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mb-6 flex flex-wrap gap-4">
+            <button onclick="sendBulkActivityReminder()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">
+                📧 Kirim Reminder Activity (Bulk)
+            </button>
+            <button onclick="sendBulkAnalysisReminder()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">
+                📊 Kirim Reminder Analysis (Bulk)
+            </button>
+            <a href="{% url 'send_custom_notification' %}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                📤 Kirim Notifikasi Custom
+            </a>
+            <a href="{% url 'notification_analytics' %}" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+                📈 Analytics Notifikasi
+            </a>
+        </div>
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex space-x-4">
+                <button onclick="sendBulkActivityReminder()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">
+                    📧 Kirim Reminder Activity (Bulk)
+                </button>
+                <button onclick="sendBulkAnalysisReminder()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">
+                    📊 Kirim Reminder Analysis (Bulk)
+                </button>
+                <button onclick="refreshData()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+                    🔄 Refresh Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Foremen Status Table -->
+        <div class="px-6 py-4">
+            <h2 class="text-lg font-semibold mb-4">Status Foremen Hari Ini ({{ today }})</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Report</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Analysis Report</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for foreman in foremen_status %}
+                        <tr>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="text-sm font-medium text-gray-900">{{ foreman.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ foreman.username }}</div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Shift {{ foreman.shift }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                {% if foreman.has_activity_today %}
+                                    <span class="status-badge status-complete">✅ Selesai</span>
+                                {% else %}
+                                    <span class="status-badge status-pending">⏳ Belum</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="text-sm">
+                                    <span class="font-medium">{{ foreman.analysis_count }}/3</span>
+                                    {% if foreman.analysis_count >= 3 %}
+                                        <span class="status-badge status-complete">✅ Lengkap</span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">⏳ Kurang {{ foreman.analysis_remaining }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if foreman.shift == 1 %}
+                                    18:00
+                                {% else %}
+                                    05:00 (+1)
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm space-x-2">
+                                {% if not foreman.has_activity_today %}
+                                    <button onclick="sendActivityReminder({{ foreman.id }})" class="btn-send" id="activity-btn-{{ foreman.id }}">
+                                        📧 Activity
+                                    </button>
+                                {% endif %}
+                                {% if foreman.analysis_count < 3 %}
+                                    <button onclick="sendAnalysisReminder({{ foreman.id }})" class="btn-send" id="analysis-btn-{{ foreman.id }}">
+                                        📊 Analysis
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50">
+    <div id="toast-message"></div>
+</div>
+
+<script>
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    
+    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    } text-white`;
+    
+    toastMessage.textContent = message;
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 3000);
+}
+
+function sendActivityReminder(userId) {
+    const btn = document.getElementById(`activity-btn-${userId}`);
+    btn.disabled = true;
+    btn.textContent = '⏳ Mengirim...';
+    
+    fetch(`/admin/send-activity-reminder/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            btn.textContent = '✅ Terkirim';
+        } else {
+            showToast(data.message, 'error');
+            btn.disabled = false;
+            btn.textContent = '📧 Activity';
+        }
+    })
+    .catch(error => {
+        showToast('Terjadi kesalahan saat mengirim notifikasi', 'error');
+        btn.disabled = false;
+        btn.textContent = '📧 Activity';
+    });
+}
+
+function sendAnalysisReminder(userId) {
+    const btn = document.getElementById(`analysis-btn-${userId}`);
+    btn.disabled = true;
+    btn.textContent = '⏳ Mengirim...';
+    
+    fetch(`/admin/send-analysis-reminder/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            btn.textContent = '✅ Terkirim';
+        } else {
+            showToast(data.message, 'error');
+            btn.disabled = false;
+            btn.textContent = '📊 Analysis';
+        }
+    })
+    .catch(error => {
+        showToast('Terjadi kesalahan saat mengirim notifikasi', 'error');
+        btn.disabled = false;
+        btn.textContent = '📊 Analysis';
+    });
+}
+
+function sendBulkActivityReminder() {
+    if (!confirm('Kirim reminder activity report ke semua foremen yang belum mengisi?')) return;
+    
+    fetch('/admin/send-bulk-activity-reminder/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showToast(data.message, data.success ? 'success' : 'error');
+    });
+}
+
+function sendBulkAnalysisReminder() {
+    if (!confirm('Kirim reminder analysis report ke semua foremen yang kurang laporan?')) return;
+    
+    fetch('/admin/send-bulk-analysis-reminder/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showToast(data.message, data.success ? 'success' : 'error');
+    });
+}
+
+function refreshData() {
+    location.reload();
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

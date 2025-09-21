@@ -161,7 +161,7 @@ ALLOWED_HOSTS = [
     '*.ngrok.io',  # Untuk semua subdomain ngrok
     '*.ngrok-free.app',  # Untuk ngrok versi baru
     # Tambahkan domain spesifik jika perlu
-    'f9cf959e9e43.ngrok-free.app',
+    '2905d2d02c11.ngrok-free.app',
 ]
 
 # Untuk CSRF protection dengan ngrok
@@ -171,7 +171,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://f9cf959e9e43.ngrok-free.app',  # Tambahkan https://
+    'https://2905d2d02c11.ngrok-free.app',  # Tambahkan https://
 ]
 
 # Perbaiki CORS_ALLOWED_ORIGINS juga (line 176-182)
@@ -180,7 +180,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://*.ngrok-free.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    'https://f9cf959e9e43.ngrok-free.app',  # Tambahkan https://
+    'https://92905d2d02c11.ngrok-free.app',  # Tambahkan https://
 ]
 
 # Jika menggunakan CORS (untuk API)
@@ -189,7 +189,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://*.ngrok-free.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    'f9cf959e9e43.ngrok-free.app',
+    'https://92905d2d02c11.ngrok-free.app',  # Tambahkan https://
 ]
 
 # Untuk static files dengan ngrok
@@ -199,6 +199,9 @@ if DEBUG:
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN_HERE')
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024  # 1MB

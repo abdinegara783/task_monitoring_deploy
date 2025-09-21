@@ -242,15 +242,21 @@
     </div>
 </div>
 
+<!-- Update script untuk menghilangkan validasi leader quota -->
 <script>
-// Auto-fill nama lengkap ketika nama depan atau nama belakang berubah
 document.addEventListener('DOMContentLoaded', function() {
     const firstNameField = document.getElementById('id_first_name');
     const lastNameField = document.getElementById('id_last_name');
     const fullNameField = document.getElementById('id_name');
     const usernameField = document.getElementById('id_username');
     const roleField = document.getElementById('id_role');
+    const leaderField = document.getElementById('id_leader');
+    const leaderFieldContainer = document.getElementById('leaderField');
+    const leaderQuotaInfo = document.getElementById('leaderQuotaInfo');
     const form = document.querySelector('form');
+    
+    // Leader availability data from form
+    const leaderAvailability = {{ form.leader_availability|safe }};
     
     // Auto-fill nama lengkap
     function updateFullName() {
@@ -280,87 +286,98 @@ document.addEventListener('DOMContentLoaded', function() {
         updateFullName();
     }
     
-    // Validasi leader quota
-    function validateLeaderQuota(username) {
-        return fetch('/api/check-leader-quota/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify({ username: username })
-        })
-        .then(response => response.json());
-    }
-    
-    function showValidationModal(isValid, username, quotaInfo = null) {
-        const modal = document.getElementById('leaderValidationModal');
-        const icon = document.getElementById('validationIcon');
-        const title = document.getElementById('validationTitle');
-        const message = document.getElementById('validationMessage');
-        const confirmBtn = document.getElementById('validationConfirm');
-        const cancelBtn = document.getElementById('validationCancel');
-        
-        if (isValid) {
-            // Username terdaftar di kuota
-            icon.className = 'w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-green-100';
-            icon.innerHTML = '<i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>';
-            title.textContent = 'Username Terdaftar';
-            message.textContent = `Username "${username}" terdaftar di kuota leader. Dapat melanjutkan pembuatan user.`;
-            confirmBtn.textContent = 'Lanjutkan';
-            confirmBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700';
-            
-            confirmBtn.onclick = function() {
-                modal.classList.add('hidden');
-                // Lanjutkan submit form
-                form.submit();
-            };
+    // Show/hide leader field based on role
+    function toggleLeaderField() {
+        const role = roleField.value;
+        if (role === 'foreman') {
+            leaderFieldContainer.classList.remove('hidden');
+            leaderQuotaInfo.classList.remove('hidden');
+            updateLeaderQuotaInfo();
         } else {
-            // Username tidak terdaftar
-            icon.className = 'w-12 h-12 rounded-full flex items-center justify-center mr-4 bg-red-100';
-            icon.innerHTML = '<i data-lucide="x-circle" class="w-6 h-6 text-red-600"></i>';
-            title.textContent = 'Username Tidak Terdaftar';
-            message.textContent = `Username "${username}" belum terdaftar di kuota leader. Silakan daftarkan terlebih dahulu.`;
-            confirmBtn.textContent = 'Tambah Kuota';
-            confirmBtn.className = 'px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700';
-            
-            confirmBtn.onclick = function() {
-                window.location.href = '{% url "manage_leader_quota" %}';
-            };
-        }
-        
-        cancelBtn.onclick = function() {
-            modal.classList.add('hidden');
-            roleField.value = 'foreman'; // Reset ke foreman
-        };
-        
-        modal.classList.remove('hidden');
-        
-        // Refresh icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+            leaderFieldContainer.classList.add('hidden');
+            leaderQuotaInfo.classList.add('hidden');
+            leaderField.value = '';
         }
     }
     
-    // Handle form submission
+    // Update leader quota information
+    function updateLeaderQuotaInfo() {
+        const quotaList = document.getElementById('leaderQuotaList');
+        quotaList.innerHTML = '';
+        
+        // Get leader options
+        const options = leaderField.options;
+        for (let i = 1; i < options.length; i++) { // Skip first empty option
+            const option = options[i];
+            const leaderId = option.value;
+            const isAvailable = leaderAvailability[leaderId];
+            
+            const div = document.createElement('div');
+            
+            let bgColor, borderColor, textColor, status;
+            if (option.text.includes('Belum ada kuota')) {
+                bgColor = 'bg-yellow-50';
+                borderColor = 'border-yellow-200';
+                textColor = 'text-yellow-800';
+                status = '⚠️ Belum ada kuota';
+            } else if (isAvailable) {
+                bgColor = 'bg-green-50';
+                borderColor = 'border-green-200';
+                textColor = 'text-green-800';
+                status = '✅ Tersedia';
+            } else {
+                bgColor = 'bg-red-50';
+                borderColor = 'border-red-200';
+                textColor = 'text-red-800';
+                status = '❌ Penuh';
+            }
+            
+            div.className = `flex items-center justify-between p-2 rounded ${bgColor} ${borderColor}`;
+            
+            div.innerHTML = `
+                <span class="${textColor} font-medium">${option.text.split(' - ')[0]}</span>
+                <span class="${textColor} text-xs">${status}</span>
+            `;
+            
+            quotaList.appendChild(div);
+        }
+    }
+    
+    // Handle leader selection - HAPUS validasi modal untuk leader penuh
+    function handleLeaderSelection() {
+        const selectedLeaderId = leaderField.value;
+        
+        if (selectedLeaderId && !leaderAvailability[selectedLeaderId]) {
+            // Hanya show warning, tidak block selection
+            const selectedOption = leaderField.options[leaderField.selectedIndex];
+            if (selectedOption.text.includes('Belum ada kuota')) {
+                // Show info untuk leader tanpa kuota
+                console.log('Leader belum memiliki kuota, bisa ditambahkan melalui edit.');
+            } else {
+                // Show warning untuk leader penuh
+                console.log('Leader sudah penuh, tapi tetap bisa dipilih.');
+            }
+        }
+    }
+    
+    // Event listeners
+    if (roleField) {
+        roleField.addEventListener('change', toggleLeaderField);
+        toggleLeaderField(); // Initial check
+    }
+    
+    if (leaderField) {
+        leaderField.addEventListener('change', handleLeaderSelection);
+    }
+    
+    // HAPUS validasi leader quota untuk role leader
+    // Leader bisa dibuat langsung tanpa validasi kuota
+    
+    // Handle form submission - HAPUS validasi untuk leader
     if (form) {
         form.addEventListener('submit', function(e) {
-            const role = roleField.value;
-            const username = usernameField.value.trim();
-            
-            if (role === 'leader' && username) {
-                e.preventDefault();
-                
-                // Validasi username di kuota leader
-                validateLeaderQuota(username)
-                    .then(data => {
-                        showValidationModal(data.is_registered, username, data.quota_info);
-                    })
-                    .catch(error => {
-                        console.error('Error validating leader quota:', error);
-                        alert('Terjadi kesalahan saat validasi. Silakan coba lagi.');
-                    });
-            }
+            // Tidak ada validasi khusus, form bisa langsung submit
+            return true;
         });
     }
 });

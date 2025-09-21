@@ -32,7 +32,7 @@
                         {% if notifications %}
                             <ul class="divide-y divide-gray-100">
                                 {% for notification in notifications|slice:":5" %}
-                                <li class="p-3 {% if not notification.is_read %}bg-blue-50{% endif %}">
+                                <li class="p-3 {% if notification.status == 'unread' %}bg-blue-50{% endif %}">
                                     <div class="flex items-start">
                                         {% if notification.notification_type == 'activity_reminder' %}
                                             <span class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-2">
@@ -127,7 +127,7 @@
                                 <i data-lucide="file-text" class="w-8 h-8 text-white"></i>
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-gray-900">Laporan Harian</h3>
+                                <h3 class="text-xl font-bold text-gray-900">Mechanic Activity Report</h3>
                                 <p class="text-gray-600">Activity Report untuk hari ini</p>
                             </div>
                         </div>
@@ -146,13 +146,30 @@
 
                     <div class="space-y-4">
                         <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                            <div class="flex items-center gap-2 mb-2">
-                                <i data-lucide="alert-triangle" class="w-5 h-5 text-orange-600"></i>
-                                <span class="font-medium text-orange-800">Deadline: 18:00</span>
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-orange-800">Activity Report Belum Diisi</h3>
+                                    <div class="mt-2 text-sm text-orange-700">
+                                        {% if user.shift == 1 %}
+                                            <span class="font-medium text-orange-800">Deadline: 18:00 (Shift 1)</span>
+                                        {% else %}
+                                            <span class="font-medium text-orange-800">Deadline: 05:00 (Shift 2)</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mt-1 text-sm text-orange-600">
+                                        {% if user.shift == 1 %}
+                                            Jangan lupa isi laporan aktivitas hari ini sebelum jam 18:00
+                                        {% else %}
+                                            Jangan lupa isi laporan aktivitas hari ini sebelum jam 05:00
+                                        {% endif %}
+                                    </p>
+                                </div>
                             </div>
-                            <p class="text-sm text-orange-700">
-                                Jangan lupa isi laporan aktivitas hari ini sebelum jam 18:00
-                            </p>
                         </div>
 
                         <a href="{% url 'create_activity_report' %}" 
@@ -173,7 +190,7 @@
                                 <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
                             </div>
                             <div>
-                                <h3 class="text-xl font-bold text-gray-900">Laporan Analisis</h3>
+                                <h3 class="text-xl font-bold text-gray-900">Technical Analysis Report</h3>
                                 <p class="text-gray-600">Analysis Report bulanan</p>
                             </div>
                         </div>

@@ -62,11 +62,12 @@ class LeaderQuota(models.Model):
 
 class User(AbstractUser):
     ROLE_CHOICES = [
-        ("superadmin", "Super Admin"),
         ("admin", "Admin"),
+        ("superadmin", "Super Admin"),
         ("leader", "Leader"),
-        ("foreman", "Mekanik"),
+        ("foreman", "Foreman"),
     ]
+
     DEPARTMENT_CHOICES = [
         ("SUPPORT", "Support & Fabrikasi"),
         ("TRACK", "Track"),
@@ -79,6 +80,7 @@ class User(AbstractUser):
     nrp = models.CharField(max_length=20, blank=True, null=True)
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(max_length=254, unique=True)
+    telegram_chat_id = models.CharField(max_length=50, blank=True, null=True, help_text="Telegram Chat ID untuk notifikasi")
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="foreman")
     department = models.CharField(
         max_length=100, choices=DEPARTMENT_CHOICES, blank=True, null=True
@@ -221,8 +223,6 @@ class ActivityReport(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
 
-# Tambahkan field baru di AnalysisReport class (setelah line 230)
-
 class AnalysisReport(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -230,6 +230,7 @@ class AnalysisReport(models.Model):
         ("rejected", "Rejected"),
     ]
     SECTION_CHOICES = [
+        # Equipment yang sudah ada
         ("PC1250", "PC1250"),
         ("CAT395", "CAT395"),
         ("DX800", "DX800"),
@@ -240,6 +241,23 @@ class AnalysisReport(models.Model):
         ("D155", "D155"),
         ("D85", "D85"),
         ("EPIROC DM30", "EPIROC DM30"),
+        # Equipment baru yang ditambahkan
+        ("HD785", "HD785"),
+        ("VOLVO FMX400", "VOLVO FMX400"),
+        ("GD955", "GD955"),
+        ("GD535", "GD535"),
+        ("GD160K/M", "GD160K/M"),
+        ("DYNAPAC COMPACTOR", "DYNAPAC COMPACTOR"),
+        ("HD465/WT", "HD465/WT"),
+        ("RENAULT FT/LB", "RENAULT FT/LB"),
+        ("HINO WT/LT/CT", "HINO WT/LT/CT"),
+        ("MANITAOU", "MANITAOU"),
+        ("KATO CRANE", "KATO CRANE"),
+        ("GENSET", "GENSET"),
+        ("WATER PUMP (WP)", "WATER PUMP (WP)"),
+        ("HINO DT", "HINO DT"),
+        ("MERCY DT", "MERCY DT"),
+        ("BOMAG COMPACTOR", "BOMAG COMPACTOR"),
     ]
     PROBLEM_CHOICES = [
         ("1000", "Engine"),
@@ -306,31 +324,31 @@ class AnalysisReport(models.Model):
         blank=True, null=True
     )
     
-    # Faktor 4M1E - Multiple choice dengan checkbox
-    faktor_man = models.BooleanField(
-        default=False,
+    # Faktor 4M1E - Text input untuk penjelasan spesifik
+    faktor_man = models.TextField(
         verbose_name="Man (Manusia)",
-        help_text="Faktor manusia sebagai penyebab masalah"
+        help_text="Jelaskan faktor manusia yang berkontribusi terhadap masalah (contoh: Terjadi kelalaian pada saat monitoring)",
+        blank=True, null=True
     )
-    faktor_material = models.BooleanField(
-        default=False,
+    faktor_material = models.TextField(
         verbose_name="Material",
-        help_text="Faktor material sebagai penyebab masalah"
+        help_text="Jelaskan faktor material yang berkontribusi terhadap masalah",
+        blank=True, null=True
     )
-    faktor_machine = models.BooleanField(
-        default=False,
+    faktor_machine = models.TextField(
         verbose_name="Machine (Mesin)",
-        help_text="Faktor mesin sebagai penyebab masalah"
+        help_text="Jelaskan faktor mesin yang berkontribusi terhadap masalah",
+        blank=True, null=True
     )
-    faktor_method = models.BooleanField(
-        default=False,
+    faktor_method = models.TextField(
         verbose_name="Method (Metode)",
-        help_text="Faktor metode sebagai penyebab masalah"
+        help_text="Jelaskan faktor metode yang berkontribusi terhadap masalah",
+        blank=True, null=True
     )
-    faktor_environment = models.BooleanField(
-        default=False,
+    faktor_environment = models.TextField(
         verbose_name="Environment (Lingkungan)",
-        help_text="Faktor lingkungan sebagai penyebab masalah"
+        help_text="Jelaskan faktor lingkungan yang berkontribusi terhadap masalah",
+        blank=True, null=True
     )
     
     tindakan_dilakukan = models.TextField(
@@ -386,64 +404,103 @@ class AnalysisReport(models.Model):
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
-        ("activity_reminder", "Activity Report Reminder"),
-        ("analysis_reminder", "Analysis Report Reminder"),
+        ('activity_reminder', 'Activity Report Reminder'),
+        ('analysis_reminder', 'Analysis Report Reminder'),
+        ('manual_message', 'Manual Message'),
+        ('system_alert', 'System Alert'),
+        ('deadline_warning', 'Deadline Warning'),
+    ]
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('unread', 'Unread'),
+        ('read', 'Read'),
+        ('acknowledged', 'Acknowledged'),
     ]
 
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="notifications"
-    )
-    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     title = models.CharField(max_length=200)
     message = models.TextField()
-    is_read = models.BooleanField(default=False)
+    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unread')
+    
+    # Admin control fields
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications')
+    is_manual = models.BooleanField(default=False, help_text="Notifikasi yang dikirim manual oleh admin")
+    requires_acknowledgment = models.BooleanField(default=False, help_text="Memerlukan konfirmasi dari user")
+    
+    # Timing fields
     created_at = models.DateTimeField(auto_now_add=True)
-
+    read_at = models.DateTimeField(null=True, blank=True)
+    acknowledged_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True, help_text="Notifikasi akan otomatis dihapus setelah tanggal ini")
+    
     # Auto-remove when task is completed
     auto_remove_on_completion = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ['-created_at']
         indexes = [
-            models.Index(fields=["user", "is_read"]),
-            models.Index(fields=["notification_type", "created_at"]),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['notification_type', 'created_at']),
         ]
-
+    
     def __str__(self):
-        return f"{self.user.username} - {self.title}"
+        return f"{self.title} - {self.user.name}"
+    
+    def mark_as_read(self):
+        if self.status == 'unread':
+            self.status = 'read'
+            self.read_at = timezone.now()
+            self.save()
+    
+    def mark_as_acknowledged(self):
+        self.status = 'acknowledged'
+        self.acknowledged_at = timezone.now()
+        self.save()
 
     @classmethod
-    def create_activity_reminder(cls, user, hours_left):
+    def create_activity_reminder(cls, user, hours_before):
         """Create activity report reminder"""
-        if hours_left == 1:
-            title = "⏰ Deadline Activity Report - 1 Jam Lagi!"
-            message = "Jangan lupa isi activity report hari ini. Deadline dalam 1 jam lagi (18:00)."
-        elif hours_left == 0.5:  # 30 minutes
-            title = "🚨 Deadline Activity Report - 30 Menit Lagi!"
-            message = "Segera isi activity report hari ini! Deadline dalam 30 menit lagi (18:00)."
-        elif hours_left == 1 / 6:  # 10 minutes
-            title = "🔥 URGENT: Activity Report - 10 Menit Lagi!"
-            message = "URGENT! Activity report harus diisi sekarang! Deadline dalam 10 menit lagi (18:00)."
-        else:
-            return None
-
+        # Determine deadline time based on user's shift
+        deadline_text = "18:00" if user.shift == 1 else "05:00"
+        shift_text = "Shift 1" if user.shift == 1 else "Shift 2"
+        
+        if hours_before == 1:
+            title = f"⏰ Deadline Activity Report - 1 Jam Lagi! ({shift_text})"
+            message = f"Jangan lupa isi activity report hari ini. Deadline dalam 1 jam lagi ({deadline_text})."
+        elif hours_before == 0.5:
+            title = f"🚨 Deadline Activity Report - 30 Menit Lagi! ({shift_text})"
+            message = f"Segera isi activity report hari ini! Deadline dalam 30 menit lagi ({deadline_text})."
+        else:  # 10 minutes
+            title = f"🔥 URGENT! Deadline Activity Report - 10 Menit Lagi! ({shift_text})"
+            message = f"URGENT! Activity report harus diisi sekarang! Deadline dalam 10 menit lagi ({deadline_text})."
+        
         # Check if similar notification already exists today
         today = timezone.now().date()
-        existing = cls.objects.filter(
+        existing = Notification.objects.filter(
             user=user,
-            notification_type="activity_reminder",
+            notification_type='activity_reminder',
             created_at__date=today,
+            title=title
+        ).first()
+        
+        if existing:
+            return None  # Don't create duplicate
+        
+        return Notification.objects.create(
+            user=user,
             title=title,
-        ).exists()
-
-        if not existing:
-            return cls.objects.create(
-                user=user,
-                notification_type="activity_reminder",
-                title=title,
-                message=message,
-            )
-        return None
+            message=message,
+            notification_type='activity_reminder'
+        )
 
     @classmethod
     def create_analysis_reminder(cls, user, days_left, missing_count):

@@ -151,10 +151,10 @@
                     </div>
                     
                     <div>
-                        <label for="department" class="block text-sm font-medium text-gray-700 mb-2">Departemen</label>
+                        <label for="department" class="block text-sm font-medium text-gray-700 mb-2">Section</label>
                         <select name="department" id="department"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Pilih Departemen</option>
+                            <option value="">Pilih Section</option>
                             <option value="SUPPORT">Support & Fabrikasi</option>
                             <option value="TRACK">Track</option>
                             <option value="PLANT">Plant Coal Hauling</option>
@@ -202,18 +202,58 @@
                             Pilih Leader * 
                             <span class="text-xs text-gray-500">(Wajib untuk Mekanik)</span>
                         </label>
+                        <!-- Update bagian leader selection (sekitar line 207) -->
                         <select name="leader" id="leader"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Pilih Leader</option>
-                            {% for leader in available_leaders %}
-                            <option value="{{ leader.id }}" data-quota="{{ leader.leader_quota.max_foreman|default:0 }}" data-current="{{ leader.current_foremen_count }}">
-                                {{ leader.name|default:leader.username }} 
-                                ({{ leader.department|default:'-' }}) 
-                                - Quota: {{ leader.current_foremen_count }}/{{ leader.leader_quota.max_foreman|default:0 }}
+                            {% for leader in leaders_with_quota %}
+                            <option value="{{ leader.leader.id }}" 
+                                    data-quota="{{ leader.quota.max_foreman|default:0 }}" 
+                                    data-current="{{ leader.current_count }}" 
+                                    data-available="{{ leader.available }}">
+                                {{ leader.leader.name|default:leader.leader.username }} 
+                                ({{ leader.leader.department|default:'-' }}) 
+                                {% if leader.quota %}
+                                    - Kuota: {{ leader.current_count }}/{{ leader.quota.max_foreman }} 
+                                    ({{ leader.available }} tersedia)
+                                {% else %}
+                                    - Belum ada kuota
+                                {% endif %}
                             </option>
                             {% endfor %}
                         </select>
+                        
+                        <!-- Tambahkan script untuk pre-fill leader dari URL parameter -->
+                        <script>
+                        // Pre-fill leader from URL parameter
+                        window.addEventListener('load', function() {
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const leaderId = urlParams.get('leader');
+                            const username = urlParams.get('username');
+                            
+                            if (leaderId) {
+                                document.getElementById('leader').value = leaderId;
+                                document.getElementById('role').value = 'foreman';
+                                handleRoleChange();
+                            }
+                            
+                            if (username) {
+                                document.getElementById('username').value = username;
+                                document.getElementById('role').value = 'leader';
+                                handleRoleChange();
+                            }
+                            
+                            showStep(1);
+                        });
+                        </script>
                         <div class="error-message text-red-600 text-sm mt-1 hidden" id="leader-error"></div>
+                        
+                        <!-- Info kuota leader -->
+                        <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-xs text-blue-700">
+                                💡 <strong>Info:</strong> Jika leader belum memiliki kuota, Anda dapat menambahkannya setelah user dibuat melalui menu edit di daftar user.
+                            </p>
+                        </div>
                     </div>
                     
                     <div>
@@ -233,19 +273,19 @@
                     </div>
                 </div>
                 
-                <!-- Leader Quota Warning -->
-                <div id="leaderQuotaWarning" class="hidden mt-6">
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <!-- Info untuk Leader -->
+                <div id="leaderInfo" class="hidden mt-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                         <div class="flex items-start">
                             <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h3 class="text-sm font-medium text-yellow-800">Perhatian: Leader Quota</h3>
-                                <p class="text-sm text-yellow-700 mt-1">
-                                    Untuk membuat Leader baru, Anda perlu mengatur Leader Quota terlebih dahulu.
+                                <h3 class="text-sm font-medium text-green-800">Leader akan dibuat tanpa kuota</h3>
+                                <p class="text-sm text-green-700 mt-1">
+                                    Setelah user leader dibuat, Anda dapat menambahkan kuota melalui link "Tambah Kuota" di kolom aksi pada daftar user.
                                 </p>
                             </div>
                         </div>
@@ -256,15 +296,9 @@
                     <button type="button" id="prevStep2" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">
                         ← Kembali
                     </button>
-                    <div class="flex gap-3">
-                        <button type="button" id="leaderQuotaBtn" class="hidden bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700"
-                                onclick="redirectToLeaderQuota()">
-                            Atur Leader Quota Dulu
-                        </button>
-                        <button type="button" id="nextStep2" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
-                            Lanjut ke Konfirmasi →
-                        </button>
-                    </div>
+                    <button type="button" id="nextStep2" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        Lanjut ke Konfirmasi →
+                    </button>
                 </div>
             </div>
             
@@ -530,45 +564,26 @@ function updateReviewData() {
     }
 }
 
-// Role change handler
+// Role change handler - SIMPLIFIED
 function handleRoleChange() {
     const roleSelect = document.getElementById('role');
     const leaderSelection = document.getElementById('leaderSelection');
-    const leaderQuotaWarning = document.getElementById('leaderQuotaWarning');
-    const leaderQuotaBtn = document.getElementById('leaderQuotaBtn');
-    const nextStep2Btn = document.getElementById('nextStep2');
+    const leaderInfo = document.getElementById('leaderInfo');
     const leaderField = document.getElementById('leader');
     
     const selectedRole = roleSelect.value;
     
     // Reset visibility
     leaderSelection.classList.add('hidden');
-    leaderQuotaWarning.classList.add('hidden');
-    leaderQuotaBtn.classList.add('hidden');
-    nextStep2Btn.classList.remove('hidden');
+    leaderInfo.classList.add('hidden');
     leaderField.removeAttribute('required');
     
     if (selectedRole === 'foreman') {
         leaderSelection.classList.remove('hidden');
         leaderField.setAttribute('required', 'required');
     } else if (selectedRole === 'leader') {
-        leaderQuotaWarning.classList.remove('hidden');
-        leaderQuotaBtn.classList.remove('hidden');
-        nextStep2Btn.classList.add('hidden');
+        leaderInfo.classList.remove('hidden');
     }
-}
-
-function redirectToLeaderQuota() {
-    // Save form data
-    const formData = new FormData(document.getElementById('createUserForm'));
-    const data = {};
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
-    }
-    sessionStorage.setItem('pendingUserData', JSON.stringify(data));
-    
-    // Redirect
-    window.location.href = '{% url "manage_leader_quota" %}';
 }
 
 // Auto-fill name field
@@ -607,24 +622,8 @@ document.getElementById('prevStep3').addEventListener('click', function() {
     showStep(2);
 });
 
-// Load pending data if exists
+// Initialize first step
 window.addEventListener('load', function() {
-    const pendingData = sessionStorage.getItem('pendingUserData');
-    if (pendingData) {
-        const data = JSON.parse(pendingData);
-        
-        for (let [key, value] of Object.entries(data)) {
-            const field = document.getElementById(key);
-            if (field) {
-                field.value = value;
-            }
-        }
-        
-        handleRoleChange();
-        sessionStorage.removeItem('pendingUserData');
-    }
-    
-    // Initialize first step
     showStep(1);
 });
 </script>
@@ -646,7 +645,6 @@ window.addEventListener('load', function() {
     transition: width 0.3s ease;
 }
 
-/* Smooth transitions */
 .step-content {
     transition: opacity 0.3s ease;
 }
