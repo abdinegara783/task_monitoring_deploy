@@ -1226,14 +1226,14 @@ def export_analysis_reports_pdf(request):
 
         if reports.count() == 1:
             # Single report - generate single TAR PDF
-            pdf_service = AnalysisPDFService()
+            pdf_service = PDFReportService()
             return pdf_service.generate_technical_analysis_report_pdf(reports.first())
         else:
             # Multiple reports - create ZIP with individual TAR PDFs
             zip_buffer = io.BytesIO()
 
             with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-                pdf_service = AnalysisPDFService()
+                pdf_service = PDFReportService()
 
                 for i, report in enumerate(reports, 1):
                     # Generate PDF for each report
@@ -1254,7 +1254,7 @@ def export_analysis_reports_pdf(request):
                 zip_buffer.getvalue(), content_type="application/zip"
             )
             response["Content-Disposition"] = (
-                f'attachment; filename="Technical_Analysis_Reports_{datetime.now().strftime("%Y%m%d")}.zip"'
+                f'attachment; filename="Technical_Analysis_Reports_{timezone.now().strftime("%Y%m%d")}.zip"'
             )
 
             return response

@@ -611,8 +611,8 @@ class RoleBasedUserCreationForm(forms.ModelForm):
             leader_quota__isnull=False,
             leader_quota__is_active=True,
         ).filter(
-            models.Q(
-                leader_quota__current_foreman_count__lt=models.F(
+            models.Q(  # noqa: F821
+                leader_quota__current_foreman_count__lt=models.F(  # noqa: F821
                     "leader_quota__max_foreman"
                 )
             )

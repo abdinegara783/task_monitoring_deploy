@@ -258,6 +258,7 @@ class AnalysisReport(models.Model):
         ("HINO DT", "HINO DT"),
         ("MERCY DT", "MERCY DT"),
         ("BOMAG COMPACTOR", "BOMAG COMPACTOR"),
+        ("TL","TL")
     ]
     PROBLEM_CHOICES = [
         ("1000", "Engine"),
