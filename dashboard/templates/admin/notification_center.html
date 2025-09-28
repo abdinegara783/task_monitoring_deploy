@@ -1,4 +1,4 @@
-{% extends "admin/base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}Pusat Notifikasi{% endblock %}
@@ -9,9 +9,10 @@
         transition: all 0.3s ease;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e5e7eb;
     }
     .notification-card:hover {
-        transform: translateY(-4px);
+        transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
     .stat-card {
@@ -45,6 +46,8 @@
         border-radius: 20px;
         font-weight: 600;
         font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
     }
     .badge-warning {
         background: linear-gradient(135deg, #f59e0b, #d97706);
@@ -53,6 +56,8 @@
         border-radius: 20px;
         font-weight: 600;
         font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
     }
     .badge-danger {
         background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -61,6 +66,8 @@
         border-radius: 20px;
         font-weight: 600;
         font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
     }
     .broadcast-section {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -84,26 +91,6 @@
         position: relative;
         z-index: 1;
     }
-    .btn-broadcast {
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 50px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-    }
-    .btn-broadcast:hover {
-        background: rgba(255, 255, 255, 0.3);
-        border-color: rgba(255, 255, 255, 0.5);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    }
-    .btn-broadcast:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
     .table-modern {
         border-radius: 12px;
         overflow: hidden;
@@ -123,6 +110,7 @@
         border: 2px solid #10b981;
         border-radius: 12px;
         padding: 1.5rem;
+        margin-bottom: 2rem;
     }
     .header-gradient {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -131,28 +119,76 @@
         border-radius: 20px;
         margin-bottom: 2rem;
     }
+    .btn-broadcast {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
+    }
+    .btn-broadcast:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(238, 90, 36, 0.6);
+        color: white;
+    }
+    .loading-spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ffffff;
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto p-6">
-    <!-- Enhanced Header -->
+<div class="container mx-auto p-6 max-w-7xl">
+    <!-- Header -->
     <div class="header-gradient">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-4xl font-bold mb-2">🔔 Pusat Notifikasi</h1>
-                <p class="text-lg opacity-90">Kelola dan kirim notifikasi ke mekanik yang belum mengisi activity report</p>
-                <p class="text-sm opacity-75 mt-2">{{ today|date:"l, d F Y" }}</p>
+                <h1 class="text-3xl font-bold mb-2">
+                    <i data-lucide="bell-ring" class="w-8 h-8 inline mr-3"></i>
+                    Pusat Notifikasi
+                </h1>
+                <p class="text-blue-100">Kelola dan kirim notifikasi kepada mekanik</p>
             </div>
             <div class="text-right">
-                <div class="text-3xl mb-2">📊</div>
-                <p class="text-sm opacity-75">Dashboard Admin</p>
+                <p class="text-blue-100 text-sm">{{ today|date:"l, d F Y" }}</p>
+                <p class="text-white font-semibold">{{ request.user.get_full_name }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Enhanced Statistics Cards -->
+    <!-- Success Message -->
+    {% if messages %}
+        {% for message in messages %}
+            {% if message.tags == 'success' %}
+                <div class="success-alert">
+                    <div class="flex items-center">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-green-600 mr-3"></i>
+                        <div>
+                            <h4 class="font-bold text-green-800">Berhasil!</h4>
+                            <p class="text-green-700">{{ message }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total Mekanik -->
         <div class="notification-card bg-white p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -169,6 +205,7 @@
             </div>
         </div>
 
+        <!-- Belum Mengisi Report -->
         <div class="notification-card bg-white p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -185,6 +222,7 @@
             </div>
         </div>
 
+        <!-- Sudah Mengisi Report -->
         <div class="notification-card bg-white p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -201,6 +239,7 @@
             </div>
         </div>
 
+        <!-- Total Notifikasi -->
         <div class="notification-card bg-white p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -209,7 +248,7 @@
                             <i data-lucide="send" class="w-6 h-6 text-purple-600"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-gray-600">Notifikasi Terkirim</p>
+                            <p class="text-sm font-medium text-gray-600">Total Notifikasi Terkirim</p>
                             <p class="text-3xl font-bold text-purple-600">{{ total_notifications_sent }}</p>
                         </div>
                     </div>
@@ -218,63 +257,50 @@
         </div>
     </div>
 
-    <!-- Enhanced Broadcast Section -->
+    <!-- Broadcast Section -->
+    {% if foremen_missing_count > 0 %}
     <div class="broadcast-section mb-8">
         <div class="broadcast-content">
             <div class="flex items-center justify-between">
-                <div class="flex-1">
-                    <h2 class="text-2xl font-bold mb-2">📢 Broadcast Notifikasi</h2>
-                    <p class="text-lg opacity-90 mb-4">Kirim notifikasi ke semua mekanik yang belum mengisi activity report hari ini</p>
-                    {% if foremen_missing_count > 0 %}
-                        <div class="flex items-center">
-                            <i data-lucide="users" class="w-5 h-5 mr-2"></i>
-                            <span class="text-sm opacity-75">{{ foremen_missing_count }} mekanik akan menerima notifikasi</span>
-                        </div>
-                    {% endif %}
+                <div>
+                    <h3 class="text-2xl font-bold mb-2">
+                        <i data-lucide="megaphone" class="w-6 h-6 inline mr-2"></i>
+                        Kirim Notifikasi Pengingat
+                    </h3>
+                    <p class="text-blue-100 mb-4">
+                        Ada {{ foremen_missing_count }} mekanik yang belum mengisi activity report hari ini.
+                        Kirim notifikasi pengingat kepada mereka?
+                    </p>
                 </div>
-                <div class="text-center">
-                    <button 
-                        id="broadcast-btn" 
-                        class="btn-broadcast flex items-center gap-3"
-                        {% if foremen_missing_count == 0 %}disabled{% endif %}
-                    >
-                        <i data-lucide="send" class="w-6 h-6"></i>
-                        <span class="text-lg font-semibold">Broadcast Notifikasi</span>
-                        {% if foremen_missing_count > 0 %}
-                            <span class="bg-white bg-opacity-30 text-white px-3 py-1 rounded-full text-sm font-bold">{{ foremen_missing_count }}</span>
-                        {% endif %}
-                    </button>
-                </div>
-            </div>
-            
-            {% if foremen_missing_count == 0 %}
-            <div class="success-alert mt-6">
-                <div class="flex items-center">
-                    <i data-lucide="check-circle" class="w-6 h-6 text-green-600 mr-3"></i>
-                    <div>
-                        <p class="text-green-800 font-bold text-lg">Excellent! 🎉</p>
-                        <p class="text-green-700">Semua mekanik sudah mengisi activity report hari ini!</p>
-                    </div>
+                <div>
+                    <form method="post" action="{% url 'broadcast_notification' %}" id="broadcastForm">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-broadcast" id="broadcastBtn">
+                            <span id="btnText">
+                                <i data-lucide="send" class="w-5 h-5 inline mr-2"></i>
+                                Kirim Notifikasi
+                            </span>
+                            <div class="loading-spinner" id="loadingSpinner"></div>
+                        </button>
+                    </form>
                 </div>
             </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 
-    <!-- Enhanced Table for Mechanics without Reports -->
-    {% if foremen_missing_count > 0 %}
-    <div class="notification-card bg-white p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">
-                📋 Mekanik yang Belum Mengisi Activity Report
-            </h2>
-            <div class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                {{ today|date:"d F Y" }}
-            </div>
+    <!-- Mekanik yang Belum Mengisi Report -->
+    {% if foremen_without_report %}
+    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+            <h3 class="text-xl font-bold text-white">
+                <i data-lucide="alert-triangle" class="w-6 h-6 inline mr-2"></i>
+                Mekanik yang Belum Mengisi Activity Report ({{ foremen_missing_count }})
+            </h3>
         </div>
         
         <div class="overflow-x-auto">
-            <table class="table-modern min-w-full">
+            <table class="min-w-full table-modern">
                 <thead>
                     <tr>
                         <th class="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Mekanik</th>
@@ -286,31 +312,39 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for item in foremen_without_report %}
-                    <tr>
+                    <tr class="hover:bg-gray-50 transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-full flex items-center justify-center mr-4">
-                                    <span class="text-white font-bold text-lg">{{ item.foreman.name|first }}</span>
+                                    <span class="text-white font-bold text-lg">
+                                        {% if item.foreman.name %}
+                                            {{ item.foreman.name|first|upper }}
+                                        {% else %}
+                                            {{ item.foreman.username|first|upper }}
+                                        {% endif %}
+                                    </span>
                                 </div>
                                 <div>
-                                    <div class="text-sm font-bold text-gray-900">{{ item.foreman.name }}</div>
+                                    <div class="text-sm font-bold text-gray-900">{{ item.foreman.name|default:item.foreman.username }}</div>
                                     <div class="text-sm text-gray-500">@{{ item.foreman.username }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="badge-warning">
-                                {{ item.foreman.department }}
+                                <i data-lucide="building" class="w-4 h-4 mr-1"></i>
+                                {{ item.foreman.get_department_display|default:"N/A" }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-800">
+                                <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>
                                 {{ item.shift_name }}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <i data-lucide="clock" class="w-4 h-4 text-gray-500 mr-2"></i>
+                                <i data-lucide="alarm-clock" class="w-4 h-4 text-gray-500 mr-2"></i>
                                 <span class="text-sm font-medium text-gray-900">{{ item.deadline_time }}</span>
                             </div>
                         </td>
@@ -326,115 +360,38 @@
             </table>
         </div>
     </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow-sm border p-8 text-center">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="check-circle-2" class="w-10 h-10 text-green-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Semua Mekanik Sudah Mengisi Report!</h3>
+        <p class="text-gray-600">Tidak ada mekanik yang perlu diingatkan untuk mengisi activity report hari ini.</p>
+    </div>
     {% endif %}
 </div>
 
-<!-- Enhanced Toast Notification -->
-<div id="toast" class="fixed top-4 right-4 z-50 hidden">
-    <div class="bg-white border-l-4 border-blue-500 rounded-lg shadow-xl p-4 max-w-sm">
-        <div class="flex items-center">
-            <div id="toast-icon" class="mr-3"></div>
-            <div>
-                <p id="toast-message" class="text-sm font-medium text-gray-900"></p>
-                <div id="toast-debug" class="text-xs text-gray-500 mt-1 hidden"></div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const broadcastBtn = document.getElementById('broadcast-btn');
+// Initialize Lucide icons
+if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+}
+
+// Handle broadcast form submission
+document.getElementById('broadcastForm').addEventListener('submit', function(e) {
+    const btn = document.getElementById('broadcastBtn');
+    const btnText = document.getElementById('btnText');
+    const spinner = document.getElementById('loadingSpinner');
     
-    if (broadcastBtn) {
-        broadcastBtn.addEventListener('click', function() {
-            if (this.disabled) return;
-            
-            // Disable button and show loading
-            this.disabled = true;
-            this.innerHTML = '<i data-lucide="loader" class="w-6 h-6 animate-spin mr-3"></i><span class="text-lg font-semibold">Mengirim Notifikasi...</span>';
-            
-            // Send broadcast request
-            fetch('{% url "broadcast_notification" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Broadcast response:', data);
-                
-                showToast(data.message, data.success ? 'success' : 'error', data.debug_info);
-                
-                if (data.success) {
-                    // Show success animation
-                    this.innerHTML = '<i data-lucide="check-circle" class="w-6 h-6 text-green-600 mr-3"></i><span class="text-lg font-semibold">✅ Berhasil Terkirim!</span>';
-                    this.classList.remove('btn-broadcast');
-                    this.classList.add('bg-green-500', 'border-green-600');
-                    
-                    // Show detailed success message
-                    showToast(`🎉 Broadcast berhasil! ${data.recipients_count} mekanik telah menerima notifikasi.`, 'success', data.debug_info);
-                    
-                    // Reload page after successful broadcast
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 4000);
-                } else {
-                    // Re-enable button on error
-                    this.disabled = false;
-                    this.innerHTML = '<i data-lucide="send" class="w-6 h-6 mr-3"></i><span class="text-lg font-semibold">Broadcast Notifikasi</span>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Terjadi kesalahan saat mengirim notifikasi', 'error');
-                
-                // Re-enable button on error
-                this.disabled = false;
-                this.innerHTML = '<i data-lucide="send" class="w-6 h-6 mr-3"></i><span class="text-lg font-semibold">Broadcast Notifikasi</span>';
-            });
-        });
-    }
+    // Show loading state
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    spinner.style.display = 'inline-block';
 });
 
-function showToast(message, type, debugInfo = null) {
-    const toast = document.getElementById('toast');
-    const toastIcon = document.getElementById('toast-icon');
-    const toastMessage = document.getElementById('toast-message');
-    const toastDebug = document.getElementById('toast-debug');
-    
-    // Set icon and color based on type
-    if (type === 'success') {
-        toastIcon.innerHTML = '<i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>';
-        toast.querySelector('.border-l-4').classList.remove('border-blue-500', 'border-red-500');
-        toast.querySelector('.border-l-4').classList.add('border-green-500');
-    } else {
-        toastIcon.innerHTML = '<i data-lucide="x-circle" class="w-6 h-6 text-red-600"></i>';
-        toast.querySelector('.border-l-4').classList.remove('border-blue-500', 'border-green-500');
-        toast.querySelector('.border-l-4').classList.add('border-red-500');
-    }
-    
-    toastMessage.textContent = message;
-    
-    // Show debug info if available
-    if (debugInfo) {
-        toastDebug.innerHTML = `Debug: ${JSON.stringify(debugInfo)}`;
-        toastDebug.classList.remove('hidden');
-    } else {
-        toastDebug.classList.add('hidden');
-    }
-    
-    // Show toast
-    toast.classList.remove('hidden');
-    
-    // Hide toast after 8 seconds
-    setTimeout(() => {
-        toast.classList.add('hidden');
-    }, 8000);
-}
+// Auto refresh every 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000);
 </script>
 {% endblock %}
