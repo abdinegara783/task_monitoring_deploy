@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Detail Activity Report - Sistem Pelaporan Kerja{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-6xl">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{% url 'foreman_dashboard' %}" class="p-2 hover:bg-gray-100 rounded-md">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Detail Activity Report</h1>
+                <p class="text-gray-600">Laporan Aktivitas Lengkap</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            {% if report.status == 'pending' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-orange-100 text-orange-800">
+                    Menunggu Validasi
+                </span>
+            {% elif report.status == 'approved' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">
+                    Disetujui
+                </span>
+            {% elif report.status == 'rejected' %}
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-800">
+                    Ditolak
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Report Info Card -->
+    <div class="bg-white rounded-lg shadow-sm border mb-6">
+        <div class="p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Informasi Laporan</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Laporan</label>
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm font-medium">{{ report.date|date:"d F Y" }}</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">NRP</label>
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm font-medium">{{ report.nrp }}</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Section</label>
+                    <div class="p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm font-medium">{{ report.get_section_display }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            {% if report.feedback %}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Feedback</label>
+                <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p class="text-sm text-blue-800">{{ report.feedback }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Activities List -->
+    <div class="bg-white rounded-lg shadow-sm border">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-bold text-gray-900">Detail Aktivitas ({{ activities.count }} aktivitas)</h2>
+        </div>
+        
+        <div class="p-6">
+            {% if activities %}
+                <div class="space-y-6">
+                    {% for activity in activities %}
+                    <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                        <!-- Activity Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Aktivitas {{ activity.activity_number }}
+                            </h3>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">
+                                {{ activity.get_activity_code_display }}
+                            </span>
+                        </div>
+                        
+                        <!-- Activity Details Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Unit Code</label>
+                                <p class="text-sm font-medium text-gray-900">{{ activity.unit_code }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">HM/KM</label>
+                                <p class="text-sm font-medium text-gray-900">{{ activity.hm_km }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Waktu Mulai</label>
+                                <p class="text-sm font-medium text-gray-900">{{ activity.start_time }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Waktu Selesai</label>
+                                <p class="text-sm font-medium text-gray-900">{{ activity.stop_time }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Component -->
+                        <div class="mb-4">
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Komponen</label>
+                            <p class="text-sm font-medium text-gray-900">{{ activity.get_component_display }}</p>
+                        </div>
+                        
+                        <!-- Activities Description -->
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Deskripsi Aktivitas</label>
+                            <div class="bg-gray-50 rounded-lg p-3 border">
+                                <p class="text-sm text-gray-900 leading-relaxed">{{ activity.activities }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12">
+                    <i data-lucide="file-text" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Tidak Ada Aktivitas</h3>
+                    <p class="text-gray-600">Laporan ini belum memiliki detail aktivitas.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-6 flex justify-between">
+        <a href="{% url 'foreman_report_status' %}" 
+           class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            Kembali ke Status Laporan
+        </a>
+        
+        {% if report.status == 'pending' %}
+        <div class="text-sm text-gray-600">
+            <i data-lucide="clock" class="w-4 h-4 inline mr-1"></i>
+            Menunggu validasi dari leader
+        </div>
+        {% elif report.status == 'approved' %}
+        <div class="text-sm text-green-600">
+            <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>
+            Laporan telah disetujui
+        </div>
+        {% elif report.status == 'rejected' %}
+        <div class="text-sm text-red-600">
+            <i data-lucide="x-circle" class="w-4 h-4 inline mr-1"></i>
+            Laporan ditolak, silakan perbaiki
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Initialize Lucide icons
+if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+}
+</script>
+{% endblock %}

@@ -20,6 +20,7 @@ urlpatterns = [
     # Foreman URLs
     path("mekanik/", views.foreman_dashboard, name="foreman_dashboard"),
     path("mekanik/reports/", views.foreman_reports, name="foreman_reports"),
+    path("foreman/activity-report/<int:report_id>/", views.activity_report_detail, name="activity_report_detail"),
     # Activity report
     path(
         "activity-report/create/",

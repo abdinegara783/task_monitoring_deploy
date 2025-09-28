@@ -518,12 +518,13 @@ def foreman_dashboard(request):
                 "title": "Activity Report",
                 "description": f"{report.nrp} - {report.section}",
                 "time": f"{report.date.strftime('%d %b %Y')}",
-                "status": "completed",
+                "status": report.status,  # Use actual report status instead of hardcoded "completed"
                 "report_data": {
                     "date": report.date.strftime("%d M Y"),
                     "nrp": report.nrp or "-",
                     "section": report.section or "-",
                     "activities_count": report.activities.count(),
+                    "status": report.status,  # Add status to report_data
                     "first_activity": {
                         "unit_code": first_activity.unit_code if first_activity else "-",
                         "component": first_activity.get_component_display() if first_activity else "-",
@@ -531,6 +532,7 @@ def foreman_dashboard(request):
                         "start_time": str(first_activity.start_time) if first_activity else "-",
                         "stop_time": str(first_activity.stop_time) if first_activity else "-",
                     } if first_activity else None,
+                    "id": report.id,  # Add report ID for linking to detail page
                 },
             }
         )
@@ -545,7 +547,7 @@ def foreman_dashboard(request):
                 "title": "Analysis Report",
                 "description": f"{report.no_report or 'N/A'} - {report.unit_code or 'N/A'}",
                 "time": report.report_date.strftime("%d %b %Y"),
-                "status": "completed",
+                "status": report.status,  # Use actual report status instead of hardcoded "completed"
                 "report_data": {
                     "report_date": report.report_date.strftime("%d M Y"),
                     "no_report": report.no_report or "-",
@@ -563,6 +565,7 @@ def foreman_dashboard(request):
                     "title_problem": report.title_problem or "Tidak ada deskripsi",
                     "part_no": report.part_no or "-",
                     "part_name": report.part_name or "-",
+                    "status": report.status,  # Add status to report_data
                 },
             }
         )
@@ -729,6 +732,21 @@ def create_analysis_report_step2(request, report_id):
     context = {"form": form, "analysis_report": analysis_report, "user": request.user}
 
     return render(request, "foreman/foreman_create_analysis_report_step2.html", context)
+
+
+@login_required
+@role_required(["foreman"])
+def activity_report_detail(request, report_id):
+    """View untuk menampilkan detail lengkap activity report dengan semua aktivitas"""
+    report = get_object_or_404(ActivityReport, id=report_id, foreman=request.user)
+    activities = report.activities.all().order_by('activity_number')
+    
+    context = {
+        'report': report,
+        'activities': activities,
+    }
+    
+    return render(request, 'foreman/activity_report_detail.html', context)
 
 
 @login_required

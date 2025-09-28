@@ -84,21 +84,35 @@ class PDFReportService:
         elements.extend(self._add_activity_table(reports))
         
         # Add footer section dengan nama foreman dan leader
-        elements.extend(self._add_footer_section(foreman_data))
+        elements.extend(self._add_footer_section(foreman_data, reports))
         
         # Build PDF
         doc.build(elements)
         return response
     
     def _add_company_header_with_logo(self):
-        """Add company header with logo placeholder"""
+        """Add company header with actual logo"""
         elements = []
         
-        # Create header table dengan logo space dan company info
+        # Create header table dengan logo dan company info
         header_data = []
         
-        # Logo placeholder dan company info dalam satu row
-        logo_cell = "[LOGO]\n\nTempat untuk\nlogo perusahaan\n(100x60 px)"
+        # Logo path
+        logo_path = os.path.join(settings.BASE_DIR, 'media', 'logo', 'LOGO.png')
+        
+        # Check if logo exists, if not use placeholder
+        if os.path.exists(logo_path):
+            try:
+                # Create logo image
+                logo = Image(logo_path, width=1.5*inch, height=1*inch)
+                logo.hAlign = 'CENTER'
+                logo_cell = logo
+            except:
+                # Fallback to text if image fails to load
+                logo_cell = "[LOGO]\n\nTempat untuk\nlogo perusahaan\n(100x60 px)"
+        else:
+            logo_cell = "[LOGO]\n\nTempat untuk\nlogo perusahaan\n(100x60 px)"
+        
         company_info = "PT. RIUNG MITRA LESTARI SITE RMGM\n\nMining Contractor"
         
         header_data.append([logo_cell, company_info])
@@ -108,14 +122,25 @@ class PDFReportService:
             ('ALIGN', (0, 0), (0, 0), 'CENTER'),
             ('ALIGN', (1, 0), (1, 0), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('FONTNAME', (0, 0), (0, 0), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (0, 0), 8),
             ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (1, 0), (1, 0), 12),
-            ('TEXTCOLOR', (0, 0), (0, 0), colors.grey),
             ('TEXTCOLOR', (1, 0), (1, 0), colors.black),
-            ('BOX', (0, 0), (0, 0), 1, colors.grey),
         ]))
+        
+        # Only add box if using text placeholder
+        if isinstance(logo_cell, str):
+            header_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+                ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('FONTNAME', (0, 0), (0, 0), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (0, 0), 8),
+                ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (1, 0), (1, 0), 12),
+                ('TEXTCOLOR', (0, 0), (0, 0), colors.grey),
+                ('TEXTCOLOR', (1, 0), (1, 0), colors.black),
+                ('BOX', (0, 0), (0, 0), 1, colors.grey),
+            ]))
         
         elements.append(header_table)
         elements.append(Spacer(1, 15))
@@ -178,51 +203,79 @@ class PDFReportService:
         return elements
     
     def _add_activity_table(self, reports):
-        """Add main activity table dengan data yang rapi"""
+        """Add main activity table dengan data yang rapi - Updated for new ActivityReport model"""
         elements = []
         
-        # Table headers
+        # Table headers - Updated to match new structure
         headers = [
-            'NO', 'START', 'STOP', 'DURASI\n(JAM)', 'ACTIVITIES', 
-            'UNIT\nCODE', 'HM/KM', 'SC/US', 'COMPONENT'
+            'NO', 'TANGGAL', 'NRP', 'SECTION', 'START', 'STOP', 
+            'UNIT\nCODE', 'COMPONENT', 'ACTIVITIES', 'STATUS'
         ]
         
         # Create table data
         table_data = [headers]
         
-        # Add 5 rows (sesuai dokumen asli)
-        for i in range(1, 6):
-            row = [str(i), '', '', '', '', '', '', '', '']
-            table_data.append(row)
-        
         # Populate dengan data reports jika ada
         if reports:
-            for i, report in enumerate(reports[:5], 1):
-                if i <= len(table_data) - 1:
-                    start_time = report.start_time.strftime('%H:%M') if report.start_time else ''
-                    end_time = report.end_time.strftime('%H:%M') if report.end_time else ''
-                    duration = self._calculate_duration(report.start_time, report.end_time)
-                    activities = (report.activities[:30] + '...') if len(report.activities or '') > 30 else (report.activities or '')
-                    unit_code = report.Unit_Code or ''
-                    hmkm = report.Hmkm or ''
-                    component = report.get_component_display() or ''
-                    
-                    table_data[i] = [
-                        str(i), start_time, end_time, duration, activities,
-                        unit_code, hmkm, '', component
-                    ]
+            row_num = 1
+            for report in reports:
+                # Get all activities for this report
+                activities = report.activities.all().order_by('activity_number')
+                
+                if activities.exists():
+                    # Add each activity as a separate row
+                    for activity in activities:
+                        start_time = activity.start_time.strftime('%H:%M') if activity.start_time else ''
+                        stop_time = activity.stop_time.strftime('%H:%M') if activity.stop_time else ''
+                        unit_code = activity.unit_code or ''
+                        component = activity.get_component_display() or ''
+                        activities_desc = (activity.activities[:25] + '...') if len(activity.activities or '') > 25 else (activity.activities or '')
+                        
+                        table_data.append([
+                            str(row_num),
+                            report.date.strftime('%d/%m/%Y'),
+                            report.nrp or '',
+                            report.get_section_display() or '',
+                            start_time,
+                            stop_time,
+                            unit_code,
+                            component,
+                            activities_desc,
+                            report.get_status_display()
+                        ])
+                        row_num += 1
+                else:
+                    # If no activities, show report with empty activity data
+                    table_data.append([
+                        str(row_num),
+                        report.date.strftime('%d/%m/%Y'),
+                        report.nrp or '',
+                        report.get_section_display() or '',
+                        '',
+                        '',
+                        '',
+                        '',
+                        'No activities',
+                        report.get_status_display()
+                    ])
+                    row_num += 1
+        else:
+            # Add empty rows if no reports
+            for i in range(1, 6):
+                table_data.append([str(i), '', '', '', '', '', '', '', '', ''])
         
-        # Create table dengan column widths yang proporsional
+        # Create table dengan column widths yang proporsional - Updated for new columns
         table = Table(table_data, colWidths=[
-            0.4*inch,   # NO
-            0.7*inch,   # START
-            0.7*inch,   # STOP
-            0.7*inch,   # DURASI
-            2.2*inch,   # ACTIVITIES
+            0.3*inch,   # NO
+            0.8*inch,   # TANGGAL
+            0.6*inch,   # NRP
+            0.8*inch,   # SECTION
+            0.5*inch,   # START
+            0.5*inch,   # STOP
             0.7*inch,   # UNIT CODE
-            0.7*inch,   # HM/KM
-            0.6*inch,   # SC/US
-            1*inch      # COMPONENT
+            0.9*inch,   # COMPONENT
+            2.0*inch,   # ACTIVITIES
+            0.7*inch    # STATUS
         ])
         
         # Style the table
@@ -232,20 +285,23 @@ class PDFReportService:
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             
             # Body styling
             ('BACKGROUND', (0, 1), (-1, -1), colors.white),
             ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
             
             # Grid
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
             
             # Alternating row colors
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
+            
+            # Left align for text columns
+            ('ALIGN', (8, 1), (8, -1), 'LEFT'),  # ACTIVITIES column
         ]))
         
         elements.append(table)
@@ -253,12 +309,22 @@ class PDFReportService:
         
         return elements
     
-    def _add_footer_section(self, foreman_data):
-        """Add footer section dengan nama yang diisi"""
+    def _add_footer_section(self, foreman_data, reports=None):
+        """Add footer section dengan nama yang diisi dan total durasi jam kerja"""
         elements = []
         
-        # Total Durasi section
-        total_text = "Total Durasi (Jam) :"
+        # Calculate total duration from all activities
+        total_duration = 0.0
+        if reports:
+            for report in reports:
+                activities = report.activities.all()
+                for activity in activities:
+                    if activity.start_time and activity.stop_time:
+                        duration_hours = self._calculate_duration_hours(activity.start_time, activity.stop_time)
+                        total_duration += duration_hours
+        
+        # Total Durasi section dengan nilai yang dihitung
+        total_text = f"Total Durasi (Jam) : {total_duration:.1f} jam"
         total_para = Paragraph(total_text, ParagraphStyle(
             'TotalStyle',
             parent=self.styles['Normal'],
@@ -314,6 +380,25 @@ class PDFReportService:
         elements.append(sig_table)
         
         return elements
+    
+    def _calculate_duration_hours(self, start_time, end_time):
+        """Calculate duration in hours between start and end time"""
+        if start_time and end_time:
+            try:
+                # Convert to datetime for calculation
+                start_dt = datetime.combine(datetime.today(), start_time)
+                end_dt = datetime.combine(datetime.today(), end_time)
+                
+                # Handle overnight shifts
+                if end_dt < start_dt:
+                    end_dt += timedelta(days=1)
+                
+                duration = end_dt - start_dt
+                hours = duration.total_seconds() / 3600
+                return hours
+            except:
+                return 0.0
+        return 0.0
     
     def _calculate_duration(self, start_time, end_time):
         """Calculate duration between start and end time"""
@@ -417,20 +502,24 @@ class PDFReportService:
         """Add company header with logo (untuk analysis reports)"""
         elements = []
         
-        # Company logo (if exists)
-        logo_path = os.path.join(settings.STATIC_ROOT or settings.STATICFILES_DIRS[0], 'img', 'logo.png')
+        # Company logo - use the actual logo path
+        logo_path = os.path.join(settings.BASE_DIR, 'media', 'logo', 'LOGO.png')
         if os.path.exists(logo_path):
-            logo = Image(logo_path, width=2*inch, height=1*inch)
-            logo.hAlign = 'CENTER'
-            elements.append(logo)
-            elements.append(Spacer(1, 12))
+            try:
+                logo = Image(logo_path, width=2*inch, height=1.3*inch)
+                logo.hAlign = 'CENTER'
+                elements.append(logo)
+                elements.append(Spacer(1, 12))
+            except:
+                # If logo fails to load, skip it
+                pass
         
         # Company name
-        company_name = "PT. MONITORING MANAGEMENT SYSTEM"
+        company_name = "PT. RIUNG MITRA LESTARI"
         elements.append(Paragraph(company_name, self.company_style))
         
         # Company address
-        address = "Jl. Industri No. 123, Jakarta 12345<br/>Tel: (021) 1234-5678 | Email: info@monman.com"
+        address = "Mining Contractor<br/>Site RMGM"
         elements.append(Paragraph(address, self.subtitle_style))
         elements.append(Spacer(1, 20))
         
@@ -794,9 +883,23 @@ class PDFReportService:
         cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=6, fontName='Helvetica')
         
         # 1. HEADER SECTION - 3 columns aligned
+        # Create logo for TAR header
+        logo_path = os.path.join(settings.BASE_DIR, 'media', 'logo', 'LOGO.png')
+        logo_cell = 'RIUNG\n[LOGO AREA]'  # Default text
+        
+        if os.path.exists(logo_path):
+            try:
+                # Create smaller logo for TAR header
+                logo = Image(logo_path, width=25*mm, height=17*mm)
+                logo.hAlign = 'CENTER'
+                logo_cell = logo
+            except:
+                # Fallback to text if image fails to load
+                logo_cell = 'RIUNG\n[LOGO AREA]'
+        
         header_data = [
             [
-                'RIUNG\n[LOGO AREA]',  # 1.5 cols
+                logo_cell,  # 1.5 cols
                 Paragraph('<b>PT. RIUNG MITRA LESTARI<br/>Mechanic Development</b>', header_style),  # 3 cols
                 Paragraph('<b>TECHNICAL ANALYSIS REPORT (TAR)</b>', title_style)  # 4.5 cols
             ]
