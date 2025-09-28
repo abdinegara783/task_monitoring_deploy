@@ -3,20 +3,21 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db import models
 from django.utils import timezone
 from datetime import timedelta
 from .forms import (
     LoginForm,
-    RegisterForm,
+    # RegisterForm,
     EmployeeRegistrationForm,
-    ActivityReportForm,
+    # ActivityReportForm,  # Deprecated - using new forms
+    ActivityReportInitialForm,
+    ActivityReportDetailFormSet,
     AnalysisReportForm,
     AnalysisReportExtendedForm,
-    RoleBasedUserCreationForm,
+    # RoleBasedUserCreationForm,
     LeaderQuotaForm,
 )
-from .models import User, ActivityReport, AnalysisReport, Notification, LeaderQuota
+from .models import User, ActivityReport, AnalysisReport, LeaderQuota, Notification, ActivityReportDetail
 import csv
 from django.http import HttpResponse
 from .services.pdf_service import PDFReportService
@@ -80,7 +81,7 @@ def role_required(allowed_roles):
 def login_view(request):
     if request.user.is_authenticated:
         # Redirect based on user role
-        if request.user.role == "admin":
+        if request.user.role == "admin" or request.user.role == "superadmin":
             return redirect("admin_dashboard")
         elif request.user.role == "leader":
             return redirect("leader_dashboard")  # Leader dashboard
@@ -98,14 +99,15 @@ def login_view(request):
                 messages.success(request, f"Selamat datang, {user.username}!")
 
                 # Redirect to appropriate dashboard based on role
-                if user.role == "admin":
+                if user.role == "admin" or user.role == "superadmin":
                     return redirect("admin_dashboard")
                 elif user.role == "leader":
                     return redirect("leader_dashboard")  # Leader dashboard
                 elif user.role == "foreman":
                     return redirect("foreman_dashboard")
                 else:
-                    return redirect("dashboard")  # Default dashboard
+                    # Default fallback - redirect to foreman dashboard
+                    return redirect("foreman_dashboard")
             else:
                 messages.error(request, "Username atau password salah.")
         else:
@@ -196,10 +198,6 @@ def leader_dashboard(request):
     # Recent reports (5 terbaru)
     recent_reports = combined_reports[:5]
 
-    # Untuk semua dashboard (foreman, leader, admin)
-    unread_notifications_count = Notification.objects.filter(
-        user=request.user, status='unread'
-    ).count()
 
     stats = {
         "total_employees": total_employees,
@@ -216,7 +214,6 @@ def leader_dashboard(request):
         "pending_reports": pending_reports,  # Untuk tab pending-reports
         "today_reports": today_reports,  # Untuk tab today-reports
         "validated_reports": validated_reports,  # Untuk tab validated-reports
-        "unread_notifications_count": unread_notifications_count,
     }
 
     return render(request, "leader/leader_dashboard.html", context)
@@ -341,14 +338,10 @@ def admin_dashboard(request):
     validated_activity_reports = ActivityReport.objects.filter(
         status__in=["approved", "rejected"]
     ).order_by("-date")
-    all_users = User.objects.all().order_by("-date_joined")
+    all_users = User.objects.select_related('leader').all().order_by("-date_joined")
     leader_quotas = LeaderQuota.objects.all().order_by("leader_name")
     foremen = User.objects.filter(role="foreman", is_active=True)
 
-    # Untuk semua dashboard (foreman, leader, admin)
-    unread_notifications_count = Notification.objects.filter(
-        user=request.user, status='unread'
-    ).count()
 
     stats = {
         "total_users": total_users,
@@ -365,7 +358,7 @@ def admin_dashboard(request):
         "all_users": all_users,
         "leader_quotas": leader_quotas,
         "foremen": foremen,
-        "unread_notifications_count": unread_notifications_count,
+        # Remove "user": request.user to avoid conflicts
     }
 
     return render(request, "admin/admin_dashboard.html", context)
@@ -448,7 +441,7 @@ def foreman_dashboard(request):
     """Foreman dashboard view with combined reports in recent status"""
     # Get activity reports for current user, ordered by date (most recent first)
     activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
-        "-date", "-start_time"
+        "-date", "-created_at"
     )
 
     # Get total reports
@@ -511,37 +504,33 @@ def foreman_dashboard(request):
     # Combine reports for "Status Laporan Terbaru"
     combined_reports = []
 
-    # Untuk semua dashboard (foreman, leader, admin)
-    notification = Notification.objects.filter(user=request.user).order_by(
-        "-created_at"
-    )[:5]
-    unread_notifications_count = Notification.objects.filter(
-        user=request.user, status='unread'
-    ).count()
 
     # Add activity reports
     for report in recent_activity_reports:
+        # Get first activity detail for display
+        first_activity = report.activities.first()
+        
         combined_reports.append(
             {
                 "type": "activity",
                 "id": report.id,
                 "date": report.date,
                 "title": "Activity Report",
-                "description": f"{report.Unit_Code or 'N/A'} - {report.component or 'N/A'}",
-                "time": f"{report.start_time} - {report.end_time}",
+                "description": f"{report.nrp} - {report.section}",
+                "time": f"{report.date.strftime('%d %b %Y')}",
                 "status": "completed",
                 "report_data": {
                     "date": report.date.strftime("%d M Y"),
-                    "start_time": str(report.start_time),
-                    "end_time": str(report.end_time),
-                    "unit_code": report.Unit_Code or "-",
-                    "component": report.component or "-",
-                    "activities": report.activities or "Tidak ada deskripsi",
-                    "leader": getattr(report.foreman, "leader", None)
-                    and getattr(report.foreman.leader, "name", None)
-                    or "-",
-                    "hmkm": report.Hmkm or "-",
-                    "activities_code": report.activities_code or "-",
+                    "nrp": report.nrp or "-",
+                    "section": report.section or "-",
+                    "activities_count": report.activities.count(),
+                    "first_activity": {
+                        "unit_code": first_activity.unit_code if first_activity else "-",
+                        "component": first_activity.get_component_display() if first_activity else "-",
+                        "activities": first_activity.activities if first_activity else "Tidak ada aktivitas",
+                        "start_time": str(first_activity.start_time) if first_activity else "-",
+                        "stop_time": str(first_activity.stop_time) if first_activity else "-",
+                    } if first_activity else None,
                 },
             }
         )
@@ -582,6 +571,12 @@ def foreman_dashboard(request):
     combined_reports.sort(key=lambda x: x["date"], reverse=True)
     recent_reports = combined_reports[:5]  # Take top 5 most recent
 
+    # Get notification count for current user
+    unread_notifications_count = Notification.objects.filter(
+        recipient=request.user,
+        status='unread'
+    ).count()
+
     context = {
         # Activity Report Data
         "activity_reports": activity_reports[:5],
@@ -598,13 +593,12 @@ def foreman_dashboard(request):
         "analysis_reports_complete": analysis_reports_complete,
         "analysis_progress_percentage": round(analysis_progress_percentage, 1),
         "analysis_status_text": analysis_status_text,
+        # Notification Data
+        "unread_notifications_count": unread_notifications_count,
         # General Data
         "user": request.user,
         "current_time": timezone.now(),
         "month_name": today.strftime("%B %Y"),
-        # Notification Data
-        "notification": notification,
-        "unread_notifications_count": unread_notifications_count,
     }
 
     return render(request, "foreman/foreman_dashboard.html", context)
@@ -612,44 +606,66 @@ def foreman_dashboard(request):
 
 @login_required
 @role_required(["foreman"])
-def create_activity_report(request):
+def create_activity_report_new(request):
+    """Create activity report with new structure - multi-step form"""
     if request.method == "POST":
-        form = ActivityReportForm(request.POST)
-        if form.is_valid():
-            try:
-                activity_report = form.save(commit=False)
-                activity_report.foreman = (
-                    request.user
-                )  # Set foreman dari user yang login
-                activity_report.status = "pending"  # Set default status
-                activity_report.save()
+        initial_form = ActivityReportInitialForm(request.POST, user=request.user)
+        
+        if initial_form.is_valid():
+            # Save the main activity report
+            activity_report = initial_form.save(commit=False)
+            activity_report.foreman = request.user
+            activity_report.status = "pending"
+            activity_report.save()
+            
+            # Process the formset for activities
+            formset = ActivityReportDetailFormSet(request.POST, instance=activity_report)
+            
+            if formset.is_valid():
+                # Save all activity details
+                activities = formset.save(commit=False)
+                for i, activity in enumerate(activities, 1):
+                    activity.activity_number = i
+                    activity.save()
+                
+                # Delete any activities marked for deletion
+                for activity in formset.deleted_objects:
+                    activity.delete()
+                
                 messages.success(
                     request,
-                    "Laporan aktivitas berhasil dibuat dan menunggu validasi leader!",
+                    f"Activity Report berhasil dibuat dengan {len(activities)} aktivitas dan menunggu validasi leader!"
                 )
                 return redirect("foreman_dashboard")
-            except Exception as e:
-                messages.error(request, f"Gagal menyimpan laporan: {str(e)}")
-                print(f"Error saving activity report: {e}")  # For debugging
+            else:
+                messages.error(request, "Terjadi kesalahan pada detail aktivitas. Silakan periksa kembali.")
         else:
-            # Print form errors for debugging
-            print(f"Form errors: {form.errors}")
-            # Show specific field errors
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{form.fields[field].label}: {error}")
+            messages.error(request, "Terjadi kesalahan pada data dasar. Silakan periksa kembali.")
     else:
-        form = ActivityReportForm()
-
-    # Get user with leader relationship
-    user_with_leader = User.objects.select_related("leader").get(id=request.user.id)
-
+        initial_form = ActivityReportInitialForm(user=request.user)
+        formset = ActivityReportDetailFormSet()
+    
+    # Get choices for template
+    component_choices = ActivityReport.COMPONENT_CHOICES
+    activity_code_choices = ActivityReport.ACTIVITIES_CHOICES
+    
     context = {
-        "form": form,
-        "user": user_with_leader,  # Pass user with leader data
+        "initial_form": initial_form,
+        "formset": formset,
+        "component_choices": component_choices,
+        "activity_code_choices": activity_code_choices,
+        "user": request.user,
     }
+    
+    return render(request, "foreman/create_activity_report_new.html", context)
 
-    return render(request, "foreman/foreman_create_activity_report.html", context)
+
+@login_required
+@role_required(["foreman"])
+def create_activity_report(request):
+    """Legacy create activity report view - redirects to new version"""
+    messages.info(request, "Sistem Activity Report telah diperbarui. Anda akan diarahkan ke form baru.")
+    return redirect("create_activity_report_new")
 
 
 @login_required
@@ -718,8 +734,8 @@ def create_analysis_report_step2(request, report_id):
 @login_required
 @role_required(["foreman"])
 def foreman_report_status(request):
-    # Get all reports for current foreman
-    activity_reports = ActivityReport.objects.filter(foreman=request.user).order_by(
+    # Get all reports for current foreman with related data
+    activity_reports = ActivityReport.objects.filter(foreman=request.user).prefetch_related('activities').order_by(
         "-date"
     )
     analysis_reports = AnalysisReport.objects.filter(foreman=request.user).order_by(
@@ -783,95 +799,6 @@ def foreman_reports(request):
     }
 
     return render(request, "foreman/reports_list.html", context)
-
-
-@login_required
-def notifications_view(request):
-    """View for displaying user notifications"""
-    # Get user's notifications
-    notifications = Notification.objects.filter(user=request.user).order_by(
-        "-created_at"
-    )
-
-    # Mark notifications as read
-    if request.method == "POST" and "mark_read" in request.POST:
-        notification_id = request.POST.get("notification_id")
-        if notification_id:
-            notification = get_object_or_404(
-                Notification, id=notification_id, user=request.user
-            )
-            notification.mark_as_read()
-            return redirect("notifications")
-        elif "mark_all_read" in request.POST:
-            from django.utils import timezone
-            notifications.filter(status='unread').update(status='read', read_at=timezone.now())
-            return redirect("notifications")
-
-    # Context data
-    context = {
-        "notifications": notifications,
-        "unread_count": notifications.filter(status='unread').count(),
-    }
-
-    return render(request, "notification.html", context)
-
-
-@login_required
-def api_get_notifications(request):
-    """API endpoint to get notifications for AJAX requests"""
-    from django.http import JsonResponse
-
-    notifications = Notification.objects.filter(user=request.user).order_by(
-        "-created_at"
-    )[:5]
-    unread_count = Notification.objects.filter(user=request.user, status='unread').count()
-
-    data = {
-        "unread_count": unread_count,
-        "notifications": [
-            {
-                "id": n.id,
-                "title": n.title,
-                "message": n.message,
-                "is_read": n.status != 'unread',
-                "created_at": n.created_at.strftime("%d %b %Y, %H:%M"),
-                "notification_type": n.notification_type,
-            }
-            for n in notifications
-        ],
-    }
-
-    return JsonResponse(data)
-
-
-@login_required
-def api_mark_notification_read(request, notification_id):
-    """API endpoint to mark a specific notification as read"""
-    if request.method == 'POST':
-        try:
-            notification = get_object_or_404(
-                Notification, id=notification_id, user=request.user
-            )
-            notification.mark_as_read()
-            
-            # Return updated count
-            unread_count = Notification.objects.filter(
-                user=request.user, status='unread'
-            ).count()
-            
-            return JsonResponse({
-                'success': True,
-                'unread_count': unread_count,
-                'message': 'Notification marked as read'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            }, status=400)
-    
-    return JsonResponse({'error': 'Method not allowed'}, status=405)
-
 
 @login_required
 @role_required(["admin", "superadmin"])
@@ -1278,261 +1205,8 @@ def pdf_export_page(request):
     return render(request, "admin/pdf_export.html", context)
 
 
-@login_required
-@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-def notification_monitor(request):
-    """Halaman monitoring dan pengiriman notifikasi manual"""
-    today = timezone.now().date()
-    current_month = timezone.now().month
-    current_year = timezone.now().year
-    
-    # Get all foremen
-    foremen = User.objects.filter(role='foreman', is_active=True).order_by('name')
-    
-    foremen_status = []
-    activity_complete_count = 0
-    activity_pending_count = 0
-    analysis_pending_count = 0
-    
-    for foreman in foremen:
-        # Check activity report today
-        has_activity_today = ActivityReport.objects.filter(
-            foreman=foreman,
-            date=today
-        ).exists()
-        
-        # Check analysis reports this month
-        analysis_count = AnalysisReport.objects.filter(
-            foreman=foreman,
-            report_date__month=current_month,
-            report_date__year=current_year
-        ).count()
-        
-        analysis_remaining = max(0, 3 - analysis_count)
-        
-        foremen_status.append({
-            'id': foreman.id,
-            'name': foreman.name,
-            'username': foreman.username,
-            'shift': foreman.shift,
-            'has_activity_today': has_activity_today,
-            'analysis_count': analysis_count,
-            'analysis_remaining': analysis_remaining,
-        })
-        
-        # Count for summary
-        if has_activity_today:
-            activity_complete_count += 1
-        else:
-            activity_pending_count += 1
-            
-        if analysis_count < 3:
-            analysis_pending_count += 1
-    
-    context = {
-        'foremen_status': foremen_status,
-        'today': today,
-        'total_foremen': len(foremen),
-        'activity_complete_count': activity_complete_count,
-        'activity_pending_count': activity_pending_count,
-        'analysis_pending_count': analysis_pending_count,
-    }
-    
-    return render(request, 'admin/notification_monitor.html', context)
 
 
-@login_required
-@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-@require_http_methods(["POST"])
-def send_activity_reminder(request, user_id):
-    """Kirim reminder activity report ke user tertentu (Manual)"""
-    try:
-        user = User.objects.get(id=user_id, role='foreman', is_active=True)
-        
-        # Check if already has report today
-        today = timezone.now().date()
-        has_report = ActivityReport.objects.filter(
-            foreman=user,
-            date=today
-        ).exists()
-        
-        if has_report:
-            return JsonResponse({
-                'success': False,
-                'message': f'{user.name} sudah mengisi activity report hari ini'
-            })
-        
-        # Create manual reminder notification
-        deadline_text = "18:00" if user.shift == 1 else "05:00"
-        shift_text = "Shift 1" if user.shift == 1 else "Shift 2"
-        
-        notification = Notification.objects.create(
-            user=user,
-            title=f"📧 Reminder Manual - Activity Report ({shift_text})",
-            message=f"Reminder manual dari admin {request.user.name}: Harap segera isi activity report hari ini. Deadline: {deadline_text}. Silakan login ke sistem untuk mengisi laporan.",
-            notification_type='activity_reminder',
-            priority='high',
-            created_by=request.user,
-            is_manual=True,
-            requires_acknowledgment=True
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Reminder activity berhasil dikirim ke {user.name}',
-            'notification_id': notification.id
-        })
-        
-    except User.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': 'User tidak ditemukan'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Terjadi kesalahan: {str(e)}'
-        })
-
-
-@login_required
-@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-@require_http_methods(["POST"])
-def send_analysis_reminder(request, user_id):
-    """Kirim reminder analysis report ke user tertentu (Manual)"""
-    try:
-        user = User.objects.get(id=user_id, role='foreman', is_active=True)
-        
-        # Check analysis reports this month
-        current_month = timezone.now().month
-        current_year = timezone.now().year
-        analysis_count = AnalysisReport.objects.filter(
-            foreman=user,
-            report_date__month=current_month,
-            report_date__year=current_year
-        ).count()
-        
-        missing_count = max(0, 3 - analysis_count)
-        
-        if missing_count == 0:
-            return JsonResponse({
-                'success': False,
-                'message': f'{user.name} sudah lengkap analysis report bulan ini'
-            })
-        
-        # Create manual reminder notification
-        notification = Notification.objects.create(
-            user=user,
-            title=f"📊 Reminder Manual - Analysis Report",
-            message=f"Reminder manual dari admin {request.user.name}: Anda masih kekurangan {missing_count} analysis report bulan ini. Harap segera dilengkapi. Silakan login ke sistem untuk mengisi laporan.",
-            notification_type='analysis_reminder',
-            priority='high',
-            created_by=request.user,
-            is_manual=True,
-            requires_acknowledgment=True
-        )
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Reminder analysis berhasil dikirim ke {user.name} (kurang {missing_count} laporan)',
-            'notification_id': notification.id
-        })
-        
-    except User.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': 'User tidak ditemukan'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Terjadi kesalahan: {str(e)}'
-        })
-
-
-@login_required
-@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-@require_http_methods(["POST"])
-def send_bulk_activity_reminder(request):
-    """Kirim reminder activity report ke semua foremen yang belum mengisi"""
-    try:
-        today = timezone.now().date()
-        
-        # Get foremen who haven't submitted activity report today
-        foremen_without_report = User.objects.filter(
-            role='foreman',
-            is_active=True
-        ).exclude(
-            id__in=ActivityReport.objects.filter(
-                date=today
-            ).values_list('foreman_id', flat=True)
-        )
-        
-        sent_count = 0
-        for foreman in foremen_without_report:
-            deadline_text = "18:00" if foreman.shift == 1 else "05:00"
-            shift_text = "Shift 1" if foreman.shift == 1 else "Shift 2"
-            
-            Notification.objects.create(
-                user=foreman,
-                title=f"📧 Reminder Bulk - Activity Report ({shift_text})",
-                message=f"Reminder dari admin: Harap segera isi activity report hari ini. Deadline: {deadline_text}",
-                notification_type='activity_reminder'
-            )
-            sent_count += 1
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Reminder activity berhasil dikirim ke {sent_count} foremen'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Terjadi kesalahan: {str(e)}'
-        })
-
-
-@login_required
-@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-@require_http_methods(["POST"])
-def send_bulk_analysis_reminder(request):
-    """Kirim reminder analysis report ke semua foremen yang kurang laporan"""
-    try:
-        current_month = timezone.now().month
-        current_year = timezone.now().year
-        
-        foremen = User.objects.filter(role='foreman', is_active=True)
-        sent_count = 0
-        
-        for foreman in foremen:
-            analysis_count = AnalysisReport.objects.filter(
-                foreman=foreman,
-                report_date__month=current_month,
-                report_date__year=current_year
-            ).count()
-            
-            missing_count = max(0, 3 - analysis_count)
-            
-            if missing_count > 0:
-                Notification.objects.create(
-                    user=foreman,
-                    title=f"📊 Reminder Bulk - Analysis Report",
-                    message=f"Reminder dari admin: Anda masih kekurangan {missing_count} analysis report bulan ini. Harap segera dilengkapi.",
-                    notification_type='analysis_reminder'
-                )
-                sent_count += 1
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Reminder analysis berhasil dikirim ke {sent_count} foremen'
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Terjadi kesalahan: {str(e)}'
-        })
 
 @login_required
 @role_required(["admin", "superadmin"])
@@ -1592,100 +1266,314 @@ def export_single_analysis_report_pdf(request, report_id):
         return redirect("admin_dashboard")
 
 
+# ============================================================================
+# NOTIFICATION SYSTEM VIEWS
+# ============================================================================
+
 @login_required
 @user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-def send_custom_notification(request):
-    """Kirim notifikasi custom ke user tertentu atau grup"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
+def notification_center(request):
+    """Pusat notifikasi untuk superuser - menampilkan mekanik yang belum mengisi activity report"""
+    today = timezone.now().date()
+    
+    # Ambil semua foreman/mekanik yang aktif
+    all_foremen = User.objects.filter(role='foreman', is_active=True).order_by('name')
+    
+    # Cari mekanik yang belum mengisi activity report hari ini berdasarkan shift
+    foremen_without_report = []
+    
+    for foreman in all_foremen:
+        # Cek apakah sudah ada activity report hari ini untuk foreman ini
+        has_report_today = ActivityReport.objects.filter(
+            foreman=foreman,
+            date=today
+        ).exists()
+        
+        if not has_report_today:
+            # Tentukan deadline berdasarkan shift
+            deadline_time = "18:00" if foreman.shift == 1 else "05:00"
+            shift_name = "Shift 1" if foreman.shift == 1 else "Shift 2"
             
-            title = data.get('title', '').strip()
-            message = data.get('message', '').strip()
-            priority = data.get('priority', 'medium')
-            user_ids = data.get('user_ids', [])
-            requires_ack = data.get('requires_acknowledgment', False)
-            
-            if not title or not message:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Title dan message wajib diisi'
-                })
-            
-            if not user_ids:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Pilih minimal satu user'
-                })
-            
-            # Create notifications for selected users
-            notifications_created = []
-            for user_id in user_ids:
-                try:
-                    user = User.objects.get(id=user_id, is_active=True)
-                    notification = Notification.objects.create(
-                        user=user,
-                        title=f"📢 {title}",
-                        message=f"Pesan dari admin {request.user.name}: {message}",
-                        notification_type='manual_message',
-                        priority=priority,
-                        created_by=request.user,
-                        is_manual=True,
-                        requires_acknowledgment=requires_ack
-                    )
-                    notifications_created.append(notification.id)
-                except User.DoesNotExist:
-                    continue
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Notifikasi berhasil dikirim ke {len(notifications_created)} user',
-                'notification_ids': notifications_created
-            })
-            
-        except json.JSONDecodeError:
-            return JsonResponse({
-                'success': False,
-                'message': 'Format data tidak valid'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Terjadi kesalahan: {str(e)}'
+            foremen_without_report.append({
+                'foreman': foreman,
+                'shift_name': shift_name,
+                'deadline_time': deadline_time,
             })
     
-    # GET request - show form
-    users = User.objects.filter(role='foreman', is_active=True).order_by('name')
-    return render(request, 'admin/send_custom_notification.html', {
-        'users': users
+    # Statistik notifikasi
+    total_notifications_sent = Notification.objects.filter(created_by=request.user).count()
+    unread_notifications_count = Notification.objects.filter(status='unread').count()
+    
+    context = {
+        'foremen_without_report': foremen_without_report,
+        'total_foremen': all_foremen.count(),
+        'foremen_missing_count': len(foremen_without_report),
+        'today': today,
+        'total_notifications_sent': total_notifications_sent,
+        'unread_notifications_count': unread_notifications_count,
+    }
+    
+    return render(request, 'admin/notification_center.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
+@require_http_methods(["POST"])
+def broadcast_notification(request):
+    """Broadcast notifikasi ke semua mekanik yang belum mengisi activity report"""
+    try:
+        today = timezone.now().date()
+        
+        # Debug: Log the request
+        print(f"DEBUG: Broadcast request from user: {request.user.username}")
+        
+        # Ambil semua foreman yang belum mengisi activity report hari ini
+        all_foremen = User.objects.filter(role='foreman', is_active=True)
+        print(f"DEBUG: Total foremen found: {all_foremen.count()}")
+        
+        foremen_without_report = []
+        
+        for foreman in all_foremen:
+            has_report_today = ActivityReport.objects.filter(
+                foreman=foreman,
+                date=today
+            ).exists()
+            
+            print(f"DEBUG: Foreman {foreman.username} has report today: {has_report_today}")
+            
+            if not has_report_today:
+                foremen_without_report.append(foreman)
+        
+        print(f"DEBUG: Foremen without report: {len(foremen_without_report)}")
+        
+        if not foremen_without_report:
+            return JsonResponse({
+                'success': False,
+                'message': 'Semua mekanik sudah mengisi activity report hari ini.'
+            })
+        
+        # Buat pesan notifikasi
+        title = "🔔 Pengingat Activity Report"
+        message = f"Harap segera mengisi activity report untuk tanggal {today.strftime('%d %B %Y')}. Jangan lupa untuk melengkapi laporan sesuai dengan shift Anda."
+        
+        print(f"DEBUG: Creating notifications with title: {title}")
+        
+        # Broadcast notifikasi menggunakan class method
+        notifications = Notification.create_broadcast_notification(
+            title=title,
+            message=message,
+            recipients=foremen_without_report,
+            created_by=request.user
+        )
+        
+        print(f"DEBUG: Created {len(notifications)} notifications")
+        
+        # Verify notifications were created
+        created_count = Notification.objects.filter(
+            title=title,
+            created_by=request.user
+        ).count()
+        
+        print(f"DEBUG: Verified {created_count} notifications in database")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Notifikasi berhasil dikirim ke {len(notifications)} mekanik.',
+            'recipients_count': len(notifications),
+            'debug_info': {
+                'total_foremen': all_foremen.count(),
+                'foremen_without_report': len(foremen_without_report),
+                'notifications_created': len(notifications),
+                'verified_in_db': created_count
+            }
+        })
+        
+    except Exception as e:
+        print(f"DEBUG: Error in broadcast_notification: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        })
+
+
+@login_required
+def get_notifications(request):
+    """API untuk mengambil notifikasi user yang sedang login"""
+    notifications = Notification.objects.filter(
+        recipient=request.user
+    ).order_by('-created_at')[:10]
+    
+    unread_count = Notification.objects.filter(
+        recipient=request.user,
+        status='unread'
+    ).count()
+    
+    notifications_data = []
+    for notification in notifications:
+        notifications_data.append({
+            'id': notification.id,
+            'title': notification.title,
+            'message': notification.message,
+            'status': notification.status,
+            'created_at': notification.created_at.strftime('%d %b %Y, %H:%M'),
+            'is_unread': notification.status == 'unread'
+        })
+    
+    return JsonResponse({
+        'notifications': notifications_data,
+        'unread_count': unread_count
     })
 
 
 @login_required
-@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
-def notification_analytics(request):
-    """Analytics untuk notifikasi yang dikirim admin"""
-    # Get notification statistics
-    total_sent = Notification.objects.filter(is_manual=True).count()
-    unread_count = Notification.objects.filter(is_manual=True, status='unread').count()
-    acknowledged_count = Notification.objects.filter(is_manual=True, status='acknowledged').count()
+def user_notifications(request, username):
+    """Tampilkan notifikasi untuk user tertentu berdasarkan username"""
+    # Pastikan user hanya bisa melihat notifikasi mereka sendiri atau admin bisa melihat semua
+    if request.user.username != username and request.user.role not in ['admin', 'superadmin']:
+        messages.error(request, 'Anda tidak memiliki akses untuk melihat notifikasi user lain.')
+        return redirect('foreman_dashboard')
     
-    # Recent notifications
-    recent_notifications = Notification.objects.filter(
-        is_manual=True
-    ).select_related('user', 'created_by').order_by('-created_at')[:20]
+    # Ambil user berdasarkan username
+    try:
+        target_user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        messages.error(request, 'User tidak ditemukan.')
+        return redirect('foreman_dashboard')
     
-    # Notification by type
-    type_stats = Notification.objects.filter(is_manual=True).values(
-        'notification_type'
-    ).annotate(count=Count('id')).order_by('-count')
+    # Ambil notifikasi untuk user tersebut
+    notifications = Notification.objects.filter(
+        recipient=target_user
+    ).order_by('-created_at')
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(notifications, 10)  # 10 notifikasi per halaman
+    page_number = request.GET.get('page')
+    notifications = paginator.get_page(page_number)
+    
+    unread_count = Notification.objects.filter(
+        recipient=target_user,
+        status='unread'
+    ).count()
+    
+    # Auto-mark semua notifikasi sebagai read saat halaman dibuka
+    Notification.objects.filter(
+        recipient=target_user,
+        status='unread'
+    ).update(
+        status='read',
+        read_at=timezone.now()
+    )
     
     context = {
-        'total_sent': total_sent,
-        'unread_count': unread_count,
-        'acknowledged_count': acknowledged_count,
-        'recent_notifications': recent_notifications,
-        'type_stats': type_stats,
+        'notifications': notifications,
+        'unread_count': 0,  # Set ke 0 karena sudah di-mark semua sebagai read
+        'target_user': target_user,
     }
     
-    return render(request, 'admin/notification_analytics.html', context)
+    return render(request, 'notifications/user_notifications.html', context)
+
+@login_required
+def notification_list(request):
+    """Tampilkan daftar notifikasi untuk user yang sedang login"""
+    notifications = Notification.objects.filter(
+        recipient=request.user
+    ).order_by('-created_at')
+    
+    # Pagination
+    from django.core.paginator import Paginator
+    paginator = Paginator(notifications, 10)  # 10 notifikasi per halaman
+    page_number = request.GET.get('page')
+    notifications = paginator.get_page(page_number)
+    
+    unread_count = Notification.objects.filter(
+        recipient=request.user,
+        status='unread'
+    ).count()
+    
+    context = {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    }
+    
+    return render(request, 'notifications/notification_list.html', context)
+
+@login_required
+def mark_notification_read_and_redirect(request, notification_id):
+    """Tandai notifikasi sebagai dibaca dan redirect ke halaman notifikasi"""
+    try:
+        notification = get_object_or_404(
+            Notification, 
+            id=notification_id, 
+            recipient=request.user
+        )
+        
+        # Tandai sebagai dibaca
+        notification.mark_as_read()
+        
+        # Redirect ke halaman notifikasi dengan pesan sukses
+        messages.success(request, f'Notifikasi "{notification.title}" telah ditandai sebagai dibaca.')
+        return redirect('notification_list')
+        
+    except Exception as e:
+        messages.error(request, 'Terjadi kesalahan saat menandai notifikasi sebagai dibaca.')
+        return redirect('notification_list')
+
+@login_required
+@require_http_methods(["POST"])
+def mark_all_notifications_read(request):
+    """Tandai semua notifikasi sebagai dibaca"""
+    try:
+        # Update semua notifikasi yang belum dibaca
+        updated_count = Notification.objects.filter(
+            recipient=request.user,
+            status='unread'
+        ).update(
+            status='read',
+            read_at=timezone.now()
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'{updated_count} notifikasi telah ditandai sebagai dibaca.',
+            'updated_count': updated_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        }, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def mark_notification_read(request, notification_id):
+    """Tandai notifikasi sebagai sudah dibaca"""
+    try:
+        notification = get_object_or_404(
+            Notification, 
+            id=notification_id, 
+            recipient=request.user
+        )
+        
+        notification.mark_as_read()
+        
+        # Hitung ulang jumlah notifikasi yang belum dibaca
+        unread_count = Notification.objects.filter(
+            recipient=request.user,
+            status='unread'
+        ).count()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notifikasi ditandai sebagai sudah dibaca.',
+            'unread_count': unread_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Terjadi kesalahan: {str(e)}'
+        })

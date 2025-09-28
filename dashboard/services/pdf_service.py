@@ -820,8 +820,8 @@ class PDFReportService:
         wo_date = report.WO_date.strftime('%d/%m/%Y') if hasattr(report, 'WO_date') and report.WO_date else '<<WO DATE>>'
         
         report_info_data = [
-            ['REPORT NO :', report_no, '/RML/2025', 'WO NUMBER', ':', wo_number],
-            ['REPORT DATE :', '', report_date, 'WO DATE', ':', wo_date]
+            ['REPORT NO :', report_date, '/RML/2025', 'WO NUMBER', ':', wo_number],
+            ['REPORT DATE :', 'report_date', '', 'WO DATE', ':', wo_date]
         ]
             # Precise column widths yang total = page_width
         report_col_widths = [
@@ -937,7 +937,8 @@ class PDFReportService:
         # 5. PROBLEM SECTION - Matching original layout
         problem_code = report.get_problem_display() if hasattr(report, 'problem') and report.problem else '<<PROBLEM CODE>>'
         trouble_date = report.Trouble_date.strftime('%d/%m/%Y') if hasattr(report, 'Trouble_date') and report.Trouble_date else '<<TROUBLE DATE>>'
-        hm = report.HM if hasattr(report, 'HM') and report.HM else '<<HM>>'
+        hm = report.Hm if hasattr(report, 'HM') and report.HM else '<<HM>>'
+        print(hm, "------------")
         judul_problem = report.title_problem if hasattr(report, 'title_problem') and report.title_problem else '<<JUDUL PROBLEM>>'
         
         problem_data = [
@@ -969,7 +970,7 @@ class PDFReportService:
         # 6. PART INFORMATION - Full width aligned
         part_no = report.part_no if hasattr(report, 'part_no') and report.part_no else '<<PART NO>>'
         part_name = report.part_name if hasattr(report, 'part_name') and report.part_name else '<<PART NAME>>'
-        part_group = report.part_group if hasattr(report, 'part_group') and report.part_group else '<<PART GROUP>>'
+        part_group = report.component if hasattr(report, 'component') and report.component else '<<PART GROUP>>'
         
         part_data = [
             ['PART NUMBER OF MAIN PART CAUSING THE PROBLEM', 'PART NAME', 'COMP/PART GROUP', 'LIFE TIME (HM)'],
@@ -992,8 +993,8 @@ class PDFReportService:
         
         # 7. ANALYSIS SECTIONS - Full width, each section as single row
         nama_fungsi = report.nama_fungsi_komponen if hasattr(report, 'nama_fungsi_komponen') and report.nama_fungsi_komponen else '<<NAMA & FUNGSI KOMPONEN>>'
-        gejala = report.gejala if hasattr(report, 'gejala') and report.gejala else '<<GEJALA>>'
-        akar_penyebab = report.akar_penyebab if hasattr(report, 'akar_penyebab') and report.akar_penyebab else '<<AKAR PENYEBAB MASALAH>>'
+        gejala = report.gejala_masalah if hasattr(report, 'gejala_masalah') and report.gejala_masalah else '<<GEJALA>>'
+        akar_penyebab = report.akar_penyebab_masalah if hasattr(report, 'akar_penyebab_masalah') and report.akar_penyebab_masalah else '<<AKAR PENYEBAB MASALAH>>'
         tindakan = report.tindakan_dilakukan if hasattr(report, 'tindakan_dilakukan') and report.tindakan_dilakukan else '<<TINDAKAN YANG DILAKUKAN>>'
         pencegahan = report.tindakan_pencegahan if hasattr(report, 'tindakan_pencegahan') and report.tindakan_pencegahan else '<<TINDAKAN PENCEGAHAN>>'
         
@@ -1062,7 +1063,7 @@ class PDFReportService:
         
         # 9. BOTTOM SECTION - Aligned to 9-column grid
         cause_table = report.cause_table if hasattr(report, 'cause_table') and report.cause_table else '<<CAUSE TABLE>>'
-        email_aktif = report.email_aktif if hasattr(report, 'email_aktif') and report.email_aktif else '<<EMAIL AKTIF>>'
+        email_aktif = report.email if hasattr(report, 'email_aktif') and report.email_aktif else '<<EMAIL AKTIF>>'
         correction_made = report.correction_made if hasattr(report, 'correction_made') and report.correction_made else '<<CORRECTION MADE>>'
         correction_date = report.correction_date.strftime('%d/%m/%Y') if hasattr(report, 'correction_date') and report.correction_date else '<<CORRECTION DATE>>'
         man_hour = report.man_hour if hasattr(report, 'man_hour') and report.man_hour else '<<MAN HOUR>>'
@@ -1075,10 +1076,11 @@ class PDFReportService:
         grade2 = report.grade2 if hasattr(report, 'grade2') and report.grade2 else '<<GRADE 2>>'
         instruktur = report.foreman.leader.name if hasattr(report, 'foreman') and hasattr(report.foreman, 'leader') and hasattr(report.foreman.leader, 'name') and report.foreman.leader.name else '<<INSTRUKTUR>>'
         sign = '<<SIGN>>'
+        print(report)
         
         bottom_data = [
         # Row 1: CAUSE TABLE dan EMAIL AKTIF
-        ['CAUSE TABLE', '<<CAUSE TABLE>>', 'EMAIL AKTIF :', '<<EMAIL AKTIF>>', '', ''],
+        ['CAUSE TABLE', '<<CAUSE TABLE>>', 'EMAIL AKTIF :', email_aktif, '', ''],
         # Row 2: CORRECTION MADE, CORRECTION DATE, MAN HOUR dengan area kosong
         ['CORRECTION MADE', '<<CORRECTION MADE>>', 'CORRECTION DATE', 'MAN HOUR', '', ''],
         # Row 3: Empty, Empty, values for DATE and HOUR dengan area kosong

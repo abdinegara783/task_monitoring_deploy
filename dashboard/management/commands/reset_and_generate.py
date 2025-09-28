@@ -5,12 +5,12 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from django.db import connection, transaction
 from django.conf import settings
-from dashboard.models import User, ActivityReport
+from dashboard.models import User, ActivityReport, ActivityReportDetail
 from faker import Faker
 
 
 class Command(BaseCommand):
-    help = "Reset database and generate fresh dummy data with error handling"
+    help = "Reset database and generate fresh dummy data with new ActivityReport structure"
 
     def __init__(self):
         super().__init__()
@@ -26,8 +26,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--reports",
             type=int,
-            default=75,
-            help="Number of activity reports to create (default: 75)",
+            default=30,
+            help="Number of activity reports to create (default: 30)",
         )
         parser.add_argument(
             "--force",
@@ -50,7 +50,7 @@ class Command(BaseCommand):
             self.stdout.write("\n📊 Generating users...")
             users_created = self.create_users_safe(options["users"])
 
-            # Step 4: Generate Activity Reports
+            # Step 4: Generate Activity Reports with Details
             self.stdout.write("\n📋 Generating activity reports...")
             reports_created = self.create_activity_reports_safe(options["reports"])
 
@@ -131,46 +131,15 @@ class Command(BaseCommand):
             roles = ["foreman", "leader", "admin"]
 
             first_names = [
-                "Ahmad",
-                "Budi",
-                "Candra",
-                "Dedi",
-                "Eko",
-                "Fajar",
-                "Gunawan",
-                "Hadi",
-                "Indra",
-                "Joko",
-                "Kurnia",
-                "Lukman",
-                "Maman",
-                "Nanda",
-                "Oki",
-                "Putra",
-                "Qomar",
-                "Rizki",
-                "Sandi",
-                "Tono",
-                "Udin",
-                "Vino",
-                "Wahyu",
-                "Yudi",
-                "Zaki",
+                "Ahmad", "Budi", "Candra", "Dedi", "Eko", "Fajar", "Gunawan", 
+                "Hadi", "Indra", "Joko", "Kurnia", "Lukman", "Maman", "Nanda", 
+                "Oki", "Putra", "Qomar", "Rizki", "Sandi", "Tono", "Udin", 
+                "Vino", "Wahyu", "Yudi", "Zaki",
             ]
 
             last_names = [
-                "Santoso",
-                "Pratama",
-                "Wijaya",
-                "Kusuma",
-                "Permana",
-                "Saputra",
-                "Nugroho",
-                "Hidayat",
-                "Setiawan",
-                "Raharjo",
-                "Susanto",
-                "Wibowo",
+                "Santoso", "Pratama", "Wijaya", "Kusuma", "Permana", "Saputra", 
+                "Nugroho", "Hidayat", "Setiawan", "Raharjo", "Susanto", "Wibowo", 
                 "Kurniawan",
             ]
 
@@ -225,7 +194,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def create_activity_reports_safe(self, count):
-        """Create activity reports with transaction safety"""
+        """Create activity reports with new structure"""
         try:
             # Get foreman users
             foreman_users = list(User.objects.filter(role="foreman"))
@@ -242,19 +211,15 @@ class Command(BaseCommand):
                         name=f"Foreman {i + 1}",
                         nrp=f"NRP{random.randint(10000, 99999)}",
                         role="foreman",
-                        department=random.choice(
-                            ["SUPPORT", "TRACK", "PLANT", "WHEEL"]
-                        ),
+                        department=random.choice(["SUPPORT", "TRACK", "PLANT", "WHEEL"]),
                         shift=random.choice([1, 2]),
                         password=make_password("password123"),
                     )
                 foreman_users = list(User.objects.filter(role="foreman"))
 
-            leaders = [choice[0] for choice in ActivityReport.LEADER_CHOICES]
+            sections = [choice[0] for choice in ActivityReport.SECTION_CHOICES]
             components = [choice[0] for choice in ActivityReport.COMPONENT_CHOICES]
-            activities_codes = [
-                choice[0] for choice in ActivityReport.ACTIVITIES_CHOICES
-            ]
+            activities_codes = [choice[0] for choice in ActivityReport.ACTIVITIES_CHOICES]
 
             activities_descriptions = [
                 "Pemeriksaan rutin engine unit - oil level dan coolant check",
@@ -270,54 +235,58 @@ class Command(BaseCommand):
             ]
 
             reports_created = 0
-            batch_size = 20  # Create in batches
+            activities_created = 0
 
-            for batch_start in range(0, count, batch_size):
-                batch_end = min(batch_start + batch_size, count)
-                reports_batch = []
-
-                for i in range(batch_start, batch_end):
-                    # Random date within last 2 months
-                    report_date = self.fake.date_between(
-                        start_date="-2M", end_date="today"
-                    )
-
+            for i in range(count):
+                foreman = random.choice(foreman_users)
+                
+                # Random date within last 2 months
+                report_date = self.fake.date_between(start_date="-2M", end_date="today")
+                
+                # Create main activity report
+                activity_report = ActivityReport.objects.create(
+                    foreman=foreman,
+                    nrp=foreman.nrp or f"NRP{random.randint(10000, 99999)}",
+                    section=random.choice(sections),
+                    date=report_date,
+                    status="pending"
+                )
+                
+                # Create 1-5 activity details for each report
+                num_activities = random.randint(1, 5)
+                
+                for activity_num in range(1, num_activities + 1):
                     # Random working hours
                     start_hour = random.randint(7, 13)
                     start_time = time(start_hour, random.choice([0, 30]))
-
-                    # End time 4-6 hours later
-                    duration = random.randint(4, 6)
-                    end_datetime = datetime.combine(
-                        report_date, start_time
-                    ) + timedelta(hours=duration)
+                    
+                    # End time 1-4 hours later
+                    duration = random.randint(1, 4)
+                    end_datetime = datetime.combine(report_date, start_time) + timedelta(hours=duration)
                     end_time = end_datetime.time()
-
-                    report_data = ActivityReport(
-                        foreman=random.choice(foreman_users),
-                        date=report_date,
-                        shift=random.choice([1, 2]),
+                    
+                    ActivityReportDetail.objects.create(
+                        activity_report=activity_report,
+                        activity_number=activity_num,
+                        unit_code=f"UNIT{random.randint(100, 999)}",
+                        hm_km=f"{random.randint(1000, 9999)} HM",
                         start_time=start_time,
-                        end_time=end_time,
-                        activities=random.choice(activities_descriptions),
-                        leader=random.choice(leaders),
-                        Unit_Code=f"UNIT{random.randint(100, 999)}",
-                        Hmkm=f"{random.randint(1000, 9999)} HM",
+                        stop_time=end_time,
                         component=random.choice(components),
-                        activities_code=random.choice(activities_codes),
+                        activities=random.choice(activities_descriptions),
+                        activity_code=random.choice(activities_codes)
                     )
-                    reports_batch.append(report_data)
-
-                # Bulk create batch
-                ActivityReport.objects.bulk_create(reports_batch)
-                reports_created += len(reports_batch)
-
+                    activities_created += 1
+                
+                reports_created += 1
+                
                 self.stdout.write(
-                    f"   📋 Created {reports_created}/{count} reports...", ending="\r"
+                    f"   📋 Created {reports_created}/{count} reports ({activities_created} activities)...", 
+                    ending="\r"
                 )
 
             self.stdout.write(
-                f"   ✅ Successfully created {reports_created} activity reports"
+                f"   ✅ Successfully created {reports_created} activity reports with {activities_created} activities"
             )
             return reports_created
 
@@ -332,7 +301,17 @@ class Command(BaseCommand):
         self.stdout.write("\n📊 Summary:")
         self.stdout.write(f"   👥 Users created: {users_created}")
         self.stdout.write(f"   📋 Activity reports created: {reports_created}")
+        
+        # Count total activities
+        total_activities = ActivityReportDetail.objects.count()
+        self.stdout.write(f"   🔧 Total activities created: {total_activities}")
+        
         self.stdout.write("\n🔑 Login Information:")
         self.stdout.write("   📧 Any username with password: password123")
         self.stdout.write("   🌐 Access: http://127.0.0.1:8000/login/")
-        self.stdout.write("\n🚀 Ready to use!")
+        self.stdout.write("\n🚀 Ready to use the new Activity Report system!")
+        self.stdout.write("\n📝 New Features:")
+        self.stdout.write("   • Multi-step form with NRP, Section, Date")
+        self.stdout.write("   • Up to 5 activities per report")
+        self.stdout.write("   • Individual activity details with time tracking")
+        self.stdout.write("   • Enhanced admin interface with inline editing")

@@ -12,55 +12,14 @@
         </div>
         
         <div class="flex items-center gap-4">
-                        <!-- Notifications -->
+            <!-- Notification Bell -->
             <div class="relative">
-                <button id="notification-btn" class="relative p-2 hover:bg-gray-100 rounded-md">
-                    <i data-lucide="bell" class="w-5 h-5"></i>
-                    {% if unread_notifications_count > 0 %}
-                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">{{ unread_notifications_count }}</span>
-                    {% endif %}
-                </button>
-                
-                <!-- Notification Dropdown -->
-                <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50">
-                    <div class="p-3 border-b flex justify-between items-center">
-                        <h3 class="font-semibold">Notifikasi</h3>
-                        <a href="{% url 'notifications' %}" class="text-xs text-blue-600 hover:underline">Lihat Semua</a>
-                    </div>
-                    
-                    <div class="max-h-96 overflow-y-auto" id="notification-list">
-                        {% if notifications %}
-                            <ul class="divide-y divide-gray-100">
-                                {% for notification in notifications|slice:":5" %}
-                                <li class="p-3 {% if notification.status == 'unread' %}bg-blue-50{% endif %}">
-                                    <div class="flex items-start">
-                                        {% if notification.notification_type == 'activity_reminder' %}
-                                            <span class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-2">
-                                                <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-                                            </span>
-                                        {% elif notification.notification_type == 'analysis_reminder' %}
-                                            <span class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mr-2">
-                                                <i data-lucide="bar-chart" class="w-4 h-4"></i>
-                                            </span>
-                                        {% endif %}
-                                        <div>
-                                            <h4 class="font-medium text-sm">{{ notification.title }}</h4>
-                                            <p class="text-xs text-gray-600 mt-1">{{ notification.message|truncatechars:60 }}</p>
-                                            <span class="text-xs text-gray-500 mt-1 block">{{ notification.created_at|date:"d M Y, H:i" }}</span>
-                                        </div>
-                                    </div>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <div class="p-4 text-center text-gray-500">
-                                <i data-lucide="bell-off" class="w-6 h-6 mx-auto mb-2 text-gray-400"></i>
-                                <p class="text-sm">Tidak ada notifikasi</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
+                <a href="{% url 'user_notifications' user.username %}" class="relative p-2 hover:bg-gray-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 block">
+                    <i data-lucide="bell" class="w-5 h-5 text-gray-600"></i>
+                    <span id="notification-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center {% if unread_notifications_count == 0 %}hidden{% endif %}">{{ unread_notifications_count }}</span>
+                </a>
             </div>
+            
             <div class="px-3 py-1 border rounded-md flex items-center">
                 <i data-lucide="clock" class="w-4 h-4 mr-1"></i>
                 Shift {{ user.shift }} - <span id="current-time"></span>
@@ -611,6 +570,248 @@ document.addEventListener('keydown', function(e) {
         closeReportDetail();
     }
 });
+
+// ============================================================================
+// NOTIFICATION SYSTEM
+// ============================================================================
+
+// Notification functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationBtn = document.getElementById('notification-btn');
+    const notificationPopup = document.getElementById('notification-popup');
+    const notificationBadge = document.getElementById('notification-badge');
+    const popupBadge = document.getElementById('popup-badge');
+    const notificationList = document.getElementById('notification-popup-list');
+    const markAllReadBtn = document.getElementById('mark-all-read-popup');
+    const closePopupBtn = document.getElementById('close-popup');
+    const closePopupBtnFooter = document.getElementById('close-popup-btn');
+    
+    console.log('Notification elements found:', {
+        btn: !!notificationBtn,
+        popup: !!notificationPopup,
+        badge: !!notificationBadge,
+        list: !!notificationList
+    });
+    
+    // Open notification popup
+    if (notificationBtn && notificationPopup) {
+        notificationBtn.addEventListener('click', function(e) {
+            console.log('Notification button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Show popup
+            notificationPopup.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            
+            // Load notifications
+            console.log('Loading notifications...');
+            loadNotifications();
+        });
+    } else {
+        console.error('Notification elements not found!');
+    }
+    
+    // Close popup functions
+    function closeNotificationPopup() {
+        notificationPopup.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+    
+    // Close popup when clicking close button
+    if (closePopupBtn) {
+        closePopupBtn.addEventListener('click', closeNotificationPopup);
+    }
+    
+    if (closePopupBtnFooter) {
+        closePopupBtnFooter.addEventListener('click', closeNotificationPopup);
+    }
+    
+    // Close popup when clicking outside
+    if (notificationPopup) {
+        notificationPopup.addEventListener('click', function(e) {
+            if (e.target === notificationPopup) {
+                closeNotificationPopup();
+            }
+        });
+    }
+    
+    // Close popup with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !notificationPopup.classList.contains('hidden')) {
+            closeNotificationPopup();
+        }
+    });
+    }
+    
+    // Mark all notifications as read
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function() {
+            markAllNotificationsRead();
+        });
+    }
+    
+    // Load notifications on page load
+    loadNotifications();
+    
+    // Auto-refresh notifications every 30 seconds
+    setInterval(loadNotifications, 30000);
+});
+
+function loadNotifications() {
+    fetch('{% url "get_notifications" %}')
+        .then(response => response.json())
+        .then(data => {
+            updateNotificationUI(data);
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+        });
+}
+
+function updateNotificationUI(data) {
+    const notificationBadge = document.getElementById('notification-badge');
+    const popupBadge = document.getElementById('popup-badge');
+    const notificationList = document.getElementById('notification-popup-list');
+    
+    // Update both badges
+    if (notificationBadge) {
+        if (data.unread_count > 0) {
+            notificationBadge.textContent = data.unread_count;
+            notificationBadge.classList.remove('hidden');
+        } else {
+            notificationBadge.classList.add('hidden');
+        }
+    }
+    
+    if (popupBadge) {
+        if (data.unread_count > 0) {
+            popupBadge.textContent = data.unread_count;
+            popupBadge.classList.remove('hidden');
+        } else {
+            popupBadge.classList.add('hidden');
+        }
+    }
+    
+    // Update notification list
+    if (notificationList) {
+        if (data.notifications && data.notifications.length > 0) {
+            let html = '';
+            data.notifications.forEach(function(notification) {
+                const bgClass = notification.is_unread ? 'bg-blue-50 border-l-4 border-blue-400' : 'bg-white';
+                const unreadIndicator = notification.is_unread ? '<div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>' : '<div class="w-3 h-3 bg-gray-300 rounded-full"></div>';
+                const titleClass = notification.is_unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700';
+                
+                html += `
+                    <div class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${bgClass}" 
+                         onclick="markNotificationRead(${notification.id})">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3 shadow-sm">
+                                        <i data-lucide="bell" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="${titleClass} text-sm">${notification.title}</h4>
+                                        <span class="text-xs text-gray-500">${notification.created_at}</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-600 ml-13 leading-relaxed">${notification.message}</p>
+                            </div>
+                            <div class="ml-3 flex flex-col items-center">
+                                ${unreadIndicator}
+                                ${notification.is_unread ? '<span class="text-xs text-blue-600 font-medium mt-1">Baru</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            notificationList.innerHTML = html;
+        } else {
+            notificationList.innerHTML = `
+                <div class="p-8 text-center">
+                    <i data-lucide="bell-off" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                    <p class="text-gray-500 text-sm">Tidak ada notifikasi</p>
+                </div>
+            `;
+        }
+        
+        // Refresh Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+}
+
+function markNotificationRead(notificationId) {
+    console.log('Marking notification as read:', notificationId);
+    
+    fetch(`/api/notifications/${notificationId}/read/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Notification marked as read, new unread count:', data.unread_count);
+            
+            // Update badges immediately
+            const notificationBadge = document.getElementById('notification-badge');
+            const popupBadge = document.getElementById('popup-badge');
+            
+            if (data.unread_count === 0) {
+                if (notificationBadge) notificationBadge.classList.add('hidden');
+                if (popupBadge) popupBadge.classList.add('hidden');
+            } else {
+                if (notificationBadge) {
+                    notificationBadge.textContent = data.unread_count;
+                    notificationBadge.classList.remove('hidden');
+                }
+                if (popupBadge) {
+                    popupBadge.textContent = data.unread_count;
+                    popupBadge.classList.remove('hidden');
+                }
+            }
+            
+            // Reload notifications to update the list
+            loadNotifications();
+        } else {
+            console.error('Failed to mark notification as read:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+function markAllNotificationsRead() {
+    // Get all unread notification IDs from the popup list
+    const notifications = document.querySelectorAll('#notification-popup-list .bg-blue-50');
+    const promises = [];
+    
+    notifications.forEach(function(notification) {
+        const notificationId = notification.getAttribute('onclick').match(/\d+/)[0];
+        const promise = fetch(`/api/notifications/${notificationId}/read/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        });
+        promises.push(promise);
+    });
+    
+    Promise.all(promises)
+        .then(() => {
+            loadNotifications(); // Reload notifications
+        })
+        .catch(error => {
+            console.error('Error marking all notifications as read:', error);
+        });
+}
 
 // Initialize Lucide icons after DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {

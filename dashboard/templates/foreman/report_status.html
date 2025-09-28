@@ -38,20 +38,25 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Code</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Komponen</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktivitas</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NRP</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Aktivitas</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feedback</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for report in activity_reports %}
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.date }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.get_component_display|default:'-' }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.activities_code|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.nrp|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ report.get_section_display|default:'-' }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                                    {{ report.activities.count }} aktivitas
+                                </span>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 {% if report.status == 'pending' %}
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
@@ -69,6 +74,56 @@
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ report.feedback|default:'-' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="showActivityDetails({{ report.id }})" class="text-blue-600 hover:text-blue-900">
+                                    Lihat Detail
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Detail row (hidden by default) -->
+                        <tr id="detail-{{ report.id }}" class="hidden bg-gray-50">
+                            <td colspan="7" class="px-6 py-4">
+                                <div class="bg-white rounded-lg p-4 border">
+                                    <h4 class="font-medium text-gray-900 mb-3">Detail Aktivitas:</h4>
+                                    {% if report.activities.all %}
+                                        <div class="space-y-3">
+                                            {% for activity in report.activities.all %}
+                                            <div class="border-l-4 border-blue-500 pl-4 py-2">
+                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                                    <div>
+                                                        <span class="font-medium text-gray-600">Aktivitas {{ activity.activity_number }}:</span>
+                                                        <p class="text-gray-900">{{ activity.unit_code }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="font-medium text-gray-600">HM/KM:</span>
+                                                        <p class="text-gray-900">{{ activity.hm_km }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="font-medium text-gray-600">Waktu:</span>
+                                                        <p class="text-gray-900">{{ activity.start_time }} - {{ activity.stop_time }}</p>
+                                                    </div>
+                                                    <div>
+                                                        <span class="font-medium text-gray-600">Komponen:</span>
+                                                        <p class="text-gray-900">{{ activity.get_component_display }}</p>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2">
+                                                    <span class="font-medium text-gray-600">Deskripsi:</span>
+                                                    <p class="text-gray-900 text-sm">{{ activity.activities }}</p>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
+                                                        {{ activity.get_activity_code_display }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-gray-500 text-sm">Tidak ada detail aktivitas</p>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -169,5 +224,15 @@
             });
         });
     });
+
+    // Function to show/hide activity details
+    function showActivityDetails(reportId) {
+        const detailRow = document.getElementById('detail-' + reportId);
+        if (detailRow.classList.contains('hidden')) {
+            detailRow.classList.remove('hidden');
+        } else {
+            detailRow.classList.add('hidden');
+        }
+    }
 </script>
 {% endblock %}

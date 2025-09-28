@@ -104,43 +104,83 @@
                 
                 <!-- 4M1E Analysis -->
                 <div class="mb-8">
-                    <h3 class="text-md font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                         Faktor Penyebab (4M1E)
                     </h3>
-                    <p class="text-sm text-gray-600 mb-4">Pilih faktor-faktor yang berkontribusi terhadap masalah:</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <p class="text-sm text-gray-600 mb-6">Jelaskan faktor-faktor yang berkontribusi terhadap masalah (isi yang relevan saja):</p>
+                    
+                    <div class="space-y-6">
+                        <!-- Man (Manusia) -->
+                        <div>
+                            <label for="{{ form.faktor_man.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center">
+                                    <span class="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs font-semibold mr-2">M</span>
+                                    {{ form.faktor_man.label }}
+                                </span>
+                            </label>
                             {{ form.faktor_man }}
-                            <label for="{{ form.faktor_man.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
-                                {{ form.faktor_man.label }}
-                            </label>
+                            {% if form.faktor_man.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.faktor_man.errors.0 }}</p>
+                            {% endif %}
                         </div>
-                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+
+                        <!-- Material -->
+                        <div>
+                            <label for="{{ form.faktor_material.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center">
+                                    <span class="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xs font-semibold mr-2">M</span>
+                                    {{ form.faktor_material.label }}
+                                </span>
+                            </label>
                             {{ form.faktor_material }}
-                            <label for="{{ form.faktor_material.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
-                                {{ form.faktor_material.label }}
-                            </label>
+                            {% if form.faktor_material.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.faktor_material.errors.0 }}</p>
+                            {% endif %}
                         </div>
-                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+
+                        <!-- Machine (Mesin) -->
+                        <div>
+                            <label for="{{ form.faktor_machine.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center">
+                                    <span class="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold mr-2">M</span>
+                                    {{ form.faktor_machine.label }}
+                                </span>
+                            </label>
                             {{ form.faktor_machine }}
-                            <label for="{{ form.faktor_machine.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
-                                {{ form.faktor_machine.label }}
-                            </label>
+                            {% if form.faktor_machine.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.faktor_machine.errors.0 }}</p>
+                            {% endif %}
                         </div>
-                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+
+                        <!-- Method (Metode) -->
+                        <div>
+                            <label for="{{ form.faktor_method.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center">
+                                    <span class="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-semibold mr-2">M</span>
+                                    {{ form.faktor_method.label }}
+                                </span>
+                            </label>
                             {{ form.faktor_method }}
-                            <label for="{{ form.faktor_method.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
-                                {{ form.faktor_method.label }}
-                            </label>
+                            {% if form.faktor_method.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.faktor_method.errors.0 }}</p>
+                            {% endif %}
                         </div>
-                        <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
-                            {{ form.faktor_environment }}
-                            <label for="{{ form.faktor_environment.id_for_label }}" class="ml-3 text-sm font-medium text-gray-700 cursor-pointer">
-                                {{ form.faktor_environment.label }}
+
+                        <!-- Environment (Lingkungan) -->
+                        <div>
+                            <label for="{{ form.faktor_environment.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="inline-flex items-center">
+                                    <span class="w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-xs font-semibold mr-2">E</span>
+                                    {{ form.faktor_environment.label }}
+                                </span>
                             </label>
+                            {{ form.faktor_environment }}
+                            {% if form.faktor_environment.errors %}
+                                <p class="text-red-600 text-sm mt-1">{{ form.faktor_environment.errors.0 }}</p>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

@@ -84,9 +84,6 @@
     const formActivity = document.getElementById("form-activity")
     const formAnalysis = document.getElementById("form-analysis")
 
-    // Notification system
-    initNotifications()
-
     // Activity Report Modal
     if (btnActivityReport && modalActivity) {
       btnActivityReport.addEventListener("click", () => {
@@ -127,27 +124,6 @@
     }
     if (formAnalysis) {
       formAnalysis.addEventListener("submit", handleAnalysisSubmit)
-    }
-  }
-
-  function initNotifications() {
-    const notificationBtn = document.getElementById("notification-btn")
-    const notificationDropdown = document.getElementById("notification-dropdown")
-
-    if (notificationBtn && notificationDropdown) {
-      notificationBtn.addEventListener("click", (e) => {
-        e.stopPropagation()
-        notificationDropdown.classList.toggle("hidden")
-      })
-
-      // Close dropdown when clicking outside
-      document.addEventListener("click", () => {
-        notificationDropdown.classList.add("hidden")
-      })
-
-      notificationDropdown.addEventListener("click", (e) => {
-        e.stopPropagation()
-      })
     }
   }
 

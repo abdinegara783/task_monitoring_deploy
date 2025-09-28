@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, ActivityReport, AnalysisReport
+from .models import User, ActivityReport, AnalysisReport, Notification, ActivityReportDetail
 
 
 @admin.register(User)
@@ -83,93 +83,109 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ("role", "department", "shift", "is_active", "is_staff", "created_at")
 
 
+class ActivityReportDetailInline(admin.TabularInline):
+    model = ActivityReportDetail
+    extra = 1
+    max_num = 5
+    fields = ('activity_number', 'unit_code', 'hm_km', 'start_time', 'stop_time', 'component', 'activities', 'activity_code')
+    ordering = ('activity_number',)
+
+
 @admin.register(ActivityReport)
 class ActivityReportAdmin(admin.ModelAdmin):
-    """Admin configuration for ActivityReport"""
-
+    """Admin configuration for new ActivityReport structure"""
+    
     list_display = (
         "id",
         "foreman",
+        "nrp",
+        "section",
         "date",
-        "shift",
-        "component",
-        "activities_code",
-        "Unit_Code",
-        "start_time",
-        "end_time",
-        "feedback",
-        "created_at",
+        "get_activities_count",
         "status",
+        "created_at",
     )
 
-    # Remove "leader" from list_filter
     list_filter = (
         "foreman",
+        "section",
         "date",
-        "shift",
-        "component",
-        "activities_code",
-        # "leader"  # Remove this line
+        "status",
+        "created_at",
     )
 
-    # Corrected search_fields
     search_fields = (
         "foreman__username",
         "foreman__name",
-        "Unit_Code",
-        "activities",
-        "component",
+        "nrp",
+        "section",
     )
 
-    # Ordering by date (most recent first)
-    ordering = ("-date", "-start_time")
+    ordering = ("-date", "-created_at")
 
-    # Date hierarchy for easy navigation
     date_hierarchy = "date"
 
-    # Fields per page
     list_per_page = 25
 
-    # Fieldsets for organized form display
     fieldsets = (
-        ("Basic Information", {"fields": ("foreman", "date", "shift")}),
-        ("Time Information", {"fields": ("start_time", "end_time")}),
-        (
-            "Work Details",
-            {
-                # Remove "leader" from this fieldset
-                "fields": ("Unit_Code", "Hmkm", "component", "activities_code")
-            },
-        ),
-        ("Activities", {"fields": ("activities", "feedback"), "classes": ("wide",)}),
-        ("Status", {"fields": ("status",), "classes": ("wide",)}),
+        ("Basic Information", {"fields": ("foreman", "nrp", "section", "date")}),
+        ("Status", {"fields": ("status", "feedback"), "classes": ("wide",)}),
     )
 
-    # Read-only fields (if any)
-    readonly_fields = ()
+    readonly_fields = ("created_at",)
+    
+    inlines = [ActivityReportDetailInline]
 
-    # Custom methods for better display
     def get_foreman_name(self, obj):
         return obj.foreman.name or obj.foreman.get_full_name()
 
     get_foreman_name.short_description = "Foreman Name"
     get_foreman_name.admin_order_field = "foreman__name"
 
-    def get_duration(self, obj):
-        if obj.start_time and obj.end_time:
-            from datetime import datetime
+    def get_activities_count(self, obj):
+        return obj.activities.count()
 
-            start = datetime.combine(obj.date, obj.start_time)
-            end = datetime.combine(obj.date, obj.end_time)
-            duration = end - start
-            hours = duration.total_seconds() / 3600
-            return f"{hours:.1f} jam"
-        return "-"
+    get_activities_count.short_description = "Activities Count"
 
-    get_duration.short_description = "Duration"
 
-    # Add custom methods to list_display if needed
-    # list_display = list_display + ("get_foreman_name", "get_duration")
+@admin.register(ActivityReportDetail)
+class ActivityReportDetailAdmin(admin.ModelAdmin):
+    """Admin configuration for ActivityReportDetail"""
+    
+    list_display = (
+        "activity_report",
+        "activity_number",
+        "unit_code",
+        "hm_km",
+        "start_time",
+        "stop_time",
+        "component",
+        "activity_code",
+    )
+
+    list_filter = (
+        "activity_report__date",
+        "component",
+        "activity_code",
+        "activity_report__foreman",
+    )
+
+    search_fields = (
+        "activity_report__foreman__username",
+        "activity_report__foreman__name",
+        "unit_code",
+        "activities",
+    )
+
+    ordering = ("activity_report__date", "activity_number")
+
+    fieldsets = (
+        ("Report Information", {"fields": ("activity_report", "activity_number")}),
+        ("Unit Information", {"fields": ("unit_code", "hm_km")}),
+        ("Time Information", {"fields": ("start_time", "stop_time")}),
+        ("Work Details", {"fields": ("component", "activity_code")}),
+        ("Activities", {"fields": ("activities",), "classes": ("wide",)}),
+    )
 
 
 # Tambahkan atau update di admin.py
@@ -254,3 +270,31 @@ class AnalysisReportAdmin(admin.ModelAdmin):
 
     get_section_display_name.short_description = "Section"
     get_section_display_name.admin_order_field = "section_track"
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['title', 'recipient', 'status', 'created_at', 'created_by']
+    list_filter = ['status', 'created_at', 'created_by']
+    search_fields = ['title', 'message', 'recipient__username', 'recipient__name']
+    readonly_fields = ['created_at', 'read_at']
+    ordering = ['-created_at']
+    
+    fieldsets = (
+        ('Informasi Notifikasi', {
+            'fields': ('title', 'message', 'recipient')
+        }),
+        ('Status & Waktu', {
+            'fields': ('status', 'created_at', 'read_at')
+        }),
+        ('Pengirim', {
+            'fields': ('created_by',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('recipient', 'created_by')
+    
+    def get_recipient_name(self, obj):
+        return obj.recipient.name or obj.recipient.username
+    get_recipient_name.short_description = "Penerima"
+    get_recipient_name.admin_order_field = "recipient__name"

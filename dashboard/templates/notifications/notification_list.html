@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notifikasi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-item {
+        transition: all 0.3s ease;
+        border-radius: 8px;
+    }
+    .notification-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .notification-unread {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        border-left: 4px solid #3b82f6;
+    }
+    .notification-read {
+        background: #f9fafb;
+        border-left: 4px solid #e5e7eb;
+    }
+    .notification-badge {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
+                        <i data-lucide="bell" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Notifikasi</h1>
+                        <p class="text-gray-600">Daftar notifikasi untuk {{ user.name|default:user.username }}</p>
+                    </div>
+                </div>
+                {% if unread_count > 0 %}
+                <div class="flex items-center">
+                    <span class="notification-badge bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        {{ unread_count }} Belum Dibaca
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Mark All Read Button -->
+        {% if unread_count > 0 %}
+        <div class="mb-6">
+            <button id="mark-all-read-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center">
+                <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i>
+                Tandai Semua Sebagai Dibaca
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Notifications List -->
+        <div class="space-y-4">
+            {% if notifications %}
+                {% for notification in notifications %}
+                <div class="notification-item {% if notification.status == 'unread' %}notification-unread{% else %}notification-read{% endif %} p-6 rounded-lg shadow-sm border">
+                    <a href="{% url 'mark_notification_read_and_redirect' notification.id %}" class="block">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3 shadow-sm">
+                                        <i data-lucide="bell" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="{% if notification.status == 'unread' %}font-semibold text-gray-900{% else %}font-medium text-gray-700{% endif %} text-lg">
+                                            {{ notification.title }}
+                                        </h3>
+                                        <p class="text-sm text-gray-500">
+                                            {{ notification.created_at|date:"d M Y, H:i" }}
+                                            {% if notification.created_by %}
+                                                • Dari: {{ notification.created_by.name|default:notification.created_by.username }}
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <p class="text-gray-700 leading-relaxed ml-13">
+                                    {{ notification.message }}
+                                </p>
+                            </div>
+                            <div class="ml-4 flex flex-col items-center">
+                                {% if notification.status == 'unread' %}
+                                    <div class="w-3 h-3 bg-blue-500 rounded-full notification-badge"></div>
+                                    <span class="text-xs text-blue-600 font-medium mt-1">Baru</span>
+                                {% else %}
+                                    <div class="w-3 h-3 bg-gray-300 rounded-full"></div>
+                                    <span class="text-xs text-gray-500 font-medium mt-1">Dibaca</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="bg-white rounded-lg shadow-sm border p-12 text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="bell-off" class="w-8 h-8 text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Tidak Ada Notifikasi</h3>
+                    <p class="text-gray-600">Anda belum memiliki notifikasi apapun.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if notifications.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex items-center space-x-2">
+                {% if notifications.has_previous %}
+                    <a href="?page={{ notifications.previous_page_number }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Sebelumnya
+                    </a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-sm font-medium text-gray-700">
+                    Halaman {{ notifications.number }} dari {{ notifications.paginator.num_pages }}
+                </span>
+                
+                {% if notifications.has_next %}
+                    <a href="?page={{ notifications.next_page_number }}" class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Selanjutnya
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
+        <!-- Back Button -->
+        <div class="mt-8 text-center">
+            <a href="{% url 'foreman_dashboard' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Kembali ke Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mark all as read functionality
+    const markAllReadBtn = document.getElementById('mark-all-read-btn');
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', function() {
+            if (confirm('Tandai semua notifikasi sebagai sudah dibaca?')) {
+                fetch('{% url "mark_all_notifications_read" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Terjadi kesalahan: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Terjadi kesalahan saat menandai notifikasi.');
+                });
+            }
+        });
+    }
+
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+});
+</script>
+
+{% csrf_token %}
+{% endblock %}

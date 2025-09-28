@@ -5,7 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.forms import widgets
 from .models import User as CustomUser
-from .models import User, ActivityReport, AnalysisReport, LeaderQuota
+from .models import User, ActivityReport, AnalysisReport, LeaderQuota, ActivityReportDetail
 from django.utils import timezone
 
 
@@ -317,95 +317,118 @@ class EmployeeRegistrationForm(forms.ModelForm):
         return user
 
 
-class ActivityReportForm(forms.ModelForm):
+class ActivityReportInitialForm(forms.ModelForm):
+    """Form untuk input data awal: NRP, Section, Date"""
+    
     class Meta:
         model = ActivityReport
-        fields = [
-            "date",
-            "shift",  # Tambahkan shift yang hilang
-            "Unit_Code",
-            "Hmkm",
-            "start_time",
-            "end_time",
-            "component",
-            "activities",
-            "activities_code",
-        ]  # Hapus "foreman" dari fields
+        fields = ["nrp", "section", "date"]
         widgets = {
+            "nrp": forms.TextInput(
+                attrs={
+                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Masukkan NRP (Nomor Registrasi Pegawai)",
+                }
+            ),
+            "section": forms.Select(
+                attrs={
+                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                }
+            ),
             "date": forms.DateInput(
                 attrs={
                     "type": "date",
                     "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
-            "shift": forms.Select(
+        }
+        labels = {
+            "nrp": "NRP (Nomor Registrasi Pegawai)",
+            "section": "Section/Track",
+            "date": "Tanggal Laporan",
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # Auto-fill NRP from user if available
+        if user and user.nrp:
+            self.fields['nrp'].initial = user.nrp
+            self.fields['nrp'].widget.attrs['readonly'] = True
+
+
+class ActivityReportDetailForm(forms.ModelForm):
+    """Form untuk detail aktivitas individual"""
+    
+    class Meta:
+        model = ActivityReportDetail
+        fields = [
+            "unit_code", "hm_km", "start_time", "stop_time", 
+            "component", "activities", "activity_code"
+        ]
+        widgets = {
+            "unit_code": forms.TextInput(
                 attrs={
-                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "UNIT CODE",
                 }
             ),
-            "Unit_Code": forms.TextInput(
+            "hm_km": forms.TextInput(
                 attrs={
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                    "placeholder": "Masukkan kode unit",
-                }
-            ),
-            "Hmkm": forms.TextInput(
-                attrs={
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                    "placeholder": "Masukkan HM/KM",
+                    "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "HM/KM",
                 }
             ),
             "start_time": forms.TimeInput(
                 attrs={
                     "type": "time",
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
-            "end_time": forms.TimeInput(
+            "stop_time": forms.TimeInput(
                 attrs={
                     "type": "time",
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
             "component": forms.Select(
                 attrs={
-                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "class": "select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
             "activities": forms.Textarea(
                 attrs={
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                    "rows": 4,
-                    "placeholder": "Deskripsikan aktivitas yang dilakukan",
+                    "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "rows": 3,
+                    "placeholder": "Deskripsi aktivitas yang dilakukan",
                 }
             ),
-            "activities_code": forms.Select(
+            "activity_code": forms.Select(
                 attrs={
-                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "class": "select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                 }
             ),
         }
-        labels = {
-            "date": "Tanggal",
-            "shift": "Shift",
-            "Unit_Code": "Unit Code",
-            "Hmkm": "HM/KM",
-            "start_time": "Waktu Mulai",
-            "end_time": "Waktu Selesai",
-            "component": "Component",
-            "activities": "Activity",
-            "activities_code": "Activity Code",
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Set default values
-        if not self.instance.pk:  # Only for new instances
-            self.fields["date"].initial = timezone.now().date()
-            self.fields["shift"].initial = 1
 
 
-# Tambahkan di akhir forms.py
+# Formset untuk menangani multiple activities (maksimal 5)
+ActivityReportDetailFormSet = forms.inlineformset_factory(
+    ActivityReport,
+    ActivityReportDetail,
+    form=ActivityReportDetailForm,
+    extra=1,  # Start with 1 empty form
+    max_num=5,  # Maximum 5 activities
+    min_num=1,  # Minimum 1 activity required
+    validate_min=True,
+    validate_max=True,
+    can_delete=True
+)
+
+
+# Legacy ActivityReportForm - will be deprecated
+# This form is commented out because the model structure has changed
+# Use ActivityReportInitialForm and ActivityReportDetailFormSet instead
 
 
 class AnalysisReportForm(forms.ModelForm):
@@ -482,51 +505,79 @@ class AnalysisReportExtendedForm(forms.ModelForm):
             "nama_fungsi_komponen": forms.Textarea(
                 attrs={
                     "rows": 4,
-                    "class": "form-control",
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                     "placeholder": "Jelaskan nama dan fungsi komponen yang bermasalah...",
                 }
             ),
             "gejala_masalah": forms.Textarea(
                 attrs={
                     "rows": 4,
-                    "class": "form-control",
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                     "placeholder": "Deskripsikan gejala masalah yang dihadapi...",
                 }
             ),
             "akar_penyebab_masalah": forms.Textarea(
                 attrs={
                     "rows": 4,
-                    "class": "form-control",
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                     "placeholder": "Jelaskan akar penyebab masalah berdasarkan analisis...",
                 }
             ),
             "tindakan_dilakukan": forms.Textarea(
                 attrs={
                     "rows": 4,
-                    "class": "form-control",
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                     "placeholder": "Jelaskan tindakan yang telah dilakukan untuk mengatasi masalah...",
                 }
             ),
             "tindakan_pencegahan": forms.Textarea(
                 attrs={
                     "rows": 4,
-                    "class": "form-control",
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                     "placeholder": "Jelaskan tindakan pencegahan untuk mencegah masalah serupa...",
                 }
             ),
             "dokumentasi_sebelum": forms.FileInput(
-                attrs={"class": "form-control", "accept": "image/*,.pdf,.dwg"}
+                attrs={"class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", "accept": "image/*,.pdf,.dwg"}
             ),
             "dokumentasi_sesudah": forms.FileInput(
-                attrs={"class": "form-control", "accept": "image/*,.pdf,.dwg"}
+                attrs={"class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", "accept": "image/*,.pdf,.dwg"}
             ),
-            # Checkbox styling untuk faktor 4M1E
-            "faktor_man": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "faktor_material": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "faktor_machine": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "faktor_method": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-            "faktor_environment": forms.CheckboxInput(
-                attrs={"class": "form-check-input"}
+            # Textarea styling untuk faktor 4M1E
+            "faktor_man": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Contoh: Kelalaian para pekerja dalam melakukan monitoring...",
+                }
+            ),
+            "faktor_material": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Contoh: Material yang digunakan tidak sesuai spesifikasi...",
+                }
+            ),
+            "faktor_machine": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Contoh: Mesin mengalami kerusakan pada komponen utama...",
+                }
+            ),
+            "faktor_method": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Contoh: Prosedur kerja yang tidak sesuai SOP...",
+                }
+            ),
+            "faktor_environment": forms.Textarea(
+                attrs={
+                    "rows": 3,
+                    "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                    "placeholder": "Contoh: Kondisi cuaca yang ekstrem mempengaruhi kinerja...",
+                }
             ),
         }
         labels = {

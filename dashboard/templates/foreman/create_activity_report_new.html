@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buat Activity Report Baru{% endblock %}
+
+{% block extra_css %}
+<style>
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+    .step {
+        display: flex;
+        align-items: center;
+        margin: 0 1rem;
+    }
+    .step-number {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    .step.active .step-number {
+        background-color: #3b82f6;
+        color: white;
+    }
+    .step.completed .step-number {
+        background-color: #10b981;
+        color: white;
+    }
+    .step.inactive .step-number {
+        background-color: #e5e7eb;
+        color: #6b7280;
+    }
+    .activity-form {
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    .activity-form:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .activity-form.active {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    .add-activity-btn {
+        border: 2px dashed #d1d5db;
+        background: transparent;
+        transition: all 0.3s ease;
+    }
+    .add-activity-btn:hover {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    .remove-activity-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .remove-activity-btn:hover {
+        background: #dc2626;
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 max-w-6xl">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Buat Activity Report</h1>
+                <p class="text-gray-600">Sistem pelaporan aktivitas harian dengan multiple activities</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span class="text-white font-medium">{{ user.first_name.0 }}{{ user.last_name.0 }}</span>
+                </div>
+                <div class="text-left">
+                    <p class="font-semibold text-sm">{{ user.get_full_name }}</p>
+                    <p class="text-xs text-gray-600">{{ user.department }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+        <div class="step active" id="step-1-indicator">
+            <div class="step-number">1</div>
+            <span class="text-sm font-medium">Data Dasar</span>
+        </div>
+        <div class="step inactive" id="step-2-indicator">
+            <div class="step-number">2</div>
+            <span class="text-sm font-medium">Detail Aktivitas</span>
+        </div>
+        <div class="step inactive" id="step-3-indicator">
+            <div class="step-number">3</div>
+            <span class="text-sm font-medium">Review & Submit</span>
+        </div>
+    </div>
+
+    <form method="post" id="activity-report-form">
+        {% csrf_token %}
+        
+        <!-- Step 1: Initial Data -->
+        <div id="step-1" class="step-content">
+            <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="clipboard" class="w-5 h-5 text-blue-600 mr-2"></i>
+                    Data Dasar Laporan
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="{{ initial_form.nrp.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ initial_form.nrp.label }}
+                        </label>
+                        {{ initial_form.nrp }}
+                        {% if initial_form.nrp.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ initial_form.nrp.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ initial_form.section.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ initial_form.section.label }}
+                        </label>
+                        {{ initial_form.section }}
+                        {% if initial_form.section.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ initial_form.section.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label for="{{ initial_form.date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ initial_form.date.label }}
+                        </label>
+                        {{ initial_form.date }}
+                        {% if initial_form.date.errors %}
+                            <p class="text-red-600 text-sm mt-1">{{ initial_form.date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end">
+                    <button type="button" id="next-to-step-2" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-md transition-all duration-200">
+                        Selanjutnya
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Activities -->
+        <div id="step-2" class="step-content hidden">
+            <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 flex items-center">
+                        <i data-lucide="list" class="w-5 h-5 text-blue-600 mr-2"></i>
+                        Detail Aktivitas
+                    </h2>
+                    <div class="text-sm text-gray-600">
+                        <span id="activity-count">1</span> / 5 Aktivitas
+                    </div>
+                </div>
+                
+                <div id="activities-container">
+                    {{ formset.management_form }}
+                    
+                    <!-- Activity forms will be dynamically added here -->
+                    <div class="activity-form relative" data-activity-number="1">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Aktivitas 1</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">UNIT CODE 1</label>
+                                <input type="text" name="activities-0-unit_code" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="UNIT CODE">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">HM/KM 1</label>
+                                <input type="text" name="activities-0-hm_km" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="HM/KM">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">START 1</label>
+                                <input type="time" name="activities-0-start_time" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">STOP 1</label>
+                                <input type="time" name="activities-0-stop_time" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">COMPONENT 1</label>
+                                <select name="activities-0-component" class="select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                                    <option value="">Pilih Component</option>
+                                    {% for value, label in component_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">SC/USC/ACD 1</label>
+                                <select name="activities-0-activity_code" class="select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                                    <option value="">Pilih Kode</option>
+                                    {% for value, label in activity_code_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ACTIVITIES 1</label>
+                            <textarea name="activities-0-activities" rows="3" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Deskripsi aktivitas yang dilakukan"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add Activity Button -->
+                <button type="button" id="add-activity-btn" class="add-activity-btn w-full py-4 rounded-lg text-gray-600 hover:text-blue-600 flex items-center justify-center gap-2 mb-6">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Tambah Aktivitas (Maksimal 5)
+                </button>
+                
+                <div class="flex justify-between">
+                    <button type="button" id="back-to-step-1" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 flex items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        Kembali
+                    </button>
+                    <button type="button" id="next-to-step-3" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 shadow-md transition-all duration-200">
+                        Review
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Review & Submit -->
+        <div id="step-3" class="step-content hidden">
+            <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-green-600 mr-2"></i>
+                    Review & Submit
+                </h2>
+                
+                <div id="review-content">
+                    <!-- Review content will be populated by JavaScript -->
+                </div>
+                
+                <div class="flex justify-between mt-6">
+                    <button type="button" id="back-to-step-2" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 flex items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        Kembali
+                    </button>
+                    <button type="submit" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-md transition-all duration-200">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                        Submit Laporan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentStep = 1;
+    let activityCount = 1;
+    const maxActivities = 5;
+    
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Step navigation functions
+    function showStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+        
+        // Show current step
+        document.getElementById(`step-${step}`).classList.remove('hidden');
+        
+        // Update step indicators
+        document.querySelectorAll('.step').forEach((el, index) => {
+            el.classList.remove('active', 'completed', 'inactive');
+            if (index + 1 < step) {
+                el.classList.add('completed');
+            } else if (index + 1 === step) {
+                el.classList.add('active');
+            } else {
+                el.classList.add('inactive');
+            }
+        });
+        
+        currentStep = step;
+    }
+    
+    // Add activity function
+    function addActivity() {
+        if (activityCount >= maxActivities) {
+            alert('Maksimal 5 aktivitas per laporan');
+            return;
+        }
+        
+        activityCount++;
+        const container = document.getElementById('activities-container');
+        const newActivity = createActivityForm(activityCount);
+        container.appendChild(newActivity);
+        
+        updateActivityCount();
+        updateAddButton();
+        
+        // Refresh Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+    
+    // Create activity form
+    function createActivityForm(number) {
+        const div = document.createElement('div');
+        div.className = 'activity-form relative';
+        div.setAttribute('data-activity-number', number);
+        
+        div.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Aktivitas ${number}</h3>
+                ${number > 1 ? '<button type="button" class="remove-activity-btn" onclick="removeActivity(this)"><i data-lucide="x" class="w-4 h-4"></i></button>' : ''}
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">UNIT CODE ${number}</label>
+                    <input type="text" name="activities-${number-1}-unit_code" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="UNIT CODE">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">HM/KM ${number}</label>
+                    <input type="text" name="activities-${number-1}-hm_km" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="HM/KM">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">START ${number}</label>
+                    <input type="time" name="activities-${number-1}-start_time" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">STOP ${number}</label>
+                    <input type="time" name="activities-${number-1}-stop_time" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">COMPONENT ${number}</label>
+                    <select name="activities-${number-1}-component" class="select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Pilih Component</option>
+                        {% for value, label in component_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">SC/USC/ACD ${number}</label>
+                    <select name="activities-${number-1}-activity_code" class="select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                        <option value="">Pilih Kode</option>
+                        {% for value, label in activity_code_choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ACTIVITIES ${number}</label>
+                <textarea name="activities-${number-1}-activities" rows="3" class="input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" placeholder="Deskripsi aktivitas yang dilakukan"></textarea>
+            </div>
+        `;
+        
+        return div;
+    }
+    
+    // Remove activity function
+    window.removeActivity = function(button) {
+        const activityForm = button.closest('.activity-form');
+        activityForm.remove();
+        activityCount--;
+        updateActivityCount();
+        updateAddButton();
+        renumberActivities();
+    }
+    
+    // Update activity count display
+    function updateActivityCount() {
+        document.getElementById('activity-count').textContent = activityCount;
+    }
+    
+    // Update add button visibility
+    function updateAddButton() {
+        const addBtn = document.getElementById('add-activity-btn');
+        if (activityCount >= maxActivities) {
+            addBtn.style.display = 'none';
+        } else {
+            addBtn.style.display = 'flex';
+        }
+    }
+    
+    // Renumber activities after removal
+    function renumberActivities() {
+        const activities = document.querySelectorAll('.activity-form');
+        activities.forEach((activity, index) => {
+            const number = index + 1;
+            activity.setAttribute('data-activity-number', number);
+            
+            // Update title
+            activity.querySelector('h3').textContent = `Aktivitas ${number}`;
+            
+            // Update labels and input names
+            activity.querySelectorAll('label').forEach(label => {
+                const text = label.textContent;
+                label.textContent = text.replace(/\d+/, number);
+            });
+            
+            activity.querySelectorAll('input, select, textarea').forEach(input => {
+                const name = input.name;
+                if (name) {
+                    input.name = name.replace(/activities-\d+-/, `activities-${index}-`);
+                }
+            });
+        });
+    }
+    
+    // Generate review content
+    function generateReview() {
+        const reviewContent = document.getElementById('review-content');
+        let html = '<div class="space-y-6">';
+        
+        // Basic data review
+        html += `
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-gray-900 mb-2">Data Dasar</h3>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                    <div><strong>NRP:</strong> ${document.querySelector('[name="nrp"]').value}</div>
+                    <div><strong>Section:</strong> ${document.querySelector('[name="section"]').selectedOptions[0]?.text || '-'}</div>
+                    <div><strong>Tanggal:</strong> ${document.querySelector('[name="date"]').value}</div>
+                </div>
+            </div>
+        `;
+        
+        // Activities review
+        const activities = document.querySelectorAll('.activity-form');
+        activities.forEach((activity, index) => {
+            const number = index + 1;
+            html += `
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <h3 class="font-semibold text-gray-900 mb-2">Aktivitas ${number}</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>Unit Code:</strong> ${activity.querySelector('[name*="unit_code"]').value || '-'}</div>
+                        <div><strong>HM/KM:</strong> ${activity.querySelector('[name*="hm_km"]').value || '-'}</div>
+                        <div><strong>Start:</strong> ${activity.querySelector('[name*="start_time"]').value || '-'}</div>
+                        <div><strong>Stop:</strong> ${activity.querySelector('[name*="stop_time"]').value || '-'}</div>
+                        <div><strong>Component:</strong> ${activity.querySelector('[name*="component"]').selectedOptions[0]?.text || '-'}</div>
+                        <div><strong>Code:</strong> ${activity.querySelector('[name*="activity_code"]').selectedOptions[0]?.text || '-'}</div>
+                    </div>
+                    <div class="mt-2">
+                        <strong>Activities:</strong> ${activity.querySelector('[name*="activities"]').value || '-'}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        reviewContent.innerHTML = html;
+    }
+    
+    // Event listeners
+    document.getElementById('next-to-step-2').addEventListener('click', () => showStep(2));
+    document.getElementById('back-to-step-1').addEventListener('click', () => showStep(1));
+    document.getElementById('next-to-step-3').addEventListener('click', () => {
+        generateReview();
+        showStep(3);
+    });
+    document.getElementById('back-to-step-2').addEventListener('click', () => showStep(2));
+    document.getElementById('add-activity-btn').addEventListener('click', addActivity);
+    
+    // Form submission
+    document.getElementById('activity-report-form').addEventListener('submit', function(e) {
+        // Update management form total forms
+        const totalForms = document.querySelector('[name="activities-TOTAL_FORMS"]');
+        if (totalForms) {
+            totalForms.value = activityCount;
+        }
+    });
+});
+</script>
+{% endblock %}

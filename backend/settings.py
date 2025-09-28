@@ -161,7 +161,7 @@ ALLOWED_HOSTS = [
     '*.ngrok.io',  # Untuk semua subdomain ngrok
     '*.ngrok-free.app',  # Untuk ngrok versi baru
     # Tambahkan domain spesifik jika perlu
-    '2905d2d02c11.ngrok-free.app',
+    'e6f831aa0124.ngrok-free.app',
 ]
 
 # Untuk CSRF protection dengan ngrok
@@ -171,7 +171,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://*.ngrok-free.app',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://2905d2d02c11.ngrok-free.app',  # Tambahkan https://
+    'https://e6f831aa0124.ngrok-free.app',  # Tambahkan https://
 ]
 
 # Perbaiki CORS_ALLOWED_ORIGINS juga (line 176-182)
@@ -180,7 +180,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://*.ngrok-free.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    'https://92905d2d02c11.ngrok-free.app',  # Tambahkan https://
+    'https://e6f831aa0124.ngrok-free.app ',  # Tambahkan https://
 ]
 
 # Jika menggunakan CORS (untuk API)
@@ -189,7 +189,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://*.ngrok-free.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    'https://92905d2d02c11.ngrok-free.app',  # Tambahkan https://
+    'https://e6f831aa0124.ngrok-free.app ',  # Tambahkan https://
 ]
 
 # Untuk static files dengan ngrok

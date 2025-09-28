@@ -18,13 +18,18 @@ urlpatterns = [
     ),
     path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'),
     # Foreman URLs
-    path("foreman/", views.foreman_dashboard, name="foreman_dashboard"),
-    path("foreman/reports/", views.foreman_reports, name="foreman_reports"),
+    path("mekanik/", views.foreman_dashboard, name="foreman_dashboard"),
+    path("mekanik/reports/", views.foreman_reports, name="foreman_reports"),
     # Activity report
     path(
         "activity-report/create/",
         views.create_activity_report,
         name="create_activity_report",
+    ),
+    path(
+        "activity-report/create-new/",
+        views.create_activity_report_new,
+        name="create_activity_report_new",
     ),
     # Analysis report
     path(
@@ -45,10 +50,6 @@ urlpatterns = [
         name="leader_validation_activity",
     ),
     
-    # Notification URLs
-    path("notifications/", views.notifications_view, name="notifications"),
-    path("api/notifications/", views.api_get_notifications, name="api_notifications"),
-    path("api/notifications/<int:notification_id>/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
     # Tambahkan ke urlpatterns
     path('export/reports/', views.export_reports_csv, name='export_reports_csv'),
     path('export/users/', views.export_users_csv, name='export_users_csv'),
@@ -65,13 +66,14 @@ urlpatterns = [
     # Tambahkan URL untuk download single analysis report
     path('superadmin/export/analysis-report/<int:report_id>/pdf/', views.export_single_analysis_report_pdf, name='export_single_analysis_report_pdf'),
     path('api/check-leader-quota/', views.api_check_leader_quota, name='api_check_leader_quota'),
-    # Notification monitoring URLs
-    path('superadmin/notification-monitor/', views.notification_monitor, name='notification_monitor'),
-    # Notification management
-    path('superadmin/send-activity-reminder/<int:user_id>/', views.send_activity_reminder, name='send_activity_reminder'),
-    path('superadmin/send-analysis-reminder/<int:user_id>/', views.send_analysis_reminder, name='send_analysis_reminder'),
-    path('superadmin/send-bulk-activity-reminder/', views.send_bulk_activity_reminder, name='send_bulk_activity_reminder'),
-    path('superadmin/send-bulk-analysis-reminder/', views.send_bulk_analysis_reminder, name='send_bulk_analysis_reminder'),
-    path('superadmin/send-custom-notification/', views.send_custom_notification, name='send_custom_notification'),
-    path('superadmin/notification-analytics/', views.notification_analytics, name='notification_analytics'),
+    
+    # Notification URLs
+    path('superadmin/notifications/', views.notification_center, name='notification_center'),
+    path('superadmin/notifications/broadcast/', views.broadcast_notification, name='broadcast_notification'),
+    path('<str:username>/notifications/', views.user_notifications, name='user_notifications'),
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read_and_redirect, name='mark_notification_read_and_redirect'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('api/notifications/', views.get_notifications, name='get_notifications'),
+    path('api/notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
 ]

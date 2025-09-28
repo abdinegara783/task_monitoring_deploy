@@ -143,6 +143,36 @@ class ActivityReport(models.Model):
         ("rejected", "Rejected"),
     ]
 
+    SECTION_CHOICES = [
+        ("PC1250", "PC1250"),
+        ("CAT395", "CAT395"),
+        ("DX800", "DX800"),
+        ("PC500", "PC500"),
+        ("PC300", "PC300"),
+        ("PC200/210", "PC200/210"),
+        ("D375", "D375"),
+        ("D155", "D155"),
+        ("D85", "D85"),
+        ("EPIROC DM30", "EPIROC DM30"),
+        ("HD785", "HD785"),
+        ("VOLVO FMX400", "VOLVO FMX400"),
+        ("GD955", "GD955"),
+        ("GD535", "GD535"),
+        ("GD160K/M", "GD160K/M"),
+        ("DYNAPAC COMPACTOR", "DYNAPAC COMPACTOR"),
+        ("HD465/WT", "HD465/WT"),
+        ("RENAULT FT/LB", "RENAULT FT/LB"),
+        ("HINO WT/LT/CT", "HINO WT/LT/CT"),
+        ("MANITAOU", "MANITAOU"),
+        ("KATO CRANE", "KATO CRANE"),
+        ("GENSET", "GENSET"),
+        ("WATER PUMP (WP)", "WATER PUMP (WP)"),
+        ("HINO DT", "HINO DT"),
+        ("MERCY DT", "MERCY DT"),
+        ("BOMAG COMPACTOR", "BOMAG COMPACTOR"),
+        ("TL", "TL")
+    ]
+
     COMPONENT_CHOICES = [
         ("Component_1", "Engine"),
         ("Component_2", "Clutch - Couper"),
@@ -195,32 +225,80 @@ class ActivityReport(models.Model):
         ("Component_49", "5.000 KM Service"),
         ("Component_50", "2.500 KM Service"),
     ]
+    
     ACTIVITIES_CHOICES = [
         ("SC", "SC"),
         ("USC", "USC"),
         ("ACD", "ACD"),
     ]
+
+    # Main report information
     foreman = models.ForeignKey(
         User, on_delete=models.CASCADE, limit_choices_to={"role": "foreman"}
     )
-    date = models.DateField()
-    shift = models.IntegerField(choices=[(1, "Shift 1"), (2, "Shift 2")], default=1)
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    activities = models.TextField()
-    Unit_Code = models.CharField(max_length=100, blank=True, null=True)
-    Hmkm = models.CharField(max_length=100, blank=True, null=True)
-    component = models.CharField(
-        max_length=100, choices=COMPONENT_CHOICES, blank=True, null=True
+    nrp = models.CharField(max_length=20, help_text="Nomor Registrasi Pegawai")
+    section = models.CharField(
+        max_length=100, choices=SECTION_CHOICES, help_text="Section/Track"
     )
-    activities_code = models.CharField(
-        max_length=100, choices=ACTIVITIES_CHOICES, blank=True, null=True
-    )
-
-    # Tambahkan field status dan feedback
+    date = models.DateField(help_text="Tanggal laporan")
+    
+    # Status and metadata
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     feedback = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    def __str__(self):
+        return f"Activity Report - {self.foreman.get_full_name()} - {self.date}"
+
+    class Meta:
+        verbose_name = "Activity Report"
+        verbose_name_plural = "Activity Reports"
+        ordering = ['-date', '-created_at']
+
+
+class ActivityReportDetail(models.Model):
+    """Detail aktivitas untuk setiap activity report (maksimal 5 aktivitas)"""
+    
+    activity_report = models.ForeignKey(
+        ActivityReport, 
+        on_delete=models.CASCADE, 
+        related_name='activities'
+    )
+    activity_number = models.PositiveIntegerField(
+        help_text="Nomor urut aktivitas (1-5)"
+    )
+    
+    # Activity details
+    unit_code = models.CharField(
+        max_length=100, 
+        help_text="Unit Code untuk aktivitas ini"
+    )
+    hm_km = models.CharField(
+        max_length=100, 
+        help_text="HM/KM untuk aktivitas ini"
+    )
+    start_time = models.TimeField(help_text="Waktu mulai aktivitas")
+    stop_time = models.TimeField(help_text="Waktu selesai aktivitas")
+    component = models.CharField(
+        max_length=100, 
+        choices=ActivityReport.COMPONENT_CHOICES,
+        help_text="Komponen yang dikerjakan"
+    )
+    activities = models.TextField(help_text="Deskripsi aktivitas yang dilakukan")
+    activity_code = models.CharField(
+        max_length=10, 
+        choices=ActivityReport.ACTIVITIES_CHOICES,
+        help_text="Kode aktivitas (SC/USC/ACD)"
+    )
+
+    def __str__(self):
+        return f"Activity {self.activity_number} - {self.activity_report}"
+
+    class Meta:
+        verbose_name = "Activity Report Detail"
+        verbose_name_plural = "Activity Report Details"
+        ordering = ['activity_report', 'activity_number']
+        unique_together = ['activity_report', 'activity_number']
 
 
 class AnalysisReport(models.Model):
@@ -404,137 +482,76 @@ class AnalysisReport(models.Model):
 
 
 class Notification(models.Model):
-    NOTIFICATION_TYPES = [
-        ('activity_reminder', 'Activity Report Reminder'),
-        ('analysis_reminder', 'Analysis Report Reminder'),
-        ('manual_message', 'Manual Message'),
-        ('system_alert', 'System Alert'),
-        ('deadline_warning', 'Deadline Warning'),
-    ]
-    
-    PRIORITY_CHOICES = [
-        ('low', 'Low'),
-        ('medium', 'Medium'),
-        ('high', 'High'),
-        ('urgent', 'Urgent'),
-    ]
+    """Model sederhana untuk sistem notifikasi broadcast"""
     
     STATUS_CHOICES = [
-        ('unread', 'Unread'),
-        ('read', 'Read'),
-        ('acknowledged', 'Acknowledged'),
+        ('unread', 'Belum Dibaca'),
+        ('read', 'Sudah Dibaca'),
     ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    title = models.CharField(max_length=200)
-    message = models.TextField()
-    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
-    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unread')
     
-    # Admin control fields
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_notifications')
-    is_manual = models.BooleanField(default=False, help_text="Notifikasi yang dikirim manual oleh admin")
-    requires_acknowledgment = models.BooleanField(default=False, help_text="Memerlukan konfirmasi dari user")
+    # Target penerima notifikasi
+    recipient = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='notifications',
+        help_text="Penerima notifikasi"
+    )
     
-    # Timing fields
-    created_at = models.DateTimeField(auto_now_add=True)
-    read_at = models.DateTimeField(null=True, blank=True)
-    acknowledged_at = models.DateTimeField(null=True, blank=True)
-    expires_at = models.DateTimeField(null=True, blank=True, help_text="Notifikasi akan otomatis dihapus setelah tanggal ini")
+    # Deskripsi konten notifikasi
+    title = models.CharField(max_length=200, help_text="Judul notifikasi")
+    message = models.TextField(help_text="Isi pesan notifikasi")
     
-    # Auto-remove when task is completed
-    auto_remove_on_completion = models.BooleanField(default=True)
-
+    # Status baca/belum baca
+    status = models.CharField(
+        max_length=10, 
+        choices=STATUS_CHOICES, 
+        default='unread',
+        help_text="Status baca notifikasi"
+    )
+    
+    # Waktu pengiriman notifikasi
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Waktu notifikasi dibuat")
+    read_at = models.DateTimeField(null=True, blank=True, help_text="Waktu notifikasi dibaca")
+    
+    # Pengirim notifikasi (superuser)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='sent_notifications',
+        help_text="Admin yang mengirim notifikasi"
+    )
+    
     class Meta:
         ordering = ['-created_at']
+        verbose_name = "Notifikasi"
+        verbose_name_plural = "Notifikasi"
         indexes = [
-            models.Index(fields=['user', 'status']),
-            models.Index(fields=['notification_type', 'created_at']),
+            models.Index(fields=['recipient', 'status']),
+            models.Index(fields=['created_at']),
         ]
     
     def __str__(self):
-        return f"{self.title} - {self.user.name}"
+        return f"{self.title} - {self.recipient.name} ({self.status})"
     
     def mark_as_read(self):
+        """Tandai notifikasi sebagai sudah dibaca"""
         if self.status == 'unread':
             self.status = 'read'
             self.read_at = timezone.now()
             self.save()
     
-    def mark_as_acknowledged(self):
-        self.status = 'acknowledged'
-        self.acknowledged_at = timezone.now()
-        self.save()
-
     @classmethod
-    def create_activity_reminder(cls, user, hours_before):
-        """Create activity report reminder"""
-        # Determine deadline time based on user's shift
-        deadline_text = "18:00" if user.shift == 1 else "05:00"
-        shift_text = "Shift 1" if user.shift == 1 else "Shift 2"
-        
-        if hours_before == 1:
-            title = f"⏰ Deadline Activity Report - 1 Jam Lagi! ({shift_text})"
-            message = f"Jangan lupa isi activity report hari ini. Deadline dalam 1 jam lagi ({deadline_text})."
-        elif hours_before == 0.5:
-            title = f"🚨 Deadline Activity Report - 30 Menit Lagi! ({shift_text})"
-            message = f"Segera isi activity report hari ini! Deadline dalam 30 menit lagi ({deadline_text})."
-        else:  # 10 minutes
-            title = f"🔥 URGENT! Deadline Activity Report - 10 Menit Lagi! ({shift_text})"
-            message = f"URGENT! Activity report harus diisi sekarang! Deadline dalam 10 menit lagi ({deadline_text})."
-        
-        # Check if similar notification already exists today
-        today = timezone.now().date()
-        existing = Notification.objects.filter(
-            user=user,
-            notification_type='activity_reminder',
-            created_at__date=today,
-            title=title
-        ).first()
-        
-        if existing:
-            return None  # Don't create duplicate
-        
-        return Notification.objects.create(
-            user=user,
-            title=title,
-            message=message,
-            notification_type='activity_reminder'
-        )
-
-    @classmethod
-    def create_analysis_reminder(cls, user, days_left, missing_count):
-        """Create analysis report reminder"""
-        if days_left == 3:
-            title = f"📊 Analysis Report Reminder - {missing_count} Laporan Kurang"
-            message = f"Anda masih kekurangan {missing_count} analysis report bulan ini. Deadline dalam 3 hari lagi."
-        else:
-            return None
-
-        # Check if similar notification already exists this month
-        today = timezone.now().date()
-        existing = cls.objects.filter(
-            user=user,
-            notification_type="analysis_reminder",
-            created_at__month=today.month,
-            created_at__year=today.year,
-        ).exists()
-
-        if not existing:
-            return cls.objects.create(
-                user=user,
-                notification_type="analysis_reminder",
+    def create_broadcast_notification(cls, title, message, recipients, created_by):
+        """Buat notifikasi broadcast untuk multiple recipients"""
+        notifications = []
+        for recipient in recipients:
+            notification = cls.objects.create(
+                recipient=recipient,
                 title=title,
                 message=message,
+                created_by=created_by
             )
-        return None
-
-    @classmethod
-    def remove_completed_notifications(cls, user, notification_type):
-        """Remove notifications when task is completed"""
-        cls.objects.filter(
-            user=user,
-            notification_type=notification_type,
-            auto_remove_on_completion=True,
-        ).delete()
+            notifications.append(notification)
+        return notifications
