@@ -2,6 +2,76 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from datetime import datetime, timedelta
+import os
+from PIL import Image
+import io
+import base64
+
+
+def analysis_report_upload_path(instance, filename):
+    """
+    Custom upload path untuk gambar analysis report
+    Format: (namadepanmekanik)_tanggal.(extension)
+    """
+    # Ambil nama depan mekanik (foreman)
+    foreman_name = instance.foreman.name or instance.foreman.username
+    first_name = foreman_name.split()[0] if foreman_name else "unknown"
+    
+    # Ambil tanggal report
+    report_date = instance.report_date.strftime("%Y%m%d")
+    
+    # Ambil extension dari file asli
+    _, ext = os.path.splitext(filename)
+    
+    # Buat nama file baru
+    new_filename = f"{first_name}_{report_date}{ext}"
+    
+    # Return path lengkap
+    return f"analysis_reports/{new_filename}"
+
+
+def process_image_for_database(image_file, max_size=(800, 600), quality=85):
+    """
+    Memproses gambar menggunakan Pillow sebelum disimpan ke database
+    """
+    try:
+        # Buka gambar dengan Pillow
+        img = Image.open(image_file)
+        
+        # Convert ke RGB jika perlu (untuk PNG dengan transparency)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            img = img.convert('RGB')
+        
+        # Resize gambar jika terlalu besar
+        img.thumbnail(max_size, Image.Resampling.LANCZOS)
+        
+        # Simpan ke BytesIO dengan kompresi
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        output.seek(0)
+        
+        return output.getvalue()
+    except Exception as e:
+        print(f"Error processing image: {e}")
+        return None
+
+
+def generate_image_filename(foreman, report_date, field_type):
+    """
+    Generate nama file untuk gambar
+    Format: (namadepanmekanik)_tanggal_sebelum/sesudah.(extension)
+    """
+    # Ambil nama depan mekanik (foreman)
+    foreman_name = foreman.name or foreman.username
+    first_name = foreman_name.split()[0] if foreman_name else "unknown"
+    
+    # Ambil tanggal report
+    date_str = report_date.strftime("%Y%m%d")
+    
+    # Buat nama file baru
+    filename = f"{first_name}_{date_str}_{field_type}.jpg"
+    
+    return filename
 
 
 class LeaderQuota(models.Model):
@@ -442,20 +512,95 @@ class AnalysisReport(models.Model):
         blank=True, null=True
     )
     
-    # File upload untuk dokumentasi
-    dokumentasi_sebelum = models.FileField(
-        upload_to='analysis_reports/before/',
-        verbose_name="Dokumentasi Sebelum",
-        help_text="Upload gambar/drawing sebelum perbaikan (Max 1MB)",
+    # Dokumentasi gambar - disimpan di database sebagai binary data
+    dokumentasi_sebelum_data = models.BinaryField(
+        verbose_name="Data Gambar Sebelum",
+        help_text="Data binary gambar sebelum perbaikan",
         blank=True, null=True
     )
     
-    dokumentasi_sesudah = models.FileField(
-        upload_to='analysis_reports/after/',
-        verbose_name="Dokumentasi Sesudah",
-        help_text="Upload gambar/drawing sesudah perbaikan (Max 1MB)",
+    dokumentasi_sebelum_filename = models.CharField(
+        max_length=255,
+        verbose_name="Nama File Sebelum",
+        help_text="Nama file gambar sebelum perbaikan",
         blank=True, null=True
     )
+    
+    dokumentasi_sebelum_content_type = models.CharField(
+        max_length=100,
+        verbose_name="Content Type Sebelum",
+        help_text="Content type gambar sebelum (image/jpeg, image/png, dll)",
+        blank=True, null=True
+    )
+    
+    dokumentasi_sesudah_data = models.BinaryField(
+        verbose_name="Data Gambar Sesudah",
+        help_text="Data binary gambar sesudah perbaikan",
+        blank=True, null=True
+    )
+    
+    dokumentasi_sesudah_filename = models.CharField(
+        max_length=255,
+        verbose_name="Nama File Sesudah",
+        help_text="Nama file gambar sesudah perbaikan",
+        blank=True, null=True
+    )
+    
+    dokumentasi_sesudah_content_type = models.CharField(
+        max_length=100,
+        verbose_name="Content Type Sesudah",
+        help_text="Content type gambar sesudah (image/jpeg, image/png, dll)",
+        blank=True, null=True
+    )
+    
+    def save_image_to_database(self, image_file, field_type):
+        """
+        Menyimpan gambar ke database dengan processing menggunakan Pillow
+        field_type: 'sebelum' atau 'sesudah'
+        """
+        if not image_file:
+            return
+            
+        # Process gambar dengan Pillow
+        processed_image_data = process_image_for_database(image_file)
+        if not processed_image_data:
+            return
+            
+        # Generate filename
+        filename = generate_image_filename(self.foreman, self.report_date, field_type)
+        
+        # Simpan ke field yang sesuai
+        if field_type == 'sebelum':
+            self.dokumentasi_sebelum_data = processed_image_data
+            self.dokumentasi_sebelum_filename = filename
+            self.dokumentasi_sebelum_content_type = 'image/jpeg'
+        elif field_type == 'sesudah':
+            self.dokumentasi_sesudah_data = processed_image_data
+            self.dokumentasi_sesudah_filename = filename
+            self.dokumentasi_sesudah_content_type = 'image/jpeg'
+    
+    def get_image_base64(self, field_type):
+        """
+        Mengambil gambar dalam format base64 untuk ditampilkan di template
+        field_type: 'sebelum' atau 'sesudah'
+        """
+        if field_type == 'sebelum' and self.dokumentasi_sebelum_data:
+            return base64.b64encode(self.dokumentasi_sebelum_data).decode('utf-8')
+        elif field_type == 'sesudah' and self.dokumentasi_sesudah_data:
+            return base64.b64encode(self.dokumentasi_sesudah_data).decode('utf-8')
+        return None
+    
+    def get_image_data_url(self, field_type):
+        """
+        Mengambil gambar dalam format data URL untuk ditampilkan langsung di HTML
+        field_type: 'sebelum' atau 'sesudah'
+        """
+        base64_data = self.get_image_base64(field_type)
+        if base64_data:
+            content_type = (self.dokumentasi_sebelum_content_type if field_type == 'sebelum' 
+                          else self.dokumentasi_sesudah_content_type)
+            return f"data:{content_type};base64,{base64_data}"
+        return None
     
     def get_faktor_4m1e_list(self):
         """Return list of selected 4M1E factors"""

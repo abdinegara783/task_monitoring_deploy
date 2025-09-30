@@ -38,6 +38,12 @@ urlpatterns = [
         views.create_analysis_report,
         name="create_analysis_report",
     ),
+    # Image serving URLs
+    path(
+        "analysis-report/<int:report_id>/image/<str:field_type>/",
+        views.serve_analysis_report_image,
+        name="serve_analysis_report_image",
+    ),
     # Leader URLs
     path("leader/", views.leader_dashboard, name="leader_dashboard"),
     path(

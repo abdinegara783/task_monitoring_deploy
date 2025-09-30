@@ -5,12 +5,12 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import timedelta
+from django.http import HttpResponse, JsonResponse
 from .forms import (
     LoginForm,
     # RegisterForm,
     EmployeeRegistrationForm,
     # ActivityReportForm,  # Deprecated - using new forms
-    ActivityReportInitialForm,
     ActivityReportDetailFormSet,
     AnalysisReportForm,
     AnalysisReportExtendedForm,
@@ -19,11 +19,9 @@ from .forms import (
 )
 from .models import User, ActivityReport, AnalysisReport, LeaderQuota, Notification, ActivityReportDetail
 import csv
-from django.http import HttpResponse
 from .services.pdf_service import PDFReportService
 from .services.analysis_pdf_service import AnalysisPDFService
 from django.db.models import Q, Count
-from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import json
@@ -612,51 +610,51 @@ def foreman_dashboard(request):
 def create_activity_report_new(request):
     """Create activity report with new structure - multi-step form"""
     if request.method == "POST":
-        initial_form = ActivityReportInitialForm(request.POST, user=request.user)
+        # Create ActivityReport instance directly
+        activity_report = ActivityReport(
+            foreman=request.user,
+            nrp=request.POST.get('nrp', request.user.nrp or ''),
+            section=request.POST.get('section', ''),
+            date=request.POST.get('date', timezone.now().date()),
+            status="pending"
+        )
+        activity_report.save()
         
-        if initial_form.is_valid():
-            # Save the main activity report
-            activity_report = initial_form.save(commit=False)
-            activity_report.foreman = request.user
-            activity_report.status = "pending"
-            activity_report.save()
+        # Process the formset for activities
+        formset = ActivityReportDetailFormSet(request.POST, instance=activity_report)
+        
+        if formset.is_valid():
+            # Save all activity details
+            activities = formset.save(commit=False)
+            for i, activity in enumerate(activities, 1):
+                activity.activity_number = i
+                activity.save()
             
-            # Process the formset for activities
-            formset = ActivityReportDetailFormSet(request.POST, instance=activity_report)
+            # Delete any activities marked for deletion
+            for activity in formset.deleted_objects:
+                activity.delete()
             
-            if formset.is_valid():
-                # Save all activity details
-                activities = formset.save(commit=False)
-                for i, activity in enumerate(activities, 1):
-                    activity.activity_number = i
-                    activity.save()
-                
-                # Delete any activities marked for deletion
-                for activity in formset.deleted_objects:
-                    activity.delete()
-                
-                messages.success(
-                    request,
-                    f"Activity Report berhasil dibuat dengan {len(activities)} aktivitas dan menunggu validasi leader!"
-                )
-                return redirect("foreman_dashboard")
-            else:
-                messages.error(request, "Terjadi kesalahan pada detail aktivitas. Silakan periksa kembali.")
+            messages.success(
+                request,
+                f"Activity Report berhasil dibuat dengan {len(activities)} aktivitas dan menunggu validasi leader!"
+            )
+            return redirect("foreman_dashboard")
         else:
-            messages.error(request, "Terjadi kesalahan pada data dasar. Silakan periksa kembali.")
+            messages.error(request, "Terjadi kesalahan pada detail aktivitas. Silakan periksa kembali.")
+            activity_report.delete()  # Clean up if formset is invalid
     else:
-        initial_form = ActivityReportInitialForm(user=request.user)
         formset = ActivityReportDetailFormSet()
     
     # Get choices for template
     component_choices = ActivityReport.COMPONENT_CHOICES
     activity_code_choices = ActivityReport.ACTIVITIES_CHOICES
+    section_choices = ActivityReport.SECTION_CHOICES
     
     context = {
-        "initial_form": initial_form,
         "formset": formset,
         "component_choices": component_choices,
         "activity_code_choices": activity_code_choices,
+        "section_choices": section_choices,
         "user": request.user,
     }
     
@@ -1417,6 +1415,49 @@ def broadcast_notification(request):
 
 
 @login_required
+def serve_analysis_report_image(request, report_id, field_type):
+    """
+    View untuk menampilkan gambar dari database untuk AnalysisReport
+    field_type: 'sebelum' atau 'sesudah'
+    """
+    try:
+        report = get_object_or_404(AnalysisReport, id=report_id)
+        
+        # Cek apakah user memiliki akses ke report ini
+        if request.user.role == 'foreman' and report.foreman != request.user:
+            return HttpResponse('Unauthorized', status=401)
+        
+        # Tentukan field yang akan diambil
+        if field_type == 'sebelum':
+            image_data = report.dokumentasi_sebelum_data
+            content_type = report.dokumentasi_sebelum_content_type
+            filename = report.dokumentasi_sebelum_filename
+        elif field_type == 'sesudah':
+            image_data = report.dokumentasi_sesudah_data
+            content_type = report.dokumentasi_sesudah_content_type
+            filename = report.dokumentasi_sesudah_filename
+        else:
+            return HttpResponse('Invalid field type', status=400)
+        
+        # Cek apakah gambar ada
+        if not image_data:
+            return HttpResponse('Image not found', status=404)
+        
+        # Return gambar sebagai HTTP response
+        response = HttpResponse(image_data, content_type=content_type or 'image/jpeg')
+        if filename:
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+        
+        return response
+        
+    except AnalysisReport.DoesNotExist:
+        return HttpResponse('Report not found', status=404)
+    except Exception as e:
+        return HttpResponse(f'Error: {str(e)}', status=500)
+
+
+@login_required
+@user_passes_test(lambda u: u.role in ['admin', 'superadmin'])
 def get_notifications(request):
     """API untuk mengambil notifikasi user yang sedang login"""
     notifications = Notification.objects.filter(

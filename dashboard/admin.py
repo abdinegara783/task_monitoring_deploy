@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from .models import User, ActivityReport, AnalysisReport, Notification, ActivityReportDetail
 
 
@@ -194,7 +196,7 @@ class ActivityReportDetailAdmin(admin.ModelAdmin):
 class AnalysisReportAdmin(admin.ModelAdmin):
     list_display = [
         'foreman', 'report_date', 'unit_code', 'problem', 
-        'status', 'created_at'
+        'status', 'created_at', 'has_dokumentasi_sebelum', 'has_dokumentasi_sesudah'
     ]
     list_filter = [
         'status', 'problem', 'section_track', 'report_date',
@@ -205,8 +207,8 @@ class AnalysisReportAdmin(admin.ModelAdmin):
         'foreman__name', 'foreman__username', 'unit_code', 
         'title_problem', 'part_no', 'part_name'
     ]
-    readonly_fields = ['created_at']
-    
+    readonly_fields = ['created_at', 'preview_dokumentasi_sebelum', 'preview_dokumentasi_sesudah']
+
     fieldsets = [
         ('Informasi Dasar', {
             'fields': (
@@ -240,7 +242,8 @@ class AnalysisReportAdmin(admin.ModelAdmin):
         }),
         ('Dokumentasi', {
             'fields': (
-                'dokumentasi_sebelum', 'dokumentasi_sesudah'
+                'preview_dokumentasi_sebelum',
+                'preview_dokumentasi_sesudah'
             )
         }),
         ('Status & Feedback', {
@@ -249,6 +252,40 @@ class AnalysisReportAdmin(admin.ModelAdmin):
             )
         })
     ]
+
+    def has_dokumentasi_sebelum(self, obj):
+        """Menampilkan apakah ada dokumentasi sebelum"""
+        return bool(obj.dokumentasi_sebelum_data)
+    has_dokumentasi_sebelum.boolean = True
+    has_dokumentasi_sebelum.short_description = "Dokumentasi Sebelum"
+
+    def has_dokumentasi_sesudah(self, obj):
+        """Menampilkan apakah ada dokumentasi sesudah"""
+        return bool(obj.dokumentasi_sesudah_data)
+    has_dokumentasi_sesudah.boolean = True
+    has_dokumentasi_sesudah.short_description = "Dokumentasi Sesudah"
+
+    def preview_dokumentasi_sebelum(self, obj):
+        """Menampilkan preview gambar dokumentasi sebelum"""
+        if obj.dokumentasi_sebelum_data:
+            data_url = obj.get_image_data_url('sebelum')
+            return format_html(
+                '<img src="{}" style="max-width: 200px; max-height: 200px;" />',
+                data_url
+            )
+        return "Tidak ada gambar"
+    preview_dokumentasi_sebelum.short_description = "Preview Dokumentasi Sebelum"
+
+    def preview_dokumentasi_sesudah(self, obj):
+        """Menampilkan preview gambar dokumentasi sesudah"""
+        if obj.dokumentasi_sesudah_data:
+            data_url = obj.get_image_data_url('sesudah')
+            return format_html(
+                '<img src="{}" style="max-width: 200px; max-height: 200px;" />',
+                data_url
+            )
+        return "Tidak ada gambar"
+    preview_dokumentasi_sesudah.short_description = "Preview Dokumentasi Sesudah"
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('foreman')

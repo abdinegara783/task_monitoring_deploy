@@ -1,0 +1,150 @@
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#f8f9fa"/>
+  
+  <!-- Title -->
+  <text x="600" y="30" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    DIAGRAM FISHBONE - ANALISIS MASALAH SITEPAT EXPRESS CABANG TIDAR
+  </text>
+  
+  <!-- Main spine (horizontal line) -->
+  <line x1="100" y1="400" x2="950" y2="400" stroke="#34495e" stroke-width="3"/>
+  
+  <!-- Problem box (fish head) -->
+  <rect x="950" y="350" width="200" height="100" fill="#e74c3c" stroke="#c0392b" stroke-width="2" rx="10"/>
+  <text x="1050" y="385" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="white">
+    MASALAH UTAMA:
+  </text>
+  <text x="1050" y="405" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="white">
+    Tingginya Komplain
+  </text>
+  <text x="1050" y="420" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="white">
+    Pelanggan &amp; Turnover
+  </text>
+  <text x="1050" y="435" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="white">
+    Karyawan Tinggi
+  </text>
+  
+  <!-- Main category bones - symmetric layout -->
+  <!-- Man/People (top left) -->
+  <line x1="200" y1="400" x2="150" y2="250" stroke="#2980b9" stroke-width="3"/>
+  <text x="135" y="240" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2980b9">MANUSIA</text>
+  
+  <!-- Method (top center) -->
+  <line x1="400" y1="400" x2="350" y2="250" stroke="#2980b9" stroke-width="3"/>
+  <text x="330" y="240" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2980b9">METODE</text>
+  
+  <!-- Environment (top right) -->
+  <line x1="600" y1="400" x2="650" y2="250" stroke="#2980b9" stroke-width="3"/>
+  <text x="665" y="240" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2980b9">LINGKUNGAN</text>
+  
+  <!-- Machine (bottom left) -->
+  <line x1="200" y1="400" x2="150" y2="550" stroke="#2980b9" stroke-width="3"/>
+  <text x="135" y="570" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2980b9">MESIN</text>
+  
+  <!-- Material (bottom center) -->
+  <line x1="400" y1="400" x2="350" y2="550" stroke="#2980b9" stroke-width="3"/>
+  <text x="330" y="570" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2980b9">MATERIAL</text>
+  
+  <!-- Measurement (bottom right) -->
+  <line x1="600" y1="400" x2="650" y2="550" stroke="#2980b9" stroke-width="3"/>
+  <text x="665" y="570" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2980b9">PENGUKURAN</text>
+  
+  <!-- Sub-causes for MANUSIA - organized vertically -->
+  <line x1="150" y1="250" x2="100" y2="200" stroke="#27ae60" stroke-width="2"/>
+  <text x="85" y="195" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Karyawan Baru</text>
+  <text x="85" y="208" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kurang Terlatih</text>
+  
+  <line x1="150" y1="250" x2="100" y2="230" stroke="#27ae60" stroke-width="2"/>
+  <text x="85" y="235" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Turnover Tinggi</text>
+  
+  <line x1="150" y1="250" x2="100" y2="260" stroke="#27ae60" stroke-width="2"/>
+  <text x="85" y="265" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Beban Kerja</text>
+  <text x="85" y="278" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Meningkat 75%</text>
+  
+  <!-- Sub-causes for METODE -->
+  <line x1="350" y1="250" x2="300" y2="200" stroke="#27ae60" stroke-width="2"/>
+  <text x="285" y="195" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Koordinasi Tidak</text>
+  <text x="285" y="208" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Optimal</text>
+  
+  <line x1="350" y1="250" x2="300" y2="230" stroke="#27ae60" stroke-width="2"/>
+  <text x="285" y="235" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Pengawasan</text>
+  <text x="285" y="248" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kurang Intensif</text>
+  
+  <line x1="350" y1="250" x2="400" y2="200" stroke="#27ae60" stroke-width="2"/>
+  <text x="405" y="195" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Proses Training</text>
+  <text x="405" y="208" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Tidak Memadai</text>
+  
+  <!-- Sub-causes for LINGKUNGAN -->
+  <line x1="650" y1="250" x2="600" y2="200" stroke="#27ae60" stroke-width="2"/>
+  <text x="585" y="195" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kondisi Kerja</text>
+  <text x="585" y="208" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Tidak Nyaman</text>
+  
+  <line x1="650" y1="250" x2="700" y2="200" stroke="#27ae60" stroke-width="2"/>
+  <text x="705" y="195" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Pandemi COVID-19</text>
+  <text x="705" y="208" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Tekanan Kerja</text>
+  
+  <line x1="650" y1="250" x2="700" y2="230" stroke="#27ae60" stroke-width="2"/>
+  <text x="705" y="235" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kapasitas Ruang</text>
+  <text x="705" y="248" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Tidak Sesuai</text>
+  
+  <!-- Sub-causes for MESIN -->
+  <line x1="150" y1="550" x2="100" y2="590" stroke="#27ae60" stroke-width="2"/>
+  <text x="85" y="595" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">AC Sering Rusak</text>
+  <text x="85" y="608" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">(2 bulan terakhir)</text>
+  
+  <line x1="150" y1="550" x2="200" y2="590" stroke="#27ae60" stroke-width="2"/>
+  <text x="205" y="595" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Peralatan Penunjang</text>
+  <text x="205" y="608" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kurang Memadai</text>
+  
+  <!-- Sub-causes for MATERIAL -->
+  <line x1="350" y1="550" x2="300" y2="590" stroke="#27ae60" stroke-width="2"/>
+  <text x="285" y="595" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Pengelompokan</text>
+  <text x="285" y="608" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Barang Tidak Tepat</text>
+  
+  <line x1="350" y1="550" x2="400" y2="590" stroke="#27ae60" stroke-width="2"/>
+  <text x="405" y="595" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Penanganan Paket</text>
+  <text x="405" y="608" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kurang Hati-hati</text>
+  
+  <!-- Sub-causes for PENGUKURAN -->
+  <line x1="650" y1="550" x2="600" y2="590" stroke="#27ae60" stroke-width="2"/>
+  <text x="585" y="595" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Monitoring Kinerja</text>
+  <text x="585" y="608" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Tidak Teratur</text>
+  
+  <line x1="650" y1="550" x2="700" y2="590" stroke="#27ae60" stroke-width="2"/>
+  <text x="705" y="595" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Sistem Pelaporan</text>
+  <text x="705" y="608" font-family="Arial, sans-serif" font-size="10" fill="#27ae60">Kurang Efektif</text>
+  
+  <!-- Data Komplain -->
+  <rect x="50" y="600" width="300" height="120" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="1" rx="5"/>
+  <text x="200" y="620" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    DATA KOMPLAIN PELANGGAN
+  </text>
+  <text x="60" y="640" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Juni 2020: 10 komplain</text>
+  <text x="60" y="655" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Juli 2020: 17 komplain</text>
+  <text x="60" y="670" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Agustus 2020: 30 komplain</text>
+  <text x="60" y="685" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• 3 komplain masuk media online nasional</text>
+  <text x="60" y="700" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Keluhan: pengiriman lambat &amp; paket rusak</text>
+  
+  <!-- Turnover Data -->
+  <rect x="400" y="600" width="300" height="120" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="1" rx="5"/>
+  <text x="550" y="620" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#2c3e50">
+    DATA TURNOVER KARYAWAN
+  </text>
+  <text x="410" y="640" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Juni: 1 admin + 2 sprinter keluar</text>
+  <text x="410" y="655" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Juli: 2 sprinter keluar</text>
+  <text x="410" y="670" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Agustus: 1 staf gudang + 3 sprinter keluar</text>
+  <text x="410" y="685" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Total penambahan: 10 karyawan baru</text>
+  <text x="410" y="700" font-family="Arial, sans-serif" font-size="10" fill="#2c3e50">• Peningkatan order: 75% vs tahun lalu</text>
+  
+  <!-- Priority Recommendation -->
+  <rect x="750" y="600" width="400" height="120" fill="#f39c12" stroke="#e67e22" stroke-width="2" rx="5"/>
+  <text x="950" y="620" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="white">
+    REKOMENDASI PRIORITAS PENYELESAIAN
+  </text>
+  <text x="760" y="640" font-family="Arial, sans-serif" font-size="10" fill="white">1. MANUSIA: Pelatihan intensif untuk karyawan baru</text>
+  <text x="760" y="655" font-family="Arial, sans-serif" font-size="10" fill="white">2. METODE: Perbaikan sistem koordinasi &amp; pengawasan</text>
+  <text x="760" y="670" font-family="Arial, sans-serif" font-size="10" fill="white">3. LINGKUNGAN: Perbaikan kondisi kerja (AC, ruang)</text>
+  <text x="760" y="685" font-family="Arial, sans-serif" font-size="10" fill="white">4. PENGUKURAN: Sistem monitoring kinerja berkala</text>
+  <text x="760" y="700" font-family="Arial, sans-serif" font-size="10" fill="white">5. MATERIAL: SOP penanganan &amp; pengelompokan paket</text>
+</svg>

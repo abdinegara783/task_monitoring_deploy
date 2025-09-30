@@ -1,4 +1,3 @@
-# Remove unused 'email' import
 from typing import Required
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -43,13 +42,13 @@ class LeaderQuotaForm(forms.ModelForm):
     def clean_leader_username(self):
         username = self.cleaned_data.get("leader_username")
         if username:
-            # Cek apakah username sudah digunakan di User
+            # Check if username already exists in User model
             if User.objects.filter(username=username).exists():
                 raise forms.ValidationError(
                     "Username ini sudah digunakan oleh user lain."
                 )
 
-            # Cek apakah username sudah ada di kuota lain (untuk edit)
+            # Check if username already exists in other LeaderQuota instances
             if self.instance.pk:
                 existing = LeaderQuota.objects.filter(leader_username=username).exclude(
                     pk=self.instance.pk
@@ -163,10 +162,8 @@ class RegisterForm(UserCreationForm):
         return user
 
 
-# NEW: Form untuk Admin menambah karyawan
 class EmployeeRegistrationForm(forms.ModelForm):
-    """Form untuk admin mendaftarkan karyawan baru"""
-
+    # Password fields (optional for editing)
     password1 = forms.CharField(
         label="Password",
         required=False,
@@ -188,7 +185,7 @@ class EmployeeRegistrationForm(forms.ModelForm):
         ),
     )
 
-    # Custom field untuk leader dengan informasi kuota
+    # Leader field with dynamic queryset
     leader = forms.ModelChoiceField(
         queryset=User.objects.none(),  # Will be set in __init__
         required=False,
@@ -267,7 +264,7 @@ class EmployeeRegistrationForm(forms.ModelForm):
             "department": forms.TextInput(
                 attrs={
                     "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
-                    "placeholder": "Departemen/Divisi",
+                    "placeholder": "Departemen",
                 }
             ),
             "shift": forms.Select(
@@ -276,102 +273,58 @@ class EmployeeRegistrationForm(forms.ModelForm):
                 }
             ),
         }
-        labels = {
-            "username": "Username",
-            "email": "Email",
-            "first_name": "Nama Depan",
-            "last_name": "Nama Belakang",
-            "name": "Nama Lengkap",
-            "phone": "Nomor Telepon",
-            "nrp": "NRP",
-            "role": "Role/Jabatan",
-            "department": "Departemen",
-            "shift": "Shift Kerja",
-        }
 
-    def clean_password2(self):
-        password1 = self.cleaned_data.get("password1")
-        password2 = self.cleaned_data.get("password2")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set queryset for leader field to only include users with 'leader' role
+        self.fields["leader"].queryset = User.objects.filter(role="leader")
 
+        # If editing existing user, make username readonly
+        if self.instance.pk:
+            self.fields["username"].widget.attrs["readonly"] = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        # Only validate passwords if they are provided
         if password1 or password2:
-            if not password1:
-                raise forms.ValidationError(
-                    "Password harus diisi jika ingin mengubah password"
-                )
-            if not password2:
-                raise forms.ValidationError("Konfirmasi password harus diisi")
             if password1 != password2:
-                raise forms.ValidationError("Password tidak cocok")
-        return password2
+                raise forms.ValidationError("Password dan konfirmasi password tidak cocok.")
+
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        password = self.cleaned_data.get("password1")
 
-        # Hanya update password jika diisi
-        password1 = self.cleaned_data.get("password1")
-        if password1:
-            user.set_password(password1)
+        # Only set password if provided
+        if password:
+            user.set_password(password)
 
         if commit:
             user.save()
         return user
 
 
-class ActivityReportInitialForm(forms.ModelForm):
-    """Form untuk input data awal: NRP, Section, Date"""
-    
-    class Meta:
-        model = ActivityReport
-        fields = ["nrp", "section", "date"]
-        widgets = {
-            "nrp": forms.TextInput(
-                attrs={
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                    "placeholder": "Masukkan NRP (Nomor Registrasi Pegawai)",
-                }
-            ),
-            "section": forms.Select(
-                attrs={
-                    "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                }
-            ),
-            "date": forms.DateInput(
-                attrs={
-                    "type": "date",
-                    "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                }
-            ),
-        }
-        labels = {
-            "nrp": "NRP (Nomor Registrasi Pegawai)",
-            "section": "Section/Track",
-            "date": "Tanggal Laporan",
-        }
-
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        
-        # Auto-fill NRP from user if available
-        if user and user.nrp:
-            self.fields['nrp'].initial = user.nrp
-            self.fields['nrp'].widget.attrs['readonly'] = True
-
-
 class ActivityReportDetailForm(forms.ModelForm):
-    """Form untuk detail aktivitas individual"""
-    
     class Meta:
         model = ActivityReportDetail
         fields = [
-            "unit_code", "hm_km", "start_time", "stop_time", 
-            "component", "activities", "activity_code"
+            "unit_code",
+            "hm_km",
+            "start_time",
+            "stop_time",
+            "component",
+            "activities",
+            "activity_code",
         ]
         widgets = {
             "unit_code": forms.TextInput(
                 attrs={
                     "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
-                    "placeholder": "UNIT CODE",
+                    "placeholder": "Unit Code",
                 }
             ),
             "hm_km": forms.TextInput(
@@ -412,7 +365,7 @@ class ActivityReportDetailForm(forms.ModelForm):
         }
 
 
-# Formset untuk menangani multiple activities (maksimal 5)
+# Create the formset
 ActivityReportDetailFormSet = forms.inlineformset_factory(
     ActivityReport,
     ActivityReportDetail,
@@ -426,13 +379,9 @@ ActivityReportDetailFormSet = forms.inlineformset_factory(
 )
 
 
-# Legacy ActivityReportForm - will be deprecated
-# This form is commented out because the model structure has changed
-# Use ActivityReportInitialForm and ActivityReportDetailFormSet instead
-
-
+# Form untuk step 1 analysis report
 class AnalysisReportForm(forms.ModelForm):
-    """Form untuk analysis report - step 1 (basic info)"""
+    """Form untuk step 1 analysis report"""
 
     class Meta:
         model = AnalysisReport
@@ -474,9 +423,7 @@ class AnalysisReportForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-        # Set default values
         self.fields["report_date"].initial = timezone.now().date()
-        self.fields["WO_date"].initial = timezone.now().date()
         self.fields["Trouble_date"].initial = timezone.now().date()
         if user:
             self.fields["email"].initial = user.email
@@ -484,6 +431,29 @@ class AnalysisReportForm(forms.ModelForm):
 
 class AnalysisReportExtendedForm(forms.ModelForm):
     """Form untuk field tambahan analysis report - step 2"""
+    
+    # Custom fields untuk upload gambar
+    dokumentasi_sebelum = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(
+            attrs={
+                "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", 
+                "accept": "image/*"
+            }
+        ),
+        label="Dokumentasi Sebelum (Max 1MB)"
+    )
+    
+    dokumentasi_sesudah = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(
+            attrs={
+                "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", 
+                "accept": "image/*"
+            }
+        ),
+        label="Dokumentasi Sesudah (Max 1MB)"
+    )
 
     class Meta:
         model = AnalysisReport
@@ -498,8 +468,6 @@ class AnalysisReportExtendedForm(forms.ModelForm):
             "faktor_environment",
             "tindakan_dilakukan",
             "tindakan_pencegahan",
-            "dokumentasi_sebelum",
-            "dokumentasi_sesudah",
         ]
         widgets = {
             "nama_fungsi_komponen": forms.Textarea(
@@ -536,12 +504,6 @@ class AnalysisReportExtendedForm(forms.ModelForm):
                     "class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
                     "placeholder": "Jelaskan tindakan pencegahan untuk mencegah masalah serupa...",
                 }
-            ),
-            "dokumentasi_sebelum": forms.FileInput(
-                attrs={"class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", "accept": "image/*,.pdf,.dwg"}
-            ),
-            "dokumentasi_sesudah": forms.FileInput(
-                attrs={"class": "block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200", "accept": "image/*,.pdf,.dwg"}
             ),
             # Textarea styling untuk faktor 4M1E
             "faktor_man": forms.Textarea(
@@ -591,23 +553,39 @@ class AnalysisReportExtendedForm(forms.ModelForm):
             "faktor_environment": "Environment (Lingkungan)",
             "tindakan_dilakukan": "Tindakan yang Dilakukan",
             "tindakan_pencegahan": "Tindakan Pencegahan",
-            "dokumentasi_sebelum": "Dokumentasi Sebelum (Max 1MB)",
-            "dokumentasi_sesudah": "Dokumentasi Sesudah (Max 1MB)",
         }
-
+    
     def clean_dokumentasi_sebelum(self):
-        file = self.cleaned_data.get("dokumentasi_sebelum")
-        if file:
-            if file.size > 1024 * 1024:  # 1MB
-                raise forms.ValidationError("File size tidak boleh lebih dari 1MB")
-        return file
-
+        image = self.cleaned_data.get('dokumentasi_sebelum')
+        if image:
+            if image.size > 1024 * 1024:  # 1MB
+                raise forms.ValidationError("Ukuran file tidak boleh lebih dari 1MB")
+        return image
+    
     def clean_dokumentasi_sesudah(self):
-        file = self.cleaned_data.get("dokumentasi_sesudah")
-        if file:
-            if file.size > 1024 * 1024:  # 1MB
-                raise forms.ValidationError("File size tidak boleh lebih dari 1MB")
-        return file
+        image = self.cleaned_data.get('dokumentasi_sesudah')
+        if image:
+            if image.size > 1024 * 1024:  # 1MB
+                raise forms.ValidationError("Ukuran file tidak boleh lebih dari 1MB")
+        return image
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Handle image uploads
+        dokumentasi_sebelum = self.cleaned_data.get('dokumentasi_sebelum')
+        dokumentasi_sesudah = self.cleaned_data.get('dokumentasi_sesudah')
+        
+        if dokumentasi_sebelum:
+            instance.save_image_to_database(dokumentasi_sebelum, 'sebelum')
+        
+        if dokumentasi_sesudah:
+            instance.save_image_to_database(dokumentasi_sesudah, 'sesudah')
+        
+        if commit:
+            instance.save()
+        
+        return instance
 
 
 class RoleBasedUserCreationForm(forms.ModelForm):
@@ -656,57 +634,43 @@ class RoleBasedUserCreationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filter leader choices untuk yang memiliki kuota tersedia
-        available_leaders = User.objects.filter(
-            role="leader",
-            leader_quota__isnull=False,
-            leader_quota__is_active=True,
-        ).filter(
-            models.Q(  # noqa: F821
-                leader_quota__current_foreman_count__lt=models.F(  # noqa: F821
-                    "leader_quota__max_foreman"
-                )
-            )
-        )
+        # Set queryset for leader field
+        self.fields["leader"].queryset = User.objects.filter(role="leader")
 
-        self.fields["leader"].queryset = available_leaders
-        self.fields["leader"].required = False
+        # Make leader field conditional based on role
+        if "role" in self.data:
+            role = self.data.get("role")
+            if role != "foreman":
+                self.fields["leader"].required = False
+                self.fields["leader"].widget = forms.HiddenInput()
 
     def clean(self):
         cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2:
+            if password1 != password2:
+                raise forms.ValidationError("Password dan konfirmasi password tidak cocok.")
+
+        # Validate leader field for foreman role
         role = cleaned_data.get("role")
         leader = cleaned_data.get("leader")
 
-        if role == "foreman":
-            if not leader:
-                raise forms.ValidationError("Foreman harus memiliki leader.")
-
-            # Validasi kuota leader
-            if leader.leader_quota and not leader.leader_quota.can_add_foreman():
-                raise forms.ValidationError(
-                    f"Leader {leader.name} sudah mencapai kuota maksimum foreman."
-                )
-
-        elif role == "leader":
-            if leader:
-                raise forms.ValidationError("Leader tidak boleh memiliki leader.")
+        if role == "foreman" and not leader:
+            raise forms.ValidationError({"leader": "Leader harus dipilih untuk role foreman."})
 
         return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
+        password = self.cleaned_data.get("password1")
+
+        if password:
+            user.set_password(password)
 
         if commit:
             user.save()
-
-            # Jika membuat leader baru, buat LeaderQuota
-            if user.role == "leader":
-                LeaderQuota.objects.get_or_create(
-                    leader_name=user.name or user.username,
-                    defaults={"max_foreman": 0},  # Admin harus set kuota manual
-                )
-
         return user
 
 

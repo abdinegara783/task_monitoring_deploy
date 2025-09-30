@@ -8,6 +8,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from django.http import HttpResponse
 from django.conf import settings
 from datetime import datetime, timedelta
+from io import BytesIO
 import os
 
 class PDFReportService:
@@ -46,6 +47,14 @@ class PDFReportService:
             spaceAfter=10,
             alignment=TA_CENTER,
             textColor=colors.blue
+        )
+        
+        # Cell Style for table content
+        self.cell_style = ParagraphStyle(
+            'CellStyle',
+            parent=self.styles['Normal'],
+            fontSize=6,
+            fontName='Helvetica'
         )
     
     def generate_activity_reports_pdf(self, reports, date_range=None):
@@ -206,9 +215,9 @@ class PDFReportService:
         """Add main activity table dengan data yang rapi - Updated for new ActivityReport model"""
         elements = []
         
-        # Table headers - Updated to match new structure
+        # Table headers - Updated to remove NRP column
         headers = [
-            'NO', 'TANGGAL', 'NRP', 'SECTION', 'START', 'STOP', 
+            'NO', 'TANGGAL', 'SECTION', 'START', 'STOP', 
             'UNIT\nCODE', 'COMPONENT', 'ACTIVITIES', 'STATUS'
         ]
         
@@ -229,18 +238,19 @@ class PDFReportService:
                         stop_time = activity.stop_time.strftime('%H:%M') if activity.stop_time else ''
                         unit_code = activity.unit_code or ''
                         component = activity.get_component_display() or ''
-                        activities_desc = (activity.activities[:25] + '...') if len(activity.activities or '') > 25 else (activity.activities or '')
+                        # Gunakan Paragraph untuk text wrapping yang lebih baik
+                        activities_text = activity.activities or ''
+                        activities_paragraph = Paragraph(activities_text, self.cell_style)
                         
                         table_data.append([
                             str(row_num),
                             report.date.strftime('%d/%m/%Y'),
-                            report.nrp or '',
                             report.get_section_display() or '',
                             start_time,
                             stop_time,
                             unit_code,
                             component,
-                            activities_desc,
+                            activities_paragraph,
                             report.get_status_display()
                         ])
                         row_num += 1
@@ -249,7 +259,6 @@ class PDFReportService:
                     table_data.append([
                         str(row_num),
                         report.date.strftime('%d/%m/%Y'),
-                        report.nrp or '',
                         report.get_section_display() or '',
                         '',
                         '',
@@ -262,19 +271,18 @@ class PDFReportService:
         else:
             # Add empty rows if no reports
             for i in range(1, 6):
-                table_data.append([str(i), '', '', '', '', '', '', '', '', ''])
+                table_data.append([str(i), '', '', '', '', '', '', '', ''])
         
-        # Create table dengan column widths yang proporsional - Updated for new columns
+        # Create table dengan column widths yang proporsional - Updated to remove NRP column
         table = Table(table_data, colWidths=[
             0.3*inch,   # NO
             0.8*inch,   # TANGGAL
-            0.6*inch,   # NRP
             0.8*inch,   # SECTION
             0.5*inch,   # START
             0.5*inch,   # STOP
             0.7*inch,   # UNIT CODE
             0.9*inch,   # COMPONENT
-            2.0*inch,   # ACTIVITIES
+            2.5*inch,   # ACTIVITIES - diperbesar untuk menampung text yang lebih panjang
             0.7*inch    # STATUS
         ])
         
@@ -300,8 +308,9 @@ class PDFReportService:
             # Alternating row colors
             ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F8F9FA')]),
             
-            # Left align for text columns
+            # Left align for text columns and enable text wrapping
             ('ALIGN', (8, 1), (8, -1), 'LEFT'),  # ACTIVITIES column
+            ('VALIGN', (8, 1), (8, -1), 'TOP'),  # ACTIVITIES column - align to top for better readability
         ]))
         
         elements.append(table)
@@ -399,6 +408,23 @@ class PDFReportService:
             except:
                 return 0.0
         return 0.0
+    
+    def _create_image_from_binary(self, image_data, max_width=60*mm, max_height=40*mm):
+        """Create ReportLab Image from binary data with size constraints"""
+        if not image_data:
+            return None
+        
+        try:
+            # Create BytesIO object from binary data
+            image_stream = BytesIO(image_data)
+            
+            # Create Image object with size constraints
+            img = Image(image_stream, width=max_width, height=max_height)
+            img.hAlign = 'CENTER'
+            return img
+        except Exception as e:
+            print(f"Error creating image from binary data: {e}")
+            return None
     
     def _calculate_duration(self, start_time, end_time):
         """Calculate duration between start and end time"""
@@ -1136,7 +1162,7 @@ class PDFReportService:
             ]))
             elements.append(content_table)
         
-        # 8. DOCUMENTATION SECTION - Two equal columns
+        # 8. DOCUMENTATION SECTION - Two equal columns with actual images
         doc_header_data = [['DOKUMENTASI SEBELUM', 'DOKUMENTASI SESUDAH']]
         doc_header_table = Table(doc_header_data, colWidths=[page_width/2, page_width/2])
         doc_header_table.setStyle(TableStyle([
@@ -1149,18 +1175,38 @@ class PDFReportService:
         ]))
         elements.append(doc_header_table)
         
-        dokumentasi_sebelum = report.dokumentasi_sebelum if hasattr(report, 'dokumentasi_sebelum') and report.dokumentasi_sebelum else '<<DOKUMENTASI SEBELUM>>'
-        dokumentasi_sesudah = report.dokumentasi_sesudah if hasattr(report, 'dokumentasi_sesudah') and report.dokumentasi_sesudah else '<<DOKUMENTASI SESUDAH>>'
+        # Create images from binary data or use placeholder text
+        dokumentasi_sebelum_content = '<<DOKUMENTASI SEBELUM>>'
+        dokumentasi_sesudah_content = '<<DOKUMENTASI SESUDAH>>'
         
-        doc_content_data = [[dokumentasi_sebelum, dokumentasi_sesudah]]
+        # Try to get images from BinaryField data - dengan ukuran 2x lipat
+        if hasattr(report, 'dokumentasi_sebelum_data') and report.dokumentasi_sebelum_data:
+            sebelum_img = self._create_image_from_binary(
+                report.dokumentasi_sebelum_data, 
+                max_width=page_width/2 - 10*mm, 
+                max_height=50*mm  # Diperbesar dari 20mm ke 50mm (2.5x lipat)
+            )
+            if sebelum_img:
+                dokumentasi_sebelum_content = sebelum_img
+        
+        if hasattr(report, 'dokumentasi_sesudah_data') and report.dokumentasi_sesudah_data:
+            sesudah_img = self._create_image_from_binary(
+                report.dokumentasi_sesudah_data, 
+                max_width=page_width/2 - 10*mm, 
+                max_height=50*mm  # Diperbesar dari 20mm ke 50mm (2.5x lipat)
+            )
+            if sesudah_img:
+                dokumentasi_sesudah_content = sesudah_img
+        
+        doc_content_data = [[dokumentasi_sebelum_content, dokumentasi_sesudah_content]]
         doc_content_table = Table(doc_content_data,
                                 colWidths=[page_width/2, page_width/2],
-                                rowHeights=[25*mm])
+                                rowHeights=[55*mm])  # Diperbesar dari 25mm ke 55mm untuk menampung gambar yang lebih besar
         doc_content_table.setStyle(TableStyle([
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('FONTSIZE', (0, 0), (-1, -1), 6),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         elements.append(doc_content_table)
         
