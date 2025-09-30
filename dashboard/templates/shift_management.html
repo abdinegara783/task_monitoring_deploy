@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- Page Header with Black Background and Back Button -->
+<div class="bg-black text-white py-6 mb-8">
+    <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'admin_dashboard' %}" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Kembali
+                </a>
+                <div>
+                    <h1 class="text-3xl font-semibold">{{ title }}</h1>
+                    <p class="text-gray-300 mt-1">Kelola shift kerja untuk semua foreman</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4">
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="{% if message.tags == 'success' %}bg-green-100 border-green-400 text-green-700{% else %}bg-red-100 border-red-400 text-red-700{% endif %} border px-4 py-3 rounded mb-4" role="alert">
+                {{ message }}
+                <button type="button" class="float-right text-xl leading-none font-semibold" onclick="this.parentElement.style.display='none'">&times;</button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if foremen %}
+        <!-- Table Layout -->
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Foreman</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NRP</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shift Saat Ini</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubah Shift</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for foreman in foremen %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ foreman.name }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">{{ foreman.nrp|default:"Tidak ada" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-500">{{ foreman.email }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    {% if foreman.shift == 1 %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {% if foreman.shift == 1 %}Shift 1{% else %}Shift 2{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <form method="post" class="shift-form inline-flex items-center gap-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="foreman_id" value="{{ foreman.id }}">
+                                    <select name="shift" class="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                        <option value="">Pilih Shift</option>
+                                        {% for value, label in shift_choices %}
+                                            <option value="{{ value }}" {% if foreman.shift == value %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                        Update
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center py-16 text-gray-600">
+            <h3 class="text-xl font-semibold mb-2">Tidak ada foreman yang terdaftar</h3>
+            <p>Silakan tambahkan foreman terlebih dahulu melalui menu manajemen user.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add confirmation for shift updates
+    const forms = document.querySelectorAll('.shift-form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const foremanName = this.closest('.shift-card').querySelector('.foreman-name').textContent;
+            const selectedShift = this.querySelector('select[name="shift"]').selectedOptions[0].textContent;
+            
+            if (!confirm(`Apakah Anda yakin ingin mengubah shift ${foremanName} ke ${selectedShift}?`)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

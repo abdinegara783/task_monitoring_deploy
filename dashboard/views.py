@@ -816,6 +816,52 @@ def foreman_reports(request):
 
     return render(request, "foreman/reports_list.html", context)
 
+# Simple Shift Management Views
+@login_required
+@role_required(["admin", "superadmin"])
+def shift_management(request):
+    """View sederhana untuk mengelola shift foreman"""
+    # Get all foremen
+    foremen = User.objects.filter(role='foreman').order_by('name')
+    
+    # Handle POST request for updating shifts
+    if request.method == 'POST':
+        foreman_id = request.POST.get('foreman_id')
+        new_shift = request.POST.get('shift')
+        
+        if foreman_id and new_shift:
+            try:
+                foreman = User.objects.get(id=foreman_id, role='foreman')
+                # Update foreman's shift in database
+                foreman.shift = int(new_shift)
+                foreman.save()
+                
+                shift_name = "Shift 1" if int(new_shift) == 1 else "Shift 2"
+                messages.success(request, f'Shift untuk {foreman.name} berhasil diubah ke {shift_name}.')
+            except User.DoesNotExist:
+                messages.error(request, 'Foreman tidak ditemukan.')
+            except ValueError:
+                messages.error(request, 'Nilai shift tidak valid.')
+        else:
+            messages.error(request, 'Data tidak lengkap.')
+        
+        return redirect('shift_management')
+    
+    # Define available shifts (sesuai dengan model User)
+    shift_choices = [
+        (1, 'Shift 1'),
+        (2, 'Shift 2'),
+    ]
+    
+    context = {
+        'foremen': foremen,
+        'shift_choices': shift_choices,
+        'title': 'Manajemen Shift Foreman'
+    }
+    
+    return render(request, 'shift_management.html', context)
+
+
 @login_required
 @role_required(["admin", "superadmin"])
 def create_user_with_role(request):
@@ -1605,6 +1651,7 @@ def mark_all_notifications_read(request):
             'success': False,
             'message': f'Terjadi kesalahan: {str(e)}'
         }, status=500)
+
 
 @login_required
 @require_http_methods(["POST"])

@@ -17,6 +17,7 @@ urlpatterns = [
         name="admin_delete",
     ),
     path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'),
+    path('superadmin/shift-management/', views.shift_management, name='shift_management'),
     # Foreman URLs
     path("mekanik/", views.foreman_dashboard, name="foreman_dashboard"),
     path("mekanik/reports/", views.foreman_reports, name="foreman_reports"),
