@@ -10,10 +10,24 @@
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         border: 1px solid #e5e7eb;
+        background: #ffffff;
     }
     .notification-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    .notification-card p {
+        color: #374151 !important;
+        font-weight: 600;
+    }
+    .notification-card .text-gray-600 {
+        color: #4b5563 !important;
+        font-weight: 600;
+    }
+    .notification-card .text-3xl {
+        color: inherit !important;
+        font-weight: 800;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
     }
     .stat-card {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -40,7 +54,7 @@
         z-index: 1;
     }
     .badge-success {
-        background: linear-gradient(135deg, #10b981, #059669);
+        background: linear-gradient(135deg, #059669, #047857);
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 20px;
@@ -48,9 +62,10 @@
         font-size: 0.875rem;
         display: inline-flex;
         align-items: center;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     }
     .badge-warning {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+        background: linear-gradient(135deg, #d97706, #b45309);
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 20px;
@@ -58,9 +73,10 @@
         font-size: 0.875rem;
         display: inline-flex;
         align-items: center;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     }
     .badge-danger {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
         color: white;
         padding: 0.5rem 1rem;
         border-radius: 20px;
@@ -68,28 +84,31 @@
         font-size: 0.875rem;
         display: inline-flex;
         align-items: center;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
     }
     .broadcast-section {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: #ffffff;
+        border: 3px solid #374151;
         border-radius: 20px;
         padding: 2rem;
-        color: white;
+        color: #111827;
         position: relative;
         overflow: hidden;
-    }
-    .broadcast-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     .broadcast-content {
         position: relative;
         z-index: 1;
+    }
+    .broadcast-content h3 {
+        color: #111827 !important;
+        font-weight: 800;
+        text-shadow: none;
+    }
+    .broadcast-content p {
+        color: #374151 !important;
+        font-weight: 600;
+        text-shadow: none;
     }
     .table-modern {
         border-radius: 12px;
@@ -97,13 +116,28 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     .table-modern thead {
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        background: linear-gradient(135deg, #1e40af, #581c87);
         color: white;
     }
+    .table-modern thead th {
+        color: #ffffff !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        font-weight: 600;
+    }
     .table-modern tbody tr:hover {
-        background-color: #f8fafc;
+        background-color: #f1f5f9;
         transform: scale(1.01);
         transition: all 0.2s ease;
+    }
+    .table-modern tbody td {
+        color: #1f2937 !important;
+    }
+    .table-modern tbody .text-gray-900 {
+        color: #111827 !important;
+        font-weight: 600;
+    }
+    .table-modern tbody .text-gray-500 {
+        color: #6b7280 !important;
     }
     .success-alert {
         background: linear-gradient(135deg, #d1fae5, #a7f3d0);
@@ -113,25 +147,48 @@
         margin-bottom: 2rem;
     }
     .header-gradient {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        color: #1f2937;
         padding: 2rem;
         border-radius: 20px;
         margin-bottom: 2rem;
+        position: relative;
+        border: 2px solid #d1d5db;
+    }
+    .header-gradient h1 {
+        color: #111827 !important;
+        font-weight: 800;
+        text-shadow: none;
+    }
+    .header-gradient p {
+        color: #374151 !important;
+        font-weight: 600;
+        text-shadow: none;
+    }
+    .header-gradient .text-right p {
+        color: #374151 !important;
+        font-weight: 600;
+        text-shadow: none;
+    }
+    .header-gradient .text-white {
+        color: #111827 !important;
+        font-weight: 700;
+        text-shadow: none;
     }
     .btn-broadcast {
-        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        background: #111827;
         color: white;
-        border: none;
+        border: 2px solid #374151;
         padding: 0.75rem 2rem;
         border-radius: 25px;
-        font-weight: 600;
+        font-weight: 700;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
+        box-shadow: 0 4px 15px rgba(17, 24, 39, 0.4);
     }
     .btn-broadcast:hover {
+        background: #374151;
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(238, 90, 36, 0.6);
+        box-shadow: 0 8px 25px rgba(17, 24, 39, 0.6);
         color: white;
     }
     .loading-spinner {
@@ -160,11 +217,6 @@
                     <i data-lucide="bell-ring" class="w-8 h-8 inline mr-3"></i>
                     Pusat Notifikasi
                 </h1>
-                <p class="text-blue-100">Kelola dan kirim notifikasi kepada mekanik</p>
-            </div>
-            <div class="text-right">
-                <p class="text-blue-100 text-sm">{{ today|date:"l, d F Y" }}</p>
-                <p class="text-white font-semibold">{{ request.user.get_full_name }}</p>
             </div>
         </div>
     </div>
@@ -267,10 +319,6 @@
                         <i data-lucide="megaphone" class="w-6 h-6 inline mr-2"></i>
                         Kirim Notifikasi Pengingat
                     </h3>
-                    <p class="text-blue-100 mb-4">
-                        Ada {{ foremen_missing_count }} mekanik yang belum mengisi activity report hari ini.
-                        Kirim notifikasi pengingat kepada mereka?
-                    </p>
                 </div>
                 <div>
                     <form method="post" action="{% url 'broadcast_notification' %}" id="broadcastForm">

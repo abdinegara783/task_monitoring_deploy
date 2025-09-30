@@ -137,7 +137,7 @@
                                 {{ report.start_time }} - {{ report.end_time }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ report.Unit_Code|default:"-" }}
+                                {{ report.unit_code|default:"-" }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ report.get_component_display|default:report.component|default:"-" }}
@@ -146,7 +146,7 @@
                                 {{ report.get_leader_display|default:report.leader|default:"-" }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <!-- <button onclick="showReportDetail('{{ report.id }}', '{{ report.date|date:'d M Y'}}', '{{ report.start_time }}', '{{ report.end_time }}', '{{ report.Unit_Code }}', '{{ report.component }}', '{{ report.activities|escapejs }}', '{{ report.leader }}', '{{ report.Hmkm }}', '{{ report.activities_code }}')" 
+                                <!-- <button onclick="showReportDetail('{{ report.id }}', '{{ report.date|date:'d M Y'}}', '{{ report.start_time }}', '{{ report.end_time }}', '{{ report.unit_code }}', '{{ report.component }}', '{{ report.activities|escapejs }}', '{{ report.leader }}', '{{ report.Hmkm }}', '{{ report.activities_code }}')" 
                                         class="text-blue-600 hover:text-blue-900 transition-colors">
                                     Lihat Detail
                                 </button> -->

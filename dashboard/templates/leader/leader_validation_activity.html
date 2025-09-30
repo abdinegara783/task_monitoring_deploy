@@ -95,7 +95,13 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Unit Code</label>
                         <div class="p-3 bg-gray-50 rounded-lg">
-                            <p class="text-sm font-medium">{{ report.Unit_Code|default:'Tidak ada unit code' }}</p>
+                            <p class="text-sm font-medium">
+                                {% if report.activities.exists %}
+                                    {{ report.activities.first.unit_code|default:'Tidak ada unit code' }}
+                                {% else %}
+                                    Tidak ada unit code
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
 
@@ -109,14 +115,26 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Komponen</label>
                         <div class="p-3 bg-gray-50 rounded-lg">
-                            <p class="text-sm font-medium">{{ report.get_component_display|default:'Tidak ada komponen' }}</p>
+                            <p class="text-sm font-medium">
+                                {% if report.activities.exists %}
+                                    {{ report.activities.first.component|default:'Tidak ada komponen' }}
+                                {% else %}
+                                    Tidak ada komponen
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kode Aktivitas</label>
                         <div class="p-3 bg-gray-50 rounded-lg">
-                            <p class="text-sm font-medium">{{ report.get_activities_code_display|default:'Tidak ada kode aktivitas' }}</p>
+                            <p class="text-sm font-medium">
+                                {% if report.activities.exists %}
+                                    {{ report.activities.first.activity_code|default:'Tidak ada kode aktivitas' }}
+                                {% else %}
+                                    Tidak ada kode aktivitas
+                                {% endif %}
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -125,9 +143,38 @@
             <!-- Activities Description -->
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Deskripsi Aktivitas</h3>
-                <div class="p-4 bg-gray-50 rounded-lg border">
-                    <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ report.activities|default:'Tidak ada deskripsi aktivitas' }}</p>
-                </div>
+                {% if report.activities.exists %}
+                    {% for activity in report.activities.all %}
+                    <div class="p-4 bg-gray-50 rounded-lg border mb-4 {% if not forloop.last %}mb-4{% endif %}">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-md font-medium text-gray-800">Aktivitas {{ forloop.counter }}</h4>
+                            <span class="text-xs text-gray-500">{{ activity.created_at|date:"d M Y H:i" }}</span>
+                        </div>
+                        <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ activity.activity_description|default:'Tidak ada deskripsi aktivitas' }}</p>
+                        
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                <div>
+                                    <span class="font-medium text-gray-600">Komponen:</span>
+                                    <span class="ml-1">{{ activity.component|default:'-' }}</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-600">Kode:</span>
+                                    <span class="ml-1">{{ activity.activity_code|default:'-' }}</span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-600">HM/KM:</span>
+                                    <span class="ml-1">{{ activity.hm_km|default:'-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-4 bg-gray-50 rounded-lg border">
+                        <p class="text-sm leading-relaxed text-gray-500">Tidak ada deskripsi aktivitas</p>
+                    </div>
+                {% endif %}
             </div>
 
             <!-- Current Status -->
@@ -272,7 +319,7 @@ Buat template sederhana untuk debug:
     <p>Foreman Username: {{ report.foreman.username }}</p>
     <p>Date: {{ report.date }}</p>
     <p>Status: {{ report.status }}</p>
-    <p>Unit Code: {{ report.Unit_Code }}</p>
+    <p>Unit Code: {{ report.unit_code }}</p>
     <p>Activities: {{ report.activities }}</p>
     
     <h2>All Report Fields:</h2>
@@ -283,7 +330,7 @@ Buat template sederhana untuk debug:
         <li>Shift: {{ report.shift|default:'NONE' }}</li>
         <li>Start Time: {{ report.start_time|default:'NONE' }}</li>
         <li>End Time: {{ report.end_time|default:'NONE' }}</li>
-        <li>Unit Code: {{ report.Unit_Code|default:'NONE' }}</li>
+        <li>Unit Code: {{ report.unit_code|default:'NONE' }}</li>
         <li>HM/KM: {{ report.Hmkm|default:'NONE' }}</li>
         <li>Component: {{ report.component|default:'NONE' }}</li>
         <li>Activities: {{ report.activities|default:'NONE' }}</li>

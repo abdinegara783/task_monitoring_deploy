@@ -202,7 +202,7 @@ class Command(BaseCommand):
                     start_time=start_time,
                     end_time=end_time,
                     activities=f'Performed maintenance work on {random.choice(["engine", "hydraulic system", "transmission", "brake system"])}',
-                    Unit_Code=f'HD{random.randint(100, 999)}',
+                    unit_code=f'HD{random.randint(100, 999)}',
                     Hmkm=f'{random.randint(1000, 5000)}',
                     component=random.choice([
                         'Component_1',  # Engine

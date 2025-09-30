@@ -51,7 +51,13 @@
                     </div>
                     <div>
                         <span class="text-sm font-medium text-gray-700">Unit Code:</span>
-                        <span class="ml-2 text-sm text-gray-900">{{ report.Unit_Code|default:'-' }}</span>
+                        <span class="ml-2 text-sm text-gray-900">
+                            {% if report.activities.exists %}
+                                {{ report.activities.first.unit_code|default:'-' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </span>
                     </div>
                     <div>
                         <span class="text-sm font-medium text-gray-700">HM/KM:</span>
@@ -76,28 +82,58 @@
     <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4">Detail Aktivitas</h2>
         
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Komponen</label>
-                <div class="p-3 bg-gray-50 rounded border">
-                    {{ report.component|default:'Tidak ada komponen' }}
+        {% if report.activities.exists %}
+            {% for activity in report.activities.all %}
+            <div class="border border-gray-200 rounded-lg p-4 mb-4 {% if not forloop.last %}mb-4{% endif %}">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-md font-medium text-gray-800">Aktivitas {{ forloop.counter }}</h3>
+                    <span class="text-xs text-gray-500">{{ activity.created_at|date:"d M Y H:i" }}</span>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Komponen</label>
+                        <div class="p-3 bg-gray-50 rounded border">
+                            {{ activity.component|default:'Tidak ada komponen' }}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kode Aktivitas</label>
+                        <div class="p-3 bg-gray-50 rounded border">
+                            {{ activity.activity_code|default:'Tidak ada kode aktivitas' }}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Aktivitas</label>
+                        <div class="p-3 bg-gray-50 rounded border min-h-[100px]">
+                            {{ activity.activity_description|default:'Tidak ada deskripsi aktivitas' }}
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Unit Code</label>
+                            <div class="p-3 bg-gray-50 rounded border">
+                                {{ activity.unit_code|default:'-' }}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">HM/KM</label>
+                            <div class="p-3 bg-gray-50 rounded border">
+                                {{ activity.hm_km|default:'-' }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Kode Aktivitas</label>
-                <div class="p-3 bg-gray-50 rounded border">
-                    {{ report.activities_code|default:'Tidak ada kode aktivitas' }}
-                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <p>Tidak ada detail aktivitas yang tersedia</p>
             </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Aktivitas</label>
-                <div class="p-3 bg-gray-50 rounded border min-h-[100px]">
-                    {{ report.activities|default:'Tidak ada deskripsi aktivitas' }}
-                </div>
-            </div>
-        </div>
+        {% endif %}
     </div>
 
     <!-- Feedback Section -->
