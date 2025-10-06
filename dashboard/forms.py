@@ -379,6 +379,47 @@ ActivityReportDetailFormSet = forms.inlineformset_factory(
 )
 
 
+# Initial form untuk Data Dasar laporan (Step 1)
+class ActivityReportInitialForm(forms.Form):
+    nrp = forms.CharField(
+        label="NRP",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+                "placeholder": "NRP",
+            }
+        ),
+    )
+    section = forms.ChoiceField(
+        label="Section",
+        choices=ActivityReport.SECTION_CHOICES,
+        widget=forms.Select(
+            attrs={
+                "class": "select-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+            }
+        ),
+    )
+    date = forms.DateField(
+        label="Tanggal",
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        # Set default date ke hari ini
+        self.fields["date"].initial = timezone.now().date()
+        # Prefill NRP dari user jika ada
+        if user and getattr(user, "nrp", None):
+            self.fields["nrp"].initial = user.nrp
+
+
 # Form untuk step 1 analysis report
 class AnalysisReportForm(forms.ModelForm):
     """Form untuk step 1 analysis report"""

@@ -12,6 +12,7 @@ from .forms import (
     EmployeeRegistrationForm,
     # ActivityReportForm,  # Deprecated - using new forms
     ActivityReportDetailFormSet,
+    ActivityReportInitialForm,
     AnalysisReportForm,
     AnalysisReportExtendedForm,
     # RoleBasedUserCreationForm,
@@ -610,40 +611,49 @@ def foreman_dashboard(request):
 def create_activity_report_new(request):
     """Create activity report with new structure - multi-step form"""
     if request.method == "POST":
-        # Create ActivityReport instance directly
-        activity_report = ActivityReport(
-            foreman=request.user,
-            nrp=request.POST.get('nrp', request.user.nrp or ''),
-            section=request.POST.get('section', ''),
-            date=request.POST.get('date', timezone.now().date()),
-            status="pending"
-        )
-        activity_report.save()
-        
-        # Process the formset for activities
-        formset = ActivityReportDetailFormSet(request.POST, instance=activity_report)
-        
-        if formset.is_valid():
-            # Save all activity details
-            activities = formset.save(commit=False)
-            for i, activity in enumerate(activities, 1):
-                activity.activity_number = i
-                activity.save()
-            
-            # Delete any activities marked for deletion
-            for activity in formset.deleted_objects:
-                activity.delete()
-            
-            messages.success(
-                request,
-                f"Activity Report berhasil dibuat dengan {len(activities)} aktivitas dan menunggu validasi leader!"
-            )
-            return redirect("foreman_dashboard")
+        # Validasi data dasar laporan
+        initial_form = ActivityReportInitialForm(request.POST, user=request.user)
+
+        if not initial_form.is_valid():
+            messages.error(request, "Data dasar laporan tidak valid. Periksa NRP, Section, dan Tanggal.")
+            formset = ActivityReportDetailFormSet(request.POST, prefix='activities')
         else:
-            messages.error(request, "Terjadi kesalahan pada detail aktivitas. Silakan periksa kembali.")
-            activity_report.delete()  # Clean up if formset is invalid
+            # Buat ActivityReport dari data cleaned initial_form
+            cd = initial_form.cleaned_data
+            activity_report = ActivityReport(
+                foreman=request.user,
+                nrp=cd.get('nrp') or (request.user.nrp or ''),
+                section=cd.get('section', ''),
+                date=cd.get('date') or timezone.now().date(),
+                status="pending"
+            )
+            activity_report.save()
+
+            # Proses formset untuk aktivitas dengan prefix yang konsisten dgn template
+            formset = ActivityReportDetailFormSet(request.POST, instance=activity_report, prefix='activities')
+
+            if formset.is_valid():
+                # Simpan semua detail aktivitas
+                activities = formset.save(commit=False)
+                for i, activity in enumerate(activities, 1):
+                    activity.activity_number = i
+                    activity.save()
+
+                # Hapus aktivitas yang ditandai untuk delete
+                for activity in formset.deleted_objects:
+                    activity.delete()
+
+                messages.success(
+                    request,
+                    f"Activity Report berhasil dibuat dengan {len(activities)} aktivitas dan menunggu validasi leader!"
+                )
+                return redirect("foreman_dashboard")
+            else:
+                messages.error(request, "Terjadi kesalahan pada detail aktivitas. Silakan periksa kembali.")
+                activity_report.delete()  # Clean up jika formset tidak valid
     else:
-        formset = ActivityReportDetailFormSet()
+        initial_form = ActivityReportInitialForm(user=request.user)
+        formset = ActivityReportDetailFormSet(prefix='activities')
     
     # Get choices for template
     component_choices = ActivityReport.COMPONENT_CHOICES
@@ -651,6 +661,7 @@ def create_activity_report_new(request):
     section_choices = ActivityReport.SECTION_CHOICES
     
     context = {
+        "initial_form": initial_form,
         "formset": formset,
         "component_choices": component_choices,
         "activity_code_choices": activity_code_choices,

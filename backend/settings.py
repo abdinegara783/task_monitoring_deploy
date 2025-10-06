@@ -101,8 +101,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'reportmekanik',        # nama database
         'USER': 'sultan',      # user PostgreSQL
-        'PASSWORD': 'passwordku',
-        'HOST': 'localhost',     # atau IP server PostgreSQL
+        'PASSWORD': 'P@ssw0rd123*',
+        'HOST': '127.0.0.1',     # atau IP server PostgreSQL
         'PORT': '5432',          # port default PostgreSQL
     }
 }
