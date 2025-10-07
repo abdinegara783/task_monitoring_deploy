@@ -168,37 +168,45 @@
     {% endif %}
 
     <!-- 4M1E Analysis -->
-    {% if report.faktor_man or report.faktor_material or report.faktor_machine or report.faktor_method or report.faktor_environment %}
     <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <h2 class="text-lg font-semibold mb-4 flex items-center">
             <i data-lucide="target" class="w-5 h-5 text-blue-600 mr-2"></i>
             Analisis Faktor Penyebab (4M1E)
         </h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            <div class="flex items-center p-3 rounded-lg border {{ report.faktor_man|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
-                <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_man|yesno:'bg-red-500,bg-gray-400' }}"></div>
-                <span class="text-sm font-medium {{ report.faktor_man|yesno:'text-red-800,text-gray-600' }}">Man (Manusia)</span>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Man (Manusia)</label>
+                <div class="p-3 bg-gray-50 rounded border">
+                    {{ report.faktor_man|default:'Tidak diisi' }}
+                </div>
             </div>
-            <div class="flex items-center p-3 rounded-lg border {{ report.faktor_material|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
-                <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_material|yesno:'bg-red-500,bg-gray-400' }}"></div>
-                <span class="text-sm font-medium {{ report.faktor_material|yesno:'text-red-800,text-gray-600' }}">Material</span>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Material</label>
+                <div class="p-3 bg-gray-50 rounded border">
+                    {{ report.faktor_material|default:'Tidak diisi' }}
+                </div>
             </div>
-            <div class="flex items-center p-3 rounded-lg border {{ report.faktor_machine|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
-                <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_machine|yesno:'bg-red-500,bg-gray-400' }}"></div>
-                <span class="text-sm font-medium {{ report.faktor_machine|yesno:'text-red-800,text-gray-600' }}">Machine</span>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Machine (Mesin)</label>
+                <div class="p-3 bg-gray-50 rounded border">
+                    {{ report.faktor_machine|default:'Tidak diisi' }}
+                </div>
             </div>
-            <div class="flex items-center p-3 rounded-lg border {{ report.faktor_method|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
-                <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_method|yesno:'bg-red-500,bg-gray-400' }}"></div>
-                <span class="text-sm font-medium {{ report.faktor_method|yesno:'text-red-800,text-gray-600' }}">Method</span>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Method (Metode)</label>
+                <div class="p-3 bg-gray-50 rounded border">
+                    {{ report.faktor_method|default:'Tidak diisi' }}
+                </div>
             </div>
-            <div class="flex items-center p-3 rounded-lg border {{ report.faktor_environment|yesno:'bg-red-100 border-red-300,bg-gray-100 border-gray-300' }}">
-                <div class="w-3 h-3 rounded-full mr-3 {{ report.faktor_environment|yesno:'bg-red-500,bg-gray-400' }}"></div>
-                <span class="text-sm font-medium {{ report.faktor_environment|yesno:'text-red-800,text-gray-600' }}">Environment</span>
+            <div class="lg:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Environment (Lingkungan)</label>
+                <div class="p-3 bg-gray-50 rounded border">
+                    {{ report.faktor_environment|default:'Tidak diisi' }}
+                </div>
             </div>
         </div>
     </div>
-    {% endif %}
 
     <!-- Actions Taken -->
     {% if report.tindakan_dilakukan or report.tindakan_pencegahan %}

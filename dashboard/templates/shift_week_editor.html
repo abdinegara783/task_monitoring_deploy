@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="bg-black text-white py-6 mb-8">
+  <div class="container mx-auto px-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <a href="{% url 'shift_management' %}" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Kembali
+        </a>
+        <a href="{% url 'shift_week_scheduler' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">Generator Otomatis</a>
+        <div>
+          <h1 class="text-3xl font-semibold">{{ title }}</h1>
+          <p class="text-gray-300 mt-1">Set manual shift per foreman untuk 7 hari</p>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <a href="?start={{ prev_start }}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-md">◀ Minggu Sebelumnya</a>
+        <a href="?start={{ next_start }}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-md">Minggu Berikutnya ▶</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mx-auto px-4">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="{% if message.tags == 'success' %}bg-green-100 border-green-400 text-green-700{% else %}bg-red-100 border-red-400 text-red-700{% endif %} border px-4 py-3 rounded mb-4" role="alert">
+        {{ message }}
+        <button type="button" class="float-right text-xl leading-none font-semibold" onclick="this.parentElement.style.display='none'">&times;</button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="start" value="{{ start_date }}" />
+    <div class="bg-white rounded-lg shadow-sm overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Foreman</th>
+            {% for d in week_dates %}
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ d }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for row in rows %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-2 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">{{ row.foreman.name }}</div>
+                <div class="text-xs text-gray-500">{{ row.foreman.email }}</div>
+              </td>
+              {% for cell in row.cells %}
+                <td class="px-4 py-2 whitespace-nowrap">
+                  <select name="schedule-{{ row.foreman.id }}-{{ cell.date }}" class="text-sm border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    {% for value, label in shift_choices %}
+                      <option value="{{ value }}" {% if cell.selected == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4">
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">Simpan Perubahan</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
