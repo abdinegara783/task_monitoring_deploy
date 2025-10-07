@@ -365,7 +365,7 @@ def admin_dashboard(request):
 
 # Ganti decorator untuk admin_detail
 @login_required
-@role_required(["admin"])
+@role_required(["admin", "superadmin"])
 def admin_detail(request, user_id):
     """Detail karyawan"""
     employee = get_object_or_404(User, id=user_id)
@@ -374,7 +374,7 @@ def admin_detail(request, user_id):
 
 # Ganti decorator untuk admin_edit
 @login_required
-@role_required(["admin"])
+@role_required(["admin", "superadmin"])
 def admin_edit(request, user_id):
     """Edit data karyawan"""
     employee = get_object_or_404(User, id=user_id)
@@ -417,7 +417,7 @@ def admin_edit(request, user_id):
 
 # Ganti decorator untuk admin_delete
 @login_required
-@role_required(["admin"])
+@role_required(["admin","superadmin"])
 def admin_delete(request, user_id):
     """Hapus karyawan"""
     employee = get_object_or_404(User, id=user_id)

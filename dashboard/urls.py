@@ -8,20 +8,20 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     # path("register/", views.register_view, name="register"),
     # Admin URLs for Employee Management
-    path("superadmin/", views.admin_dashboard, name="admin_dashboard"),
-    path("superadmin/<int:user_id>/", views.admin_detail, name="admin_detail"),
-    path("superadmin/<int:user_id>/edit/", views.admin_edit, name="admin_edit"),
+    path("superadmin/", views.admin_dashboard, name="admin_dashboard"), # Admin dashboad Oke
+    path("superadmin/<int:user_id>/", views.admin_detail, name="admin_detail"), #admin detil sudah oke
+    path("superadmin/<int:user_id>/edit/", views.admin_edit, name="admin_edit"), # Admin edit sudah oke
     path(
         "superadmin/<int:user_id>/delete/",
         views.admin_delete,
-        name="admin_delete",
-    ),
-    path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'),
+        name="admin_delete", #delete sudah oke
+    ), 
+    path('superadmin/create-user/', views.create_user_with_role, name='create_user_with_role'), #create user sudah oke
     path('superadmin/shift-management/', views.shift_management, name='shift_management'),
     # Foreman URLs
     path("mekanik/", views.foreman_dashboard, name="foreman_dashboard"),
     path("mekanik/reports/", views.foreman_reports, name="foreman_reports"),
-    path("foreman/activity-report/<int:report_id>/", views.activity_report_detail, name="activity_report_detail"),
+    path("mekanik/activity-report/<int:report_id>/", views.activity_report_detail, name="activity_report_detail"),
     # Activity report
     path(
         "activity-report/create/",

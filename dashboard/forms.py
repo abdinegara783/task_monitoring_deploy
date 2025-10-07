@@ -261,7 +261,7 @@ class EmployeeRegistrationForm(forms.ModelForm):
                     "class": "select-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400"
                 }
             ),
-            "department": forms.TextInput(
+            "department": forms.Select(
                 attrs={
                     "class": "input-field block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 hover:border-gray-400",
                     "placeholder": "Departemen",
@@ -418,6 +418,12 @@ class ActivityReportInitialForm(forms.Form):
         # Prefill NRP dari user jika ada
         if user and getattr(user, "nrp", None):
             self.fields["nrp"].initial = user.nrp
+        # Buat NRP tidak bisa diedit di form
+        self.fields["nrp"].disabled = True
+        self.fields["nrp"].widget.attrs.update({
+            "readonly": True,
+            "class": "input-field block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-700 cursor-not-allowed",
+        })
 
 
 # Form untuk step 1 analysis report

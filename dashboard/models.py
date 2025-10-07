@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -206,6 +208,61 @@ class User(AbstractUser):
         verbose_name_plural = "Users"
 
 
+class ShiftSchedule(models.Model):
+    """Model jadwal shift harian untuk foreman."""
+
+    SHIFT_CHOICES = [
+        (0, "Stop"),
+        (1, "Shift 1"),
+        (2, "Shift 2"),
+    ]
+
+    DEPARTMENT_CHOICES = [
+        ("SUPPORT", "Support & Fabrikasi"),
+        ("TRACK", "Track"),
+        ("PLANT", "PCH"),
+        ("WHEEL", "Wheel"),
+    ]
+
+    date = models.DateField(help_text="Tanggal jadwal shift")
+    shift = models.IntegerField(choices=SHIFT_CHOICES, help_text="Shift yang ditugaskan (Stop/1/2)")
+    department = models.CharField(max_length=100, choices=DEPARTMENT_CHOICES, help_text="Departemen foreman")
+    is_active = models.BooleanField(default=True, help_text="Status aktif jadwal")
+    notes = models.TextField(blank=True, null=True, help_text="Catatan tambahan untuk jadwal ini")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    created_by = models.ForeignKey(
+        User,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="created_schedules",
+        limit_choices_to={"role__in": ["admin", "superadmin"]},
+        help_text="Admin yang membuat jadwal",
+    )
+
+    foreman = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        limit_choices_to={"role": "foreman"},
+        help_text="Foreman yang dijadwalkan",
+    )
+
+    class Meta:
+        verbose_name = "Jadwal Shift"
+        verbose_name_plural = "Jadwal Shift"
+        ordering = ["-date", "shift"]
+        indexes = [
+            models.Index(fields=["date", "shift"], name="dashboard_s_date_shift_idx"),
+            models.Index(fields=["foreman", "date"], name="dashboard_s_foreman_date_idx"),
+        ]
+        unique_together = ("date", "foreman")
+
+    def __str__(self):
+        return f"{self.foreman.get_full_name()} - {self.date} ({dict(self.SHIFT_CHOICES).get(self.shift)})"
+
+
 class ActivityReport(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),
@@ -214,33 +271,10 @@ class ActivityReport(models.Model):
     ]
 
     SECTION_CHOICES = [
-        ("PC1250", "PC1250"),
-        ("CAT395", "CAT395"),
-        ("DX800", "DX800"),
-        ("PC500", "PC500"),
-        ("PC300", "PC300"),
-        ("PC200/210", "PC200/210"),
-        ("D375", "D375"),
-        ("D155", "D155"),
-        ("D85", "D85"),
-        ("EPIROC DM30", "EPIROC DM30"),
-        ("HD785", "HD785"),
-        ("VOLVO FMX400", "VOLVO FMX400"),
-        ("GD955", "GD955"),
-        ("GD535", "GD535"),
-        ("GD160K/M", "GD160K/M"),
-        ("DYNAPAC COMPACTOR", "DYNAPAC COMPACTOR"),
-        ("HD465/WT", "HD465/WT"),
-        ("RENAULT FT/LB", "RENAULT FT/LB"),
-        ("HINO WT/LT/CT", "HINO WT/LT/CT"),
-        ("MANITAOU", "MANITAOU"),
-        ("KATO CRANE", "KATO CRANE"),
-        ("GENSET", "GENSET"),
-        ("WATER PUMP (WP)", "WATER PUMP (WP)"),
-        ("HINO DT", "HINO DT"),
-        ("MERCY DT", "MERCY DT"),
-        ("BOMAG COMPACTOR", "BOMAG COMPACTOR"),
-        ("TL", "TL")
+        ("SUPPORT", "Support & Fabrikasi"),
+        ("TRACK", "Track"),
+        ("PLANT", "PCH"),
+        ("WHEEL", "Wheel"),
     ]
 
     COMPONENT_CHOICES = [
@@ -700,3 +734,14 @@ class Notification(models.Model):
             )
             notifications.append(notification)
         return notifications
+
+
+# Pastikan jadwal terkait dibersihkan sebelum user dihapus (untuk menghindari ForeignKeyViolation di beberapa DB)
+@receiver(pre_delete, sender=User)
+def cleanup_shifts_on_user_delete(sender, instance, **kwargs):
+    try:
+        if instance.role == "foreman":
+            ShiftSchedule.objects.filter(foreman=instance).delete()
+    except Exception:
+        # Jangan blok proses delete jika ada masalah; biarkan DB menangani
+        pass
