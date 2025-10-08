@@ -1087,14 +1087,17 @@ def export_reports_csv(request):
 
     reports = ActivityReport.objects.all().order_by("-date")
     for report in reports:
+        # Safely get the first activity detail associated with this report
+        first_activity = report.activities.first() if report.activities.exists() else None
+
         writer.writerow(
             [
                 report.date,
                 report.foreman.name or report.foreman.username,
                 report.foreman.leader.name if report.foreman.leader else "-",
-                report.unit_code or "-",
-                report.activities.first().component if report.activities.exists() else "-",
-                report.activities,
+                first_activity.unit_code if first_activity else "-",
+                (first_activity.get_component_display() if hasattr(first_activity, "get_component_display") else first_activity.component) if first_activity else "-",
+                first_activity.activities if first_activity else "-",
                 report.status,
                 report.feedback or "-",
             ]
