@@ -27,6 +27,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import json
 import datetime
+import zipfile
+from io import BytesIO
 
 
 def hello_world_tailwind(request):
@@ -1156,21 +1158,40 @@ def export_activity_reports_pdf(request):
     status = request.GET.get("status")
     foreman_id = request.GET.get("foreman")
 
-    # Build query
-    reports = ActivityReport.objects.select_related("foreman").all()
+    # Build base query
+    reports_qs = ActivityReport.objects.select_related("foreman").all()
 
     # Apply filters
     if start_date:
-        reports = reports.filter(date__gte=start_date)
+        reports_qs = reports_qs.filter(date__gte=start_date)
     if end_date:
-        reports = reports.filter(date__lte=end_date)
+        reports_qs = reports_qs.filter(date__lte=end_date)
     if status:
-        reports = reports.filter(status=status)
-    if foreman_id:
-        reports = reports.filter(foreman_id=foreman_id)
+        reports_qs = reports_qs.filter(status=status)
 
+    # If foreman='all', build per-foreman PDFs and zip them
+    if foreman_id in (None, '', 'all'):
+        foremen = User.objects.filter(role='foreman').order_by('name', 'username')
+        zip_buffer = BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            pdf_service = PDFReportService()
+            for foreman in foremen:
+                f_reports = reports_qs.filter(foreman=foreman).order_by('-date')
+                # Generate PDF bytes for this foreman
+                pdf_bytes = pdf_service.generate_activity_reports_pdf_bytes(f_reports)
+                safe_name = (foreman.name or foreman.username or f"foreman_{foreman.id}").replace(' ', '_')
+                filename = f"Activity_Reports_{safe_name}_{datetime.datetime.now().strftime('%Y%m%d')}.pdf"
+                zipf.writestr(filename, pdf_bytes)
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+        response['Content-Disposition'] = f"attachment; filename=Activity_Reports_All_Mekanik_{datetime.datetime.now().strftime('%Y%m%d')}.zip"
+        return response
+
+    # Otherwise, export a single combined PDF for the selected foreman or filters
+    if foreman_id:
+        reports_qs = reports_qs.filter(foreman_id=foreman_id)
     # Order by date
-    reports = reports.order_by("-date")
+    reports = reports_qs.order_by("-date")
 
     # Generate date range string
     date_range = None

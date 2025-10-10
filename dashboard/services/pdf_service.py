@@ -98,6 +98,45 @@ class PDFReportService:
         # Build PDF
         doc.build(elements)
         return response
+
+    def generate_activity_reports_pdf_bytes(self, reports, date_range=None):
+        """Generate PDF bytes for Activity Reports (for zipping multiple files)."""
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                 rightMargin=50, leftMargin=50,
+                                 topMargin=40, bottomMargin=40)
+
+        elements = []
+
+        # Get first report for foreman data
+        foreman_data = None
+        try:
+            if reports and len(reports) > 0:
+                foreman_data = reports[0].foreman
+        except Exception:
+            # In case reports is a QuerySet without __len__ implemented before evaluation
+            foreman_data = reports.first().foreman if hasattr(reports, 'first') and reports.first() else None
+
+        # Add content similar to the standard PDF export
+        elements.extend(self._add_company_header_with_logo())
+
+        title = "Mechanic Activity Report"
+        elements.append(Paragraph(title, self.title_style))
+        elements.append(Spacer(1, 15))
+
+        website = "www.riungmitra.co.id"
+        elements.append(Paragraph(website, self.subtitle_style))
+        elements.append(Spacer(1, 20))
+
+        elements.extend(self._add_form_header_section(foreman_data, reports))
+        elements.extend(self._add_activity_table(reports))
+        elements.extend(self._add_footer_section(foreman_data, reports))
+
+        # Build into buffer and return bytes
+        doc.build(elements)
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        return pdf_bytes
     
     def _add_company_header_with_logo(self):
         """Add company header with actual logo"""

@@ -26,11 +26,11 @@ SECRET_KEY = "django-insecure-_7k8ay&a^(4@))iii^0d_awyl)8egc759#n8%51+6413wa)ea4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# # Tambahkan IP addresses yang diizinkan
+# Tambahkan IP addresses yang diizinkan
 # ALLOWED_HOSTS = [
 #     "localhost",
 #     "127.0.0.1",
-#     "192.168.100.102", 
+#     "103.59.160.101", 
 #     "https://573ab30e7450.ngrok-free.app",  # IP address dari error       # Untuk development# HANYA untuk development - JANGAN untuk production!
 # ]
 
@@ -148,7 +148,7 @@ STATIC_URL = "/static/"
 # Untuk development - path ke folder staticfiles
 STATICFILES_DIRS = [
     # Hapus atau comment line ini jika folder tidak ada
-    BASE_DIR.parent / "staticfiles",
+    #BASE_DIR.parent / "staticfiles",
 ]
 
 # Untuk production - tempat collectstatic menyimpan file
@@ -180,15 +180,6 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Perbaiki CORS_ALLOWED_ORIGINS juga (line 176-182)
-CORS_ALLOWED_ORIGINS = [
-    "https://*.ngrok.io",
-    "https://*.ngrok-free.app",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-    'https://573ab30e7450.ngrok-free.app',  # Tambahkan https://
-]
-
-# Jika menggunakan CORS (untuk API)
 CORS_ALLOWED_ORIGINS = [
     "https://*.ngrok.io",
     "https://*.ngrok-free.app",
